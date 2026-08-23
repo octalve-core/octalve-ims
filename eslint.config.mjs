@@ -1,4 +1,5 @@
 import next from "eslint-config-next";
+import tierBoundaries from "./eslint.tier-boundaries.mjs";
 
 const customRules = {
   "@typescript-eslint/no-explicit-any": "off",
@@ -29,4 +30,4 @@ if (tsConfigIndex >= 0) {
   configs.push({ rules: customRules });
 }
 
-export default configs;
+export default [...configs, ...tierBoundaries];
