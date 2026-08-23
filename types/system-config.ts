@@ -44,7 +44,7 @@ export const DEFAULT_CONFIGS: Omit<
 >[] = [
   {
     key: "company_name",
-    value: "Stock Inventory Store",
+    value: "Octalve IMS Store",
     type: "string",
     label: "Company Name",
     description: "Your company or store name",

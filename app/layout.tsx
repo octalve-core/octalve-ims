@@ -43,23 +43,15 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: {
-    default: "Stockly — Warehouse & Stock Inventory Management System",
-    template: "%s | Stockly — Warehouse & Stock Inventory Management System",
+    default: "Octalve IMS — Inventory & Warehouse Management System",
+    template: "%s | Octalve IMS — Inventory & Warehouse Management System",
   },
   description:
-    "Stockly is a full-stack warehouse and stock inventory management system built with Next.js. Manage products, categories, suppliers, orders, invoices, and warehouses. Role-based access for admin, client, and supplier. Analytics dashboard, QR codes, export, and secure JWT authentication. By Arnob Mahmud.",
-  authors: [
-    {
-      name: "Arnob Mahmud",
-      url: "https://www.arnobmahmud.com",
-      email: "contact@arnobmahmud.com",
-    },
-  ],
-  creator: "Arnob Mahmud",
-  publisher: "Arnob Mahmud",
-  applicationName: "Stockly",
+    "Octalve IMS is a full-stack inventory and warehouse management system built with Next.js. Manage products, categories, suppliers, orders, invoices, and warehouses. Role-based access for admin, client, and supplier. Analytics dashboard, QR codes, export, and secure JWT authentication.",
+  creator: "Octalve",
+  publisher: "Octalve",
+  applicationName: "Octalve IMS",
   keywords: [
-    "stock inventory",
     "inventory management",
     "warehouse management",
     "stock management system",
@@ -74,7 +66,7 @@ export const metadata = {
     "JWT authentication",
     "responsive web app",
     "business dashboard",
-    "Arnob Mahmud",
+    "Octalve",
   ],
   icons: {
     icon: "/favicon.ico",
@@ -82,30 +74,30 @@ export const metadata = {
     other: [{ rel: "icon", url: "/favicon.ico" }],
   },
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://stockly-inventory.vercel.app",
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://octalve-ims.vercel.app",
   ),
   openGraph: {
     type: "website",
     locale: "en_US",
-    title: "Stockly — Warehouse & Stock Inventory Management System",
+    title: "Octalve IMS — Inventory & Warehouse Management System",
     description:
-      "Efficiently manage products, orders, invoices, and warehouses with Stockly. Secure, responsive, role-based inventory system. By Arnob Mahmud.",
-    url: "https://stockly-inventory.vercel.app",
-    siteName: "Stockly",
+      "Efficiently manage products, orders, invoices, and warehouses with Octalve IMS. Secure, responsive, role-based inventory system.",
+    url: "https://octalve-ims.vercel.app",
+    siteName: "Octalve IMS",
     images: [
       {
         url: "/favicon.ico",
         width: 32,
         height: 32,
-        alt: "Stockly — Stock Inventory Management",
+        alt: "Octalve IMS — Inventory Management",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Stockly — Warehouse & Stock Inventory Management System",
+    title: "Octalve IMS — Inventory & Warehouse Management System",
     description:
-      "Efficiently manage products, orders, invoices, and warehouses. Secure, responsive inventory system. By Arnob Mahmud.",
+      "Efficiently manage products, orders, invoices, and warehouses. Secure, responsive inventory system.",
     images: ["/favicon.ico"],
   },
   robots: {

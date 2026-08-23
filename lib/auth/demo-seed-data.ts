@@ -409,7 +409,7 @@ export const DEMO_CATALOG_SEED = {
   systemConfigs: [
     {
       key: "company_name",
-      value: "Stockly Demo",
+      value: "Octalve IMS Demo",
       type: "string",
       label: "Company name",
       description: "Display name for invoices and emails.",

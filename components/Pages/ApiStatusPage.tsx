@@ -202,7 +202,7 @@ export default function ApiStatusPage({ userRole }: ApiStatusPageProps) {
         | undefined;
 
       const status: SystemStatus = {
-        project: "Stockly Inventory Management",
+        project: "Octalve IMS",
         environment: healthData.environment,
         currentTime: new Date(healthData.timestamp).toLocaleString(),
         uptime: healthData.uptime,
@@ -296,7 +296,7 @@ export default function ApiStatusPage({ userRole }: ApiStatusPageProps) {
             icon={Activity}
             tone="emerald"
             title="API & Project Status"
-            description="Real-time monitoring of Stockly's API endpoints and system health"
+            description="Real-time monitoring of Octalve IMS's API endpoints and system health"
             trailing={
               <Button
                 onClick={handleRefresh}

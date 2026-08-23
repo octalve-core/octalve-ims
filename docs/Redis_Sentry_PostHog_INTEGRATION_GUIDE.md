@@ -1262,7 +1262,7 @@ export function FeatureComponent() {
 - [x] `next.config.ts` wrapped with `withSentryConfig` + `tunnelRoute`
 - [x] ErrorBoundary + `app/global-error.tsx`
 - [ ] Test error tracking in production after Vercel redeploy
-- [ ] Verify events in Sentry dashboard (stock-inventory project)
+- [ ] Verify events in Sentry dashboard (octalve-ims project)
 
 ### PostHog Analytics
 - [ ] Install `posthog-js`

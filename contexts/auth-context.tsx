@@ -54,7 +54,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("getSession");
     localStorage.removeItem("prevUserId");
-    localStorage.removeItem("stock-inventory-query-cache");
+    localStorage.removeItem("octalve-ims-query-cache");
     queryClient.clear();
   }, [queryClient]);
 

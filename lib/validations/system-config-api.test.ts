@@ -4,7 +4,7 @@ import { updateSystemConfigsBodySchema } from "./system-config";
 describe("updateSystemConfigsBodySchema", () => {
   it("accepts valid configs array", () => {
     const result = updateSystemConfigsBodySchema.safeParse({
-      configs: [{ key: "app.name", value: "Stockly" }],
+      configs: [{ key: "app.name", value: "Octalve IMS" }],
     });
     expect(result.success).toBe(true);
   });

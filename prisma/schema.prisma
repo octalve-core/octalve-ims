@@ -1,4 +1,4 @@
-// Prisma schema for octalve-ims (Postgres). Forked from Stockly's MongoDB
+// Prisma schema for octalve-ims (Postgres). Ported from the original MongoDB
 // schema; see out/auth-system-port-plan.md for the auth-model provenance
 // (RefreshToken/VerificationToken/LoginAttempt ported from Proplity) and
 // /home/rojitech/.claude/plans/clever-moseying-haven.md for the Milestone 0

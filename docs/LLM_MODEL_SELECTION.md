@@ -471,7 +471,7 @@ Choose whichever provider offers the highest-ranked available model.
 
 ---
 
-## Stock-inventory — Groq fallback (REQ-0018)
+## Octalve-ims — Groq fallback (REQ-0018)
 
 **Code:** [`lib/ai/groq.ts`](../lib/ai/groq.ts) · **Orchestrator:** [`lib/ai/create-chat-completion.ts`](../lib/ai/create-chat-completion.ts) · **Routes:** `/api/ai/insights`, `/api/forecasting`
 

@@ -1,6 +1,6 @@
 /**
  * OpenAPI 3.0 specification endpoint
- * GET /api/openapi — returns OpenAPI JSON for the Stockly API (no auth required)
+ * GET /api/openapi — returns OpenAPI JSON for the Octalve IMS API (no auth required)
  */
 
 import { NextRequest, NextResponse } from "next/server";

@@ -27,13 +27,13 @@ function getImageKitInstance(): ImageKit {
  * Upload QR code image to ImageKit
  * @param file - Base64 encoded image data or Buffer
  * @param fileName - Name for the uploaded file (e.g., product SKU)
- * @param folder - Folder path in ImageKit (default: /stock-inventory/qr-codes/)
+ * @param folder - Folder path in ImageKit (default: /octalve-ims/qr-codes/)
  * @returns Promise with ImageKit upload result containing URL
  */
 export async function uploadQRCodeToImageKit(
   file: string | Buffer,
   fileName: string,
-  folder: string = "/stock-inventory/qr-codes/"
+  folder: string = "/octalve-ims/qr-codes/"
 ): Promise<{ url: string; fileId: string }> {
   try {
     const imagekit = getImageKitInstance();
@@ -121,14 +121,14 @@ export async function generateQRCodeDataURL(
  * @param data - Data to encode in QR code
  * @param fileName - Name for the uploaded file
  * @param size - QR code size in pixels (default: 200)
- * @param folder - Folder path in ImageKit (default: /stock-inventory/qr-codes/)
+ * @param folder - Folder path in ImageKit (default: /octalve-ims/qr-codes/)
  * @returns Promise with ImageKit URL and fileId
  */
 export async function generateAndUploadQRCode(
   data: string,
   fileName: string,
   size: number = 200,
-  folder: string = "/stock-inventory/qr-codes/"
+  folder: string = "/octalve-ims/qr-codes/"
 ): Promise<{ url: string; fileId: string }> {
   // Generate QR code as base64
   const qrCodeDataURL = await generateQRCodeDataURL(data, size);
@@ -154,13 +154,13 @@ export async function generateAndUploadQRCode(
  * Upload product image to ImageKit
  * @param file - File buffer or base64 string
  * @param fileName - Name for the uploaded file (e.g., product SKU)
- * @param folder - Folder path in ImageKit (default: /stock-inventory/products/)
+ * @param folder - Folder path in ImageKit (default: /octalve-ims/products/)
  * @returns Promise with ImageKit upload result containing URL and fileId
  */
 export async function uploadProductImageToImageKit(
   file: string | Buffer,
   fileName: string,
-  folder: string = "/stock-inventory/products/"
+  folder: string = "/octalve-ims/products/"
 ): Promise<{ url: string; fileId: string }> {
   try {
     const imagekit = getImageKitInstance();

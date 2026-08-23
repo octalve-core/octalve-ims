@@ -40,7 +40,7 @@ export default [
     },
     rules: {
       // "warn", not "error": a full-repo run surfaces ~266 pre-existing
-      // cross-tier imports inherited from Stockly (e.g. Core order/product
+      // cross-tier imports inherited from the fork baseline (e.g. Core order/product
       // detail pages importing Pro's Stripe reconciliation or Premium's
       // forecasting/insights enrichment inline). That's real business-logic
       // entanglement predating this fork, not something introduced here —

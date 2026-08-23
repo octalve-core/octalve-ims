@@ -13,7 +13,7 @@ let shippoInstance: Shippo | null = null;
  * Can be overridden via environment variables
  */
 export const DEFAULT_FROM_ADDRESS = {
-  name: process.env.SHIPPO_FROM_NAME || "Stock Inventory Store",
+  name: process.env.SHIPPO_FROM_NAME || "Octalve IMS Store",
   street1: process.env.SHIPPO_FROM_STREET1 || "123 Main St",
   street2: process.env.SHIPPO_FROM_STREET2 || "",
   city: process.env.SHIPPO_FROM_CITY || "New York",

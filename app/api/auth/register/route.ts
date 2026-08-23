@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     // New signups get admin role for full manipulation power (existing
-    // Stockly product decision, unchanged by the auth port).
+    // original product decision, unchanged by the auth port).
     const createdUser = await prisma.user.create({
       data: {
         name,

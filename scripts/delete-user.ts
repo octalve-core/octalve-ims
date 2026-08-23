@@ -9,7 +9,7 @@
  *   npm run script:delete-user <email>
  * 
  * Example:
- *   npm run script:delete-user arnobt78@gmail.com
+ *   npm run script:delete-user user@example.com
  * 
  * WARNING: This will permanently delete the user and all their associated data. Use with caution!
  */
@@ -33,7 +33,7 @@ async function deleteUser(email?: string) {
       console.log("  or");
       console.log("  npm run script:delete-user <email>");
       console.log("\nExample:");
-      console.log("  npm run script:delete-user arnobt78@gmail.com");
+      console.log("  npm run script:delete-user user@example.com");
       process.exit(1);
     }
 

@@ -25,7 +25,7 @@ const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 function getBrevoConfig() {
   const apiKey = getEnvVar("BREVO_API_KEY");
   const senderEmail = getEnvVar("BREVO_SENDER_EMAIL") || process.env.BREVO_SENDER_EMAIL;
-  const senderName = getEnvVar("BREVO_SENDER_NAME") || process.env.BREVO_SENDER_NAME || "Stock Inventory Management";
+  const senderName = getEnvVar("BREVO_SENDER_NAME") || process.env.BREVO_SENDER_NAME || "Octalve IMS";
   const adminEmail = getEnvVar("BREVO_ADMIN_EMAIL") || process.env.BREVO_ADMIN_EMAIL;
 
   if (!apiKey) {
@@ -76,7 +76,7 @@ export async function sendEmailViaBrevo(request: SendEmailRequest): Promise<Emai
       },
       ...(request.tags && request.tags.length > 0 && { tags: request.tags }),
       headers: {
-        "X-Mailer": "Stock Inventory Management Email System",
+        "X-Mailer": "Octalve IMS Email System",
         "X-Priority": "3",
         Importance: "normal",
         Precedence: "bulk",
@@ -183,16 +183,16 @@ export function getSenderEmail(): string | undefined {
 /**
  * Get sender name from configuration
  *
- * @returns string - Sender name (defaults to "Stock Inventory Management")
+ * @returns string - Sender name (defaults to "Octalve IMS")
  */
 export function getSenderName(): string {
   try {
     return (
       getEnvVar("BREVO_SENDER_NAME") ||
       process.env.BREVO_SENDER_NAME ||
-      "Stock Inventory Management"
+      "Octalve IMS"
     );
   } catch {
-    return "Stock Inventory Management";
+    return "Octalve IMS";
   }
 }

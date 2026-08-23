@@ -4,8 +4,8 @@
  * Shown-marker survives React Strict Mode remount (consume-on-read caused missed toasts).
  */
 
-export const POST_LOGIN_WELCOME_KEY = "stockly:post-login-welcome";
-export const POST_LOGIN_WELCOME_SHOWN_KEY = "stockly:post-login-welcome-shown";
+export const POST_LOGIN_WELCOME_KEY = "octalve-ims:post-login-welcome";
+export const POST_LOGIN_WELCOME_SHOWN_KEY = "octalve-ims:post-login-welcome-shown";
 
 export type PostLoginWelcomePayload = {
   userName: string;

@@ -192,7 +192,7 @@ export function generateOrderConfirmationEmail(
                   <tr>
                     <td style="border-top: 1px solid #eeeeee; padding: 30px 0 0 0;">
                       <p style="font-size: 12px; line-height: 1.5; color: #999999; margin: 0;">
-                        This is an automated email from Stock Inventory Management. Please do not reply to this email.
+                        This is an automated email from Octalve IMS. Please do not reply to this email.
                       </p>
                     </td>
                   </tr>
@@ -234,7 +234,7 @@ ${tax ? `- Tax: ${formatCurrency(tax)}\n` : ""}${shipping ? `- Shipping: ${forma
 ${shippingAddress ? `Shipping Address:\n${shippingAddress.street}\n${shippingAddress.city}${shippingAddress.state ? `, ${shippingAddress.state}` : ""} ${shippingAddress.zipCode}\n${shippingAddress.country}\n\n` : ""}We'll send you another email when your order ships. If you have any questions, please contact our support team.
 
 ---
-This is an automated email from Stock Inventory Management. Please do not reply to this email.
+This is an automated email from Octalve IMS. Please do not reply to this email.
   `.trim();
 
   return {
@@ -439,7 +439,7 @@ export function generateInvoiceEmail(data: InvoiceEmailData): EmailContent {
                   <tr>
                     <td style="border-top: 1px solid #eeeeee; padding: 30px 0 0 0;">
                       <p style="font-size: 12px; line-height: 1.5; color: #999999; margin: 0;">
-                        This is an automated email from Stock Inventory Management. Please do not reply to this email.
+                        This is an automated email from Octalve IMS. Please do not reply to this email.
                       </p>
                     </td>
                   </tr>
@@ -484,7 +484,7 @@ ${amountPaid ? `- Amount Paid: ${formatCurrency(amountPaid)}\n` : ""}- Amount Du
 ${paymentLink ? `Pay Invoice: ${paymentLink}\n\n` : ""}${invoiceUrl ? `View Invoice: ${invoiceUrl}\n\n` : ""}${status === "overdue" ? "THIS INVOICE IS OVERDUE. Please make payment immediately to avoid any service interruptions.\n\n" : ""}If you have any questions about this invoice, please contact our support team.
 
 ---
-This is an automated email from Stock Inventory Management. Please do not reply to this email.
+This is an automated email from Octalve IMS. Please do not reply to this email.
   `.trim();
 
   return {
@@ -613,7 +613,7 @@ export function generateShippingNotificationEmail(
                   <tr>
                     <td style="border-top: 1px solid #eeeeee; padding: 30px 0 0 0;">
                       <p style="font-size: 12px; line-height: 1.5; color: #999999; margin: 0;">
-                        This is an automated email from Stock Inventory Management. Please do not reply to this email.
+                        This is an automated email from Octalve IMS. Please do not reply to this email.
                       </p>
                     </td>
                   </tr>
@@ -655,7 +655,7 @@ ${shippingAddress.country}
 You can track your package using the tracking number above. If you have any questions, please contact our support team.
 
 ---
-This is an automated email from Stock Inventory Management. Please do not reply to this email.
+This is an automated email from Octalve IMS. Please do not reply to this email.
   `.trim();
 
   return {
@@ -783,7 +783,7 @@ export function generateOrderStatusUpdateEmail(
                   <tr>
                     <td style="border-top: 1px solid #eeeeee; padding: 30px 0 0 0;">
                       <p style="font-size: 12px; line-height: 1.5; color: #999999; margin: 0;">
-                        This is an automated email from Stock Inventory Management. Please do not reply to this email.
+                        This is an automated email from Octalve IMS. Please do not reply to this email.
                       </p>
                     </td>
                   </tr>
@@ -814,7 +814,7 @@ ${estimatedDelivery ? `- Estimated Delivery: ${estimatedDelivery}\n` : ""}
 ${statusMessage ? `Message: ${statusMessage}\n\n` : ""}${orderUrl ? `View Order Details: ${orderUrl}\n\n` : ""}If you have any questions about your order, please contact our support team.
 
 ---
-This is an automated email from Stock Inventory Management. Please do not reply to this email.
+This is an automated email from Octalve IMS. Please do not reply to this email.
   `.trim();
 
   return {

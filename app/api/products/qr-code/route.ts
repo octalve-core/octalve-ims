@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       qrCodeDataString,
       `product-${product.sku}`,
       200,
-      "/stock-inventory/qr-codes/"
+      "/octalve-ims/qr-codes/"
     );
 
     // Update product with QR code URL and fileId

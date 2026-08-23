@@ -29,7 +29,7 @@ export function getPersister() {
     // This persists TanStack Query cache to browser localStorage
     return createSyncStoragePersister({
       storage: window.localStorage,
-      key: "stock-inventory-query-cache",
+      key: "octalve-ims-query-cache",
       throttleTime: 1000,
     });
   } catch (error) {

@@ -42,8 +42,8 @@ const nextConfig: NextConfig = {
 };
 
 export default withSentryConfig(nextConfig, {
-  org: process.env.SENTRY_ORG ?? "arnob-mahmuds-org",
-  project: process.env.SENTRY_PROJECT ?? "stock-inventory",
+  org: process.env.SENTRY_ORG ?? "your-sentry-org",
+  project: process.env.SENTRY_PROJECT ?? "octalve-ims",
   silent: !process.env.CI,
   widenClientFileUpload: true,
   // First-party tunnel — must match `tunnel` in instrumentation-client.ts (SENTRY_TUNNEL_PATH)

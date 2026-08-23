@@ -27,7 +27,7 @@ import {
   AUTH_FORM_ROW_STAGGER_MS,
   AUTH_FORM_STAGGER_BASE,
 } from "@/components/auth/auth-animation";
-import { Loader2, Zap } from "lucide-react";
+import { Eye, EyeOff, Loader2, Zap } from "lucide-react";
 
 /**
  * Login page client component (uses useSearchParams for OAuth/redirect).
@@ -36,6 +36,7 @@ import { Loader2, Zap } from "lucide-react";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [isNavigatingToHome, setIsNavigatingToHome] = useState(false);
@@ -238,16 +239,33 @@ export default function LoginPage() {
             >
               Password
             </label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-              disabled={formDisabled}
-              className={cn("w-full", AUTH_FORM_FIELD_SKY)}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+                disabled={formDisabled}
+                className={cn("w-full pr-10", AUTH_FORM_FIELD_SKY)}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-gray-500 hover:text-gray-700 dark:text-white/60 dark:hover:text-white/80"
+                onClick={() => setShowPassword((v) => !v)}
+                tabIndex={-1}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </AuthAnimatedBlock>
 
           <AuthAnimatedBlock delayMs={formRowDelay(4)}>
@@ -345,8 +363,8 @@ export default function LoginPage() {
 
   return (
     <AuthPageShell
-      illustrationSrc="/stock_inventory.svg"
-      illustrationAlt="Stock Inventory Illustration"
+      illustrationSrc="/octalve-ims.svg"
+      illustrationAlt="Octalve IMS Illustration"
       left={leftPanel}
       right={rightPanel}
     />

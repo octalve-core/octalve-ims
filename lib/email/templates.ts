@@ -118,7 +118,7 @@ export function generateLowStockAlertEmail(
                   <tr>
                     <td style="border-top: 1px solid #eeeeee; padding: 30px 0 0 0;">
                       <p style="font-size: 12px; line-height: 1.5; color: #999999; margin: 0;">
-                        This is an automated email from Stock Inventory Management. Please do not reply to this email.
+                        This is an automated email from Octalve IMS. Please do not reply to this email.
                       </p>
                     </td>
                   </tr>
@@ -148,7 +148,7 @@ ${sku ? `- SKU: ${sku}\n` : ""}${
 Please consider restocking this item to ensure continuous availability.
 
 ---
-This is an automated email from Stock Inventory Management. Please do not reply to this email.
+This is an automated email from Octalve IMS. Please do not reply to this email.
   `.trim();
 
   return {
@@ -240,7 +240,7 @@ export function generateStockOutNotificationEmail(
                   <tr>
                     <td style="border-top: 1px solid #eeeeee; padding: 30px 0 0 0;">
                       <p style="font-size: 12px; line-height: 1.5; color: #999999; margin: 0;">
-                        This is an automated email from Stock Inventory Management. Please do not reply to this email.
+                        This is an automated email from Octalve IMS. Please do not reply to this email.
                       </p>
                     </td>
                   </tr>
@@ -269,7 +269,7 @@ ${sku ? `- SKU: ${sku}\n` : ""}${
 Action Required: Please restock this item immediately to resume sales.
 
 ---
-This is an automated email from Stock Inventory Management. Please do not reply to this email.
+This is an automated email from Octalve IMS. Please do not reply to this email.
   `.trim();
 
   return {
@@ -340,7 +340,7 @@ export function generateInventoryReportEmail(
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
       
       <p style="font-size: 12px; color: #999; margin: 0;">
-        This is an automated email from Stock Inventory Management. Please do not reply to this email.
+        This is an automated email from Octalve IMS. Please do not reply to this email.
       </p>
     </div>
   </body>
@@ -358,7 +358,7 @@ Summary:
 - Out of Stock: ${outOfStockItems}
 
 ---
-This is an automated email from Stock Inventory Management. Please do not reply to this email.
+This is an automated email from Octalve IMS. Please do not reply to this email.
   `.trim();
 
   return {

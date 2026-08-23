@@ -14,10 +14,12 @@ import { refreshAccessToken } from "@/lib/auth/refresh-client";
  */
 
 const axiosInstance = axios.create({
-  baseURL:
-    process.env.NODE_ENV === "production"
-      ? "https://stockly-inventory.vercel.app/api" // Production URL
-      : "http://localhost:3000/api", // Localhost for development
+  // Relative — this instance is client-only and always calls the same
+  // Next.js app's own /api routes, so same-origin is guaranteed and no
+  // hardcoded host/port is needed (a hardcoded "localhost:3000" broke every
+  // request whenever the dev server had to bind to a different port because
+  // 3000 was already taken by another project).
+  baseURL: "/api",
   headers: {
     "Content-Type": "application/json",
   },

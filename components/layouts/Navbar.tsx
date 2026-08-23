@@ -155,7 +155,7 @@ export default function Navbar({ children }: NavbarProps) {
       localStorage.removeItem("token");
       localStorage.removeItem("getSession");
       localStorage.removeItem("prevUserId");
-      localStorage.removeItem("stock-inventory-query-cache");
+      localStorage.removeItem("octalve-ims-query-cache");
 
       // Await the server-side logout so the httpOnly session_id cookie is
       // cleared via Set-Cookie BEFORE the browser navigates to /login.
@@ -226,7 +226,7 @@ export default function Navbar({ children }: NavbarProps) {
               <AiFillProduct className="text-sm sm:text-lg text-rose-600 dark:text-rose-400 transition-transform group-hover:scale-110 drop-shadow-[0_2px_8px_rgba(225,29,72,0.4)]" />
             </div>
             <h1 className="text-sm sm:text-lg font-medium tracking-tight bg-gradient-to-r from-rose-600 to-gray-900 dark:from-rose-400 dark:to-gray-100 bg-clip-text text-transparent transition-all duration-300 ease-in-out group-hover:from-rose-700 group-hover:to-gray-950 dark:group-hover:from-rose-300 dark:group-hover:to-gray-50">
-              Stockly
+              Octalve IMS
             </h1>
           </Link>
         </div>

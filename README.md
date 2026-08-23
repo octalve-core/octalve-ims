@@ -1,21 +1,18 @@
-# Stock & Warehouse Inventory Management System — Next.js, TypeScript, Prisma, MongoDB Full-Stack (including AI Business Insights + Admin Panel + Client & Supplier Role-Based Dashboards & more)
+# Octalve IMS — Inventory & Warehouse Management System (Next.js, TypeScript, Prisma, PostgreSQL Full-Stack, including AI Business Insights + Admin Panel + Client & Supplier Role-Based Dashboards & more)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.2-blue)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-6.4-2D3748)](https://www.prisma.io/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248)](https://www.mongodb.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1)](https://www.postgresql.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC)](https://tailwindcss.com/)
 [![TanStack Query](https://img.shields.io/badge/TanStack_Query-5-FF4154)](https://tanstack.com/query)
 [![Vitest](https://img.shields.io/badge/Vitest-4-6E9F18)](https://vitest.dev/)
-[![launch with diploi badge](https://diploi.com/launch.svg)](https://diploi.com/launch/arnobt78/Warehouse-Stock-Inventory-Management-System--NextJS-FullStack)
 
-An open-source, role-based warehouse and stock inventory platform. Store owners (admin), suppliers, and clients manage products, multi-warehouse stock, orders, invoices, shipping, payments, support tickets, and analytics — with SSR-first Next.js pages, TanStack Query for instant UI updates after CRUD, and optional Stripe / Shippo / Brevo / Redis / Sentry / AI integrations.
+Octalve IMS is a role-based warehouse and stock inventory platform. Store owners (admin), suppliers, and clients manage products, multi-warehouse stock, orders, invoices, shipping, payments, support tickets, and analytics — with SSR-first Next.js pages, TanStack Query for instant UI updates after CRUD, and optional Stripe / Shippo / Brevo / Redis / Sentry / AI integrations.
 
-- **Live demo:** [https://stockly-inventory.vercel.app/](https://stockly-inventory.vercel.app/)
-- **Security:** Report vulnerabilities privately — see [SECURITY.md](SECURITY.md) (`contact@arnobmahmud.com`).
-- **Author:** [Arnob Mahmud](https://www.arnobmahmud.com) · [GitHub @arnobt78](https://github.com/arnobt78)
+- **Security:** Report vulnerabilities privately — see [SECURITY.md](SECURITY.md).
 
 ![Screenshot 2026-03-07 at 12 16 27](https://github.com/user-attachments/assets/f00d8441-4c1c-467d-b9fa-f5505a48feb0)
 ![Screenshot 2026-03-07 at 12 16 46](https://github.com/user-attachments/assets/64b0dd00-126f-4740-9ab4-fb2a8bc5fca5)
@@ -74,7 +71,7 @@ An open-source, role-based warehouse and stock inventory platform. Store owners 
 
 ## Project Overview
 
-Stockly is a **full-stack inventory, order, and warehouse management system**. One codebase serves three roles with different dashboards and permissions:
+Octalve IMS is a **full-stack inventory, order, and warehouse management system**. One codebase serves three roles with different dashboards and permissions:
 
 | Role                    | Typical home        | What they do                                                                                   |
 | ----------------------- | ------------------- | ---------------------------------------------------------------------------------------------- |
@@ -85,7 +82,7 @@ Stockly is a **full-stack inventory, order, and warehouse management system**. O
 **Core idea for learners:**  
 Pages are **SSR-first** (`force-dynamic` + server prefetch in `page.tsx`). The browser then hydrates with **TanStack Query**. After any create/update/delete, mutations **patch the cache** (instant badges/rows) then **invalidate** related queries so lists, detail pages, and portals stay in sync — including after the browser **Back** button — without a full page refresh. Optional **Upstash Redis** caches API/SSR payloads; writes **await** Redis invalidation before the HTTP response so clients never refetch stale server cache.
 
-You do **not** need every third-party key to learn or run the app. With only MongoDB + JWT + public API URL, you get auth, catalog, orders, invoices, warehouses, and tickets. Stripe, Shippo, Brevo, ImageKit, Redis, Sentry, and AI are **optional upgrades**.
+You do **not** need every third-party key to learn or run the app. With only PostgreSQL + JWT + public API URL, you get auth, catalog, orders, invoices, warehouses, and tickets. Stripe, Shippo, Brevo, ImageKit, Redis, Sentry, and AI are **optional upgrades**.
 
 ---
 
@@ -138,7 +135,7 @@ You do **not** need every third-party key to learn or run the app. With only Mon
 | Framework       | **Next.js 16** App Router                                                      | Pages, layouts, Route Handlers (`app/api`)     |
 | UI              | **React 19**, **Tailwind 3.4**, **shadcn/ui** (Radix)                          | Components, dialogs, tables                    |
 | Language        | **TypeScript 5**                                                               | End-to-end types (`types/`, Zod, Prisma)       |
-| Database        | **MongoDB** + **Prisma 6**                                                     | Document models, repositories in `prisma/*.ts` |
+| Database        | **PostgreSQL** + **Prisma 6**                                                  | Relational models, repositories in `prisma/*.ts` |
 | Auth            | **JWT** cookie (`session_id`), **bcryptjs**, optional Google OAuth             | Session in `utils/auth.ts`                     |
 | Server state    | **TanStack Query 5**                                                           | Lists/details, patch → invalidate              |
 | Forms           | **React Hook Form** + **Zod**                                                  | Dialogs and API `safeParse`                    |
@@ -190,11 +187,11 @@ export default async function ProductsRoute() {
 }
 ```
 
-### Prisma + MongoDB
+### Prisma + PostgreSQL
 
 **What:** ORM that generates a typed client from `schema.prisma`.  
 **Why:** Safer queries than raw drivers; shared models.  
-**How:** `npx prisma generate` (also `postinstall`); `npx prisma db push` after schema changes on MongoDB.
+**How:** `npx prisma generate` (also `postinstall`); `npx prisma migrate dev` after schema changes on PostgreSQL.
 
 ```ts
 import { prisma } from "@/prisma/client";
@@ -247,7 +244,7 @@ flowchart LR
   RSC --> ServerLib[lib/server + prisma]
   RQ --> API[app/api Route Handlers]
   API --> Prisma[Prisma Client]
-  Prisma --> Mongo[(MongoDB)]
+  Prisma --> PG[(PostgreSQL)]
   API --> Redis[(Upstash Redis optional)]
   Mutate[Mutation onSuccess] --> Patch[patch* cache]
   Patch --> Inv[invalidate related queries]
@@ -267,13 +264,13 @@ flowchart LR
 
 - **Node.js** 20+ recommended (18+ may work)
 - **npm**
-- **MongoDB** local or [Atlas](https://www.mongodb.com/atlas)
+- **PostgreSQL 16** local or any managed provider (Supabase, Neon, RDS)
 
 ### Install & run
 
 ```bash
-git clone https://github.com/arnobt78/Warehouse-Stock-Inventory-Management-System--NextJS-FullStack.git
-cd Warehouse-Stock-Inventory-Management-System--NextJS-FullStack
+git clone <your-octalve-ims-repo-url>
+cd octalve-ims
 
 npm install
 
@@ -281,7 +278,7 @@ cp .env.example .env
 # Edit .env — set at least DATABASE_URL, JWT_SECRET, NEXT_PUBLIC_API_URL
 
 npx prisma generate   # also runs on postinstall
-npx prisma db push    # sync schema to MongoDB (first time)
+npx prisma migrate dev # apply schema to PostgreSQL (first time)
 
 npm run dev           # http://localhost:3000 (Turbopack)
 ```
@@ -327,14 +324,14 @@ Validated in `lib/env.ts`. Copy `.env.example` → `.env`. **Never commit `.env`
 
 | Variable              | Description                                     | Local example                                                    |
 | --------------------- | ----------------------------------------------- | ---------------------------------------------------------------- |
-| `DATABASE_URL`        | MongoDB connection string                       | `mongodb://localhost:27017/stockly` or Atlas `mongodb+srv://...` |
+| `DATABASE_URL`        | PostgreSQL connection string                    | `postgresql://user:pass@localhost:5432/octalve_ims`               |
 | `JWT_SECRET`          | Signs session JWTs                              | Long random string (32+ chars in production)                     |
 | `NEXT_PUBLIC_API_URL` | Public base URL (emails, client API, redirects) | `http://localhost:3000`                                          |
 
 ### Minimal `.env`
 
 ```env
-DATABASE_URL="mongodb://localhost:27017/stockly"
+DATABASE_URL="postgresql://user:pass@localhost:5432/octalve_ims"
 JWT_SECRET="your-super-secret-jwt-key-min-32-chars"
 NEXT_PUBLIC_API_URL="http://localhost:3000"
 ```
@@ -357,8 +354,8 @@ NEXT_PUBLIC_API_URL="http://localhost:3000"
 ### How to achieve each required variable
 
 1. **`DATABASE_URL`**
-   - Local: install MongoDB → create DB name `stockly` → use `mongodb://localhost:27017/stockly`.
-   - Atlas: Create free cluster → Database Access + Network Access → Connect → Drivers → copy URI → replace password and DB name.
+   - Local: install PostgreSQL 16 → create DB `octalve_ims` → see [docs/local-dev-setup.md](docs/local-dev-setup.md) for the full role/RLS setup.
+   - Hosted: any managed Postgres (Supabase, Neon, RDS, etc.) — copy its connection string and replace the DB name.
 
 2. **`JWT_SECRET`**
    - Generate: `openssl rand -base64 48` (or any long random string).
@@ -366,7 +363,7 @@ NEXT_PUBLIC_API_URL="http://localhost:3000"
 
 3. **`NEXT_PUBLIC_API_URL`**
    - Local: `http://localhost:3000`.
-   - Production: your Vercel URL (e.g. `https://stockly-inventory.vercel.app`) — must match the public origin so cookies/emails/redirects work.
+   - Production: your Vercel URL (e.g. `https://octalve-ims.vercel.app`) — must match the public origin so cookies/emails/redirects work.
    - Note: `NEXT_PUBLIC_*` is baked into the **client** bundle; redeploy after changing it.
 
 ### Full template
@@ -388,7 +385,7 @@ Chrome “Translate this page” can trigger React `removeChild` noise. Prefer t
 ## Project Structure
 
 ```bash
-stock-inventory/
+octalve-ims/
 ├── app/                      # Next.js App Router (pages + api)
 │   ├── layout.tsx            # Root layout, providers, force-dynamic
 │   ├── page.tsx              # Admin home / store overview
@@ -643,49 +640,25 @@ Typical target: **Vercel**.
 4. Point Stripe/Shippo/QStash webhooks at your production URLs.
 5. After deploy, confirm Ready on the tip commit; optional Sentry 24h watch.
 
-### Optional: Launch with Diploi
-
-Spin up a cloud environment from this public repo with no local install:
-
-[![launch with diploi button](https://diploi.com/launch-big.svg)](https://diploi.com/launch/arnobt78/Warehouse-Stock-Inventory-Management-System--NextJS-FullStack)
-
-Click the button to create a Diploi deployment.  
-When it finishes, open the preview URL from the Diploi dashboard.  
-More info: [https://diploi.com/](https://diploi.com/)
-
-Diploi is optional for trying the project. Production demos for this repo use Vercel (above).
-
----
-
 ## Security
 
-To report a security vulnerability **privately**, see **[SECURITY.md](SECURITY.md)** and email **<contact@arnobmahmud.com>**.  
+To report a security vulnerability **privately**, see **[SECURITY.md](SECURITY.md)**.
 Do **not** open public GitHub issues for security bugs. Do not paste secrets or `.env` contents into reports.
 
 ---
 
 ## Conclusion
 
-Stockly is a teaching-oriented, production-shaped inventory stack: **Next.js 16**, **React 19**, **Prisma/MongoDB**, **JWT roles**, **TanStack Query** (patch → invalidate), optional **Redis**, and real integrations (Stripe, Shippo, Brevo, Sentry, AI). Use this README as a map — start with three env vars, explore demo roles, then peel into `app/api`, `hooks/queries`, and `lib/server` as you learn SSR and cache coherence. Reuse `components/ui`, validation schemas, and invalidation helpers in your own apps.
+Octalve IMS is a production-shaped inventory stack: **Next.js 16**, **React 19**, **Prisma/PostgreSQL**, **JWT roles**, **TanStack Query** (patch → invalidate), optional **Redis**, and real integrations (Stripe, Shippo, Brevo, Sentry, AI). Use this README as a map — start with the three required env vars, explore the demo roles, then peel into `app/api`, `hooks/queries`, and `lib/server` to understand SSR and cache coherence.
 
 ---
 
 ## Keywords
 
-stock inventory, warehouse management, inventory management system, Next.js 16, React 19, TypeScript, Prisma, MongoDB, TanStack Query, Zod, React Hook Form, shadcn/ui, Tailwind CSS, JWT authentication, role-based access control, admin dashboard, client portal, supplier portal, orders, invoices, stock allocation, Stripe, Shippo, Brevo, ImageKit, Upstash Redis, QStash, Sentry, OpenRouter, Groq, Vitest, SSR, App Router, Arnob Mahmud
+inventory management system, warehouse management, stock allocation, Next.js 16, React 19, TypeScript, Prisma, PostgreSQL, TanStack Query, Zod, React Hook Form, shadcn/ui, Tailwind CSS, JWT authentication, role-based access control, admin dashboard, client portal, supplier portal, orders, invoices, Stripe, Shippo, Brevo, ImageKit, Upstash Redis, QStash, Sentry, OpenRouter, Groq, Vitest, SSR, App Router
 
 ---
 
 ## License
 
-This project is licensed under the [MIT License](https://opensource.org/licenses/MIT). Feel free to use, modify, and distribute the code as per the terms of the license.
-
----
-
-## Happy Coding! 🎉
-
-This is an **open-source project** — feel free to use, enhance, and extend this project further!
-
-If you have any questions or want to share your work, reach out via GitHub or my portfolio at [https://www.arnobmahmud.com](https://www.arnobmahmud.com).
-
-**Enjoy building and learning!** 🚀
+See [LICENSE](LICENSE) for terms.

@@ -100,10 +100,9 @@ export interface ApiResponse<T> {
 /** Builds Axios instance with baseURL (/api), credentials, and request/response interceptors. */
 function createAxiosInstance(): AxiosInstance {
   const instance = axios.create({
-    baseURL:
-      process.env.NODE_ENV === "production"
-        ? "https://stockly-inventory.vercel.app/api"
-        : "http://localhost:3000/api",
+    // Relative — same-origin /api routes, no hardcoded host/port (see
+    // utils/axiosInstance.ts for why a hardcoded port broke logins).
+    baseURL: "/api",
     headers: {
       "Content-Type": "application/json",
     },

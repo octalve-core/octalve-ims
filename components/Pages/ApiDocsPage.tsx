@@ -1100,7 +1100,7 @@ export default function ApiDocsPage() {
             icon={BookOpen}
             tone="blue"
             title="Stock API Documentation"
-            description="Comprehensive API documentation for the Stock inventory management system. All endpoints require authentication via JWT token."
+            description="Comprehensive API documentation for the Octalve IMS inventory management system. All endpoints require authentication via JWT token."
           />
 
           {/* Quick Info Cards — render immediately (REQ-0094 shell-first) */}

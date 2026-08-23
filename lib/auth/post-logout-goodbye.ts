@@ -3,8 +3,8 @@
  * Navbar stores payload; login page (via AuthSessionToasts) consumes on first paint.
  */
 
-export const POST_LOGOUT_GOODBYE_KEY = "stockly:post-logout-goodbye";
-const POST_LOGOUT_GOODBYE_SHOWN_KEY = "stockly:post-logout-goodbye-shown";
+export const POST_LOGOUT_GOODBYE_KEY = "octalve-ims:post-logout-goodbye";
+const POST_LOGOUT_GOODBYE_SHOWN_KEY = "octalve-ims:post-logout-goodbye-shown";
 
 export type PostLogoutGoodbyePayload = {
   userName: string;

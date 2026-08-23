@@ -151,7 +151,7 @@ export default function FiltersAndActions({
       link.setAttribute("href", url);
       link.setAttribute(
         "download",
-        `stockly-products-${new Date().toISOString().split("T")[0]}.csv`,
+        `octalve-ims-products-${new Date().toISOString().split("T")[0]}.csv`,
       );
       link.style.visibility = "hidden";
       document.body.appendChild(link);
@@ -235,7 +235,7 @@ export default function FiltersAndActions({
       link.setAttribute("href", url);
       link.setAttribute(
         "download",
-        `stockly-products-${new Date().toISOString().split("T")[0]}.xlsx`,
+        `octalve-ims-products-${new Date().toISOString().split("T")[0]}.xlsx`,
       );
       link.style.visibility = "hidden";
       document.body.appendChild(link);

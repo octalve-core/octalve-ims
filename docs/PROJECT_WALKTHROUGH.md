@@ -1,12 +1,12 @@
 # PROJECT_WALKTHROUGH.md
 
-Agent-oriented map of **stock-inventory** (Stockly). Last updated: 2026-07-31 (REQ-0224 densify parity).
+Agent-oriented map of **octalve-ims** (Octalve IMS). Last updated: 2026-07-31 (REQ-0224 densify parity).
 
 ## 1. What this app is
 
 Role-based inventory platform (admin / supplier / client): products, orders, invoices, warehouses, support tickets, Stripe, Shippo, Brevo, optional Redis cache and Sentry monitoring.
 
-**Live:** <https://stockly-inventory.vercel.app/>
+**Live:** <https://octalve-ims.vercel.app/>
 
 ## 2. Repo map (high level)
 
@@ -70,7 +70,7 @@ flowchart LR
 
 1. `NEXT_PUBLIC_SENTRY_DSN` + `SENTRY_DSN` set on Vercel → redeploy production
 2. Browse prod site → Network tab shows POSTs to `/api/monitoring` (not blocked ingest host)
-3. Sentry project **stock-inventory** → Issues / Performance show events within ~5 min
+3. Sentry project **octalve-ims** → Issues / Performance show events within ~5 min
 
 **User context:** `contexts/auth-context.tsx` calls `syncSentryUserFromAuth` on session (id, email, role tag).
 
@@ -317,7 +317,7 @@ flowchart LR
 | Educational README (REQ-0213) | Learner README + Diploi launch; SECURITY link; 3 required env | Docs-only |
 | Deploy unblock (REQ-0212) | Pin `eslint-import-resolver-typescript@3.10.1`; merge items always `OrderItem[]`; Order dates `string\|Date` | No invalidation change |
 | Pay/cancel/Shippo (REQ-0209…0211) | Stripe return+confirm; cancel/update/ship→invoice badge patch; SSR fresher badges; item densify merge; Shippo test; draft→sent heal | Order-graph patch→invalidate |
-| SECURITY.md (REQ-0207) | Root policy + README link; private reports → contact@arnobmahmud.com | Docs-only |
+| SECURITY.md (REQ-0207) | Root policy + README link; private reports → GitHub Security Advisories | Docs-only |
 | Supplier invoices (REQ-0204) | `getInvoiceByIdForSupplier` + detail/PDF gate; Related Invoices nav | Invalidation unchanged |
 | Client catalog INV/ORD (REQ-0214) | `getInvoiceByIdForClient` / expanded `getOrderByIdForClient`; Pay buyer-only; Process Refund disabled for client/supplier | Invalidation unchanged |
 | Partial→paid settle (REQ-0215) | Cent-safe money; heal sent→paid + order sync; confirm + detail SSR; stripe return patch | Order-graph invalidate unchanged |
@@ -345,7 +345,7 @@ flowchart LR
 
 1. Confirm Vercel production = commit `9a2e37c` (REQ-0013; or later on `main`)
 2. Smoke: bell dropdown, create product w/o category (400, no Sentry), duplicate invoice (409 toast)
-3. Sentry **stock-inventory** — 24h: compare cases 1–7 vs `docs/SENTRY_ERRORS.md`
+3. Sentry **octalve-ims** — 24h: compare cases 1–7 vs `docs/SENTRY_ERRORS.md`
 4. Log result in `.agile-v/REVALIDATION_LOG.md`; CAPA if regression
 
 ## 8. Quality gates (audit 2026-07-26 REQ-0212)

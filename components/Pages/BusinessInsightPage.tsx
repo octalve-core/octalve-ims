@@ -712,7 +712,7 @@ export default function BusinessInsightPage({
         { header: "Additional Info", key: "Additional Info" },
       ];
 
-      exportToCSV(csvData, columns, "stockly-analytics");
+      exportToCSV(csvData, columns, "octalve-ims-analytics");
 
       toast({
         title: "CSV Export Successful!",
@@ -776,7 +776,7 @@ export default function BusinessInsightPage({
 
       await exportToExcel({
         sheetName: "Key Metrics",
-        fileName: "stockly-analytics",
+        fileName: "octalve-ims-analytics",
         columns: [
           { header: "Metric", key: "Metric", width: 25 },
           { header: "Value", key: "Value", width: 20 },

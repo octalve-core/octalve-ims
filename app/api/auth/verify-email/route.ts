@@ -1,5 +1,5 @@
 /**
- * Verify Email API Route Handler — new route (Stockly had no email
+ * Verify Email API Route Handler — new route (the original codebase had no email
  * verification flow at all; ported from Proplity, see
  * out/auth-system-port-plan.md). Deliberately CSRF-exempt: reached via an
  * emailed link, a legitimate cross-origin-by-nature flow that can't rely
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Note: Stockly's User model has no PENDING_VERIFICATION/ACTIVE status
+    // Note: the original User model has no PENDING_VERIFICATION/ACTIVE status
     // field (unlike Proplity's) — registration already creates fully active
     // users directly, so there's no "activation" step to perform here. This
     // route currently only covers the "set a password for an invited user"
