@@ -110,5 +110,16 @@
     "minimatch": ">=10.2.1",
     "glob": ">=11.0.0",
     "rimraf": "^5.0.5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "@sentry/cli",
+      "core-js",
+      "esbuild",
+      "prisma",
+      "unrs-resolver"
+    ]
   }
 }
