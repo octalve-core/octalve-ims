@@ -63,6 +63,7 @@
     "cookies": "^0.9.1",
     "date-fns": "^4.1.0",
     "exceljs": "^4.4.0",
+    "jose": "^6.2.10",
     "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
     "jspdf": "^4.0.0",

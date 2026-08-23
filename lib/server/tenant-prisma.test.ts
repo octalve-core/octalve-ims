@@ -44,6 +44,7 @@ describe.skipIf(!process.env.DATABASE_URL)("forTenant row-level security", () =>
         userId: "test-user",
         createdBy: "test-user",
         categoryId,
+        supplierId: "test-supplier",
         businessId: businessAId,
       },
     });
@@ -59,6 +60,7 @@ describe.skipIf(!process.env.DATABASE_URL)("forTenant row-level security", () =>
         userId: "test-user",
         createdBy: "test-user",
         categoryId,
+        supplierId: "test-supplier",
         businessId: businessBId,
       },
     });

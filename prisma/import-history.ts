@@ -5,7 +5,7 @@
 
 import { prisma } from "@/prisma/client";
 import { logger } from "@/lib/logger";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 /**
  * Import history creation input
@@ -46,7 +46,7 @@ export async function createImportHistory(
       failedRows: data.failedRows,
       errors: data.errors
         ? (JSON.parse(JSON.stringify(data.errors)) as Prisma.InputJsonValue)
-        : null,
+        : Prisma.DbNull,
       status: data.status || "processing",
     },
   });

@@ -135,6 +135,10 @@ model Product {
   reservedQuantity BigInt            @default(0)
   sku              String            @unique
   status           String
+  supplierId       String // primary/default supplier — kept as a plain scalar for backward
+  // compatibility with existing single-supplier code paths; ProductSupplier
+  // below is an additive many-to-many for Pro+ features that need it, not a
+  // replacement (see out/auth-system-port-plan.md-adjacent Milestone 0 notes)
   userId           String // actor — created by
   createdBy        String
   updatedBy        String?

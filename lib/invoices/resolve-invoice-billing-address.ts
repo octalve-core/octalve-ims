@@ -4,7 +4,7 @@
  * was checked but billing was not persisted separately.
  */
 
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import type { BillingAddress } from "@/types";
 
 type OrderAddressSource = {
@@ -15,9 +15,9 @@ type OrderAddressSource = {
 /** Clone address JSON for Prisma Invoice.billingAddress create/update. */
 export function resolveInvoiceBillingAddressInput(
   order: OrderAddressSource,
-): Prisma.InputJsonValue | null {
+): Prisma.InputJsonValue | typeof Prisma.DbNull {
   const source = order.billingAddress ?? order.shippingAddress ?? null;
-  if (source == null) return null;
+  if (source == null) return Prisma.DbNull;
   return JSON.parse(JSON.stringify(source)) as Prisma.InputJsonValue;
 }
 

@@ -489,29 +489,13 @@ export async function seedDemoCatalog(
     auditIds.push(row.id);
   }
 
-  // --- Stub schema models (empty shells; no UI pages) ---
+  // Department/StockAlert/UserAction/Session were unused Mongo-era stub
+  // models, removed in the Postgres migration (Milestone 0) — nothing to
+  // seed here anymore. Permission/VerificationToken now have real shapes
+  // (tenancy RBAC, auth token verification respectively) that need a valid
+  // roleId/userId to seed meaningfully; not worth fabricating demo rows for
+  // here since this script only seeds catalog/commerce data.
   const stubCounts: Record<string, number> = {};
-  await prisma.department.create({ data: {} });
-  stubCounts.Department = 1;
-  await prisma.stockAlert.create({ data: {} });
-  stubCounts.StockAlert = 1;
-  await prisma.userAction.create({ data: {} });
-  stubCounts.UserAction = 1;
-  await prisma.session.create({
-    data: { sessionToken: { demo: "seed-session" } },
-  });
-  stubCounts.Session = 1;
-  await prisma.verificationToken.create({
-    data: { token: { demo: "seed-token" } },
-  });
-  stubCounts.VerificationToken = 1;
-  await prisma.permission.create({
-    data: {
-      userId: { demoUserId: adminId },
-      resource: { name: "demo.explore" },
-    },
-  });
-  stubCounts.Permission = 1;
 
   return {
     categoryIds,
