@@ -1,55 +1,35 @@
 # Local dev Postgres setup
 
-Postgres 16 is already running natively on this machine (systemd, port 5432). This project needs a dedicated database and **two** roles — not one — because of an RLS-bypass trap: Postgres Row-Level Security is bypassed by default for the table owner, so the app must connect as a role that does *not* own the tables.
+Postgres 16 is running natively on this machine (systemd, port 5432).
 
-## 1. Create the roles and database
+## What's actually configured
 
-Run interactively (you'll be prompted for the Postgres admin password):
+Using the existing `roji` role (already set up for another project on this machine) rather than creating dedicated `ims_migrator`/`ims_app` roles — confirmed via `select rolsuper, rolbypassrls from pg_roles where rolname = 'roji'` that `roji` is **not** a superuser and does **not** have `BYPASSRLS`. That matters: Postgres skips Row-Level Security policies for the table owner by default, but `ALTER TABLE ... FORCE ROW LEVEL SECURITY` overrides that for any non-superuser, non-BYPASSRLS role — including the owner. Since `roji` is neither, one role is enough; the originally-planned two-role split (`ims_migrator` owns tables, `ims_app` runs queries) turned out to be unnecessary complexity for this setup specifically.
 
-```bash
-sudo -u postgres psql
+Database: `octalve_ims`, created via `createdb -h localhost -U roji octalve_ims`.
+
+`.env`:
+```
+DATABASE_URL="postgresql://roji:roji@localhost:5432/octalve_ims"
+JWT_SECRET="dev_octalve_ims_jwt_secret_change_in_production"
+NEXT_PUBLIC_API_URL="http://localhost:3000"
 ```
 
-Then at the `psql` prompt:
+Migration already applied: `prisma/migrations/20260823151908_init_postgres/`.
 
+## Row-Level Security
+
+Applied manually via `psql` (Prisma doesn't manage RLS policies):
+```bash
+PGPASSWORD=roji psql -h localhost -U roji -d octalve_ims -f prisma/rls/001_enable_rls.sql
+```
+Proven on `Product` only in Milestone 0, not rolled out to all tenant-scoped tables yet — see `prisma/rls/001_enable_rls.sql` for the policy and `lib/server/tenant-prisma.ts` for the session-variable injection mechanism.
+
+## If this role ever needs replacing
+
+If `roji` stops being available (e.g. a machine reset, or wanting real isolation from the other project sharing this role), recreate with:
 ```sql
-CREATE ROLE ims_migrator WITH LOGIN PASSWORD '<pick a password>';
-CREATE ROLE ims_app WITH LOGIN PASSWORD '<pick a different password>' NOSUPERUSER NOCREATEDB NOCREATEROLE;
-CREATE DATABASE ims_dev OWNER ims_migrator;
-\c ims_dev
-GRANT USAGE ON SCHEMA public TO ims_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ims_app;
-ALTER DEFAULT PRIVILEGES FOR ROLE ims_migrator IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ims_app;
-\q
+CREATE ROLE ims_app WITH LOGIN PASSWORD '<pick>' NOSUPERUSER NOCREATEDB NOCREATEROLE;
+CREATE DATABASE octalve_ims OWNER ims_app;
 ```
-
-## 2. Create `.env`
-
-Copy `.env.example` to `.env` and set (adjust passwords to what you picked above):
-
-```
-DATABASE_URL="postgresql://ims_migrator:<migrator-password>@localhost:5432/ims_dev"
-RUNTIME_DATABASE_URL="postgresql://ims_app:<app-password>@localhost:5432/ims_dev"
-```
-
-`DATABASE_URL` (migrator/owner) is used for `prisma migrate`/`prisma generate`. `RUNTIME_DATABASE_URL` (non-owner `ims_app`) is what the running app and `lib/server/tenant-prisma.ts` actually connect with — this split exists specifically so `FORCE ROW LEVEL SECURITY` policies actually apply to the app's own queries.
-
-## 3. Run the migration
-
-```bash
-pnpm prisma migrate dev --name init_postgres
-```
-
-This is a fresh baseline (no Mongo data is being migrated — schema only).
-
-## 4. Apply Row-Level Security
-
-Prisma doesn't manage RLS policies, so this is a separate manual step:
-
-```bash
-psql "$DATABASE_URL" -f prisma/rls/001_enable_rls.sql
-```
-
----
-
-Tell me once step 1 (the interactive `sudo -u postgres psql` block) is done — I'll take it from there (steps 2–4, plus everything else in `out/auth-system-port-plan.md` and the Milestone 0 plan that doesn't need a live DB connection).
+and update `DATABASE_URL` accordingly — everything else in this doc stays the same, since `FORCE ROW LEVEL SECURITY` doesn't care whether the connecting role is the owner or not.

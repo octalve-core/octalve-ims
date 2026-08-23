@@ -24,6 +24,10 @@
     "app/api/auth", "app/api/health", "app/api/openapi", "app/api/user", "app/api/users",
     "app/admin/settings", "app/admin/layout.tsx", "app/admin/page.tsx",
 
+    "components/Pages/ApiDocsPage.tsx", "components/Pages/ApiStatusPage.tsx",
+    "components/Pages/LoginPage.tsx", "components/Pages/RegisterPage.tsx",
+    "components/Pages/EmailPreferencesPage.tsx", "components/Pages/HomePage.tsx",
+
     "lib/api", "lib/auth", "lib/auth-server.ts", "lib/cache", "lib/date", "lib/email",
     "lib/format", "lib/monitoring", "lib/queue", "lib/react-query", "lib/server", "lib/ui",
     "lib/utils.ts", "lib/validations", "lib/vercel", "lib/logger.ts", "lib/logger.test.ts",
@@ -65,7 +69,14 @@
     "lib/products", "lib/warehouses", "lib/navigation",
 
     "components/category", "components/invoices", "components/orders", "components/products",
-    "components/warehouses", "components/Pages",
+    "components/warehouses",
+
+    "components/Pages/CategoriesPage.tsx", "components/Pages/CategoryDetailPage.tsx",
+    "components/Pages/ProductsPage.tsx", "components/Pages/ProductDetailPage.tsx",
+    "components/Pages/OrdersPage.tsx", "components/Pages/OrderDetailPage.tsx",
+    "components/Pages/InvoicesPage.tsx", "components/Pages/InvoiceDetailPage.tsx",
+    "components/Pages/SuppliersPage.tsx", "components/Pages/SupplierDetailPage.tsx",
+    "components/Pages/WarehousesPage.tsx", "components/Pages/WarehouseDetailPage.tsx",
 
     "stores/product-store.ts", "stores/index.ts",
     "hooks/use-order-line-stock-validation.ts", "hooks/use-catalog-quantity-reconcile-preview.ts",
@@ -92,6 +103,7 @@
     "lib/history", "lib/insights",
 
     "components/payments", "components/business-insights",
+    "components/Pages/BusinessInsightPage.tsx",
     "hooks/use-stripe-checkout-return.ts",
     "hooks/queries/use-stock-allocation.ts", "hooks/queries/use-system-config.ts",
     "hooks/queries/use-admin-counts.ts", "hooks/queries/use-audit-logs.ts",
@@ -113,6 +125,8 @@
 
     "components/shipping", "components/support-tickets",
     "components/product-reviews", "components/supplier",
+    "components/Pages/ClientPortalPage.tsx", "components/Pages/SupplierPortalPage.tsx",
+    "components/Pages/index.ts",
 
     "types/shipping.ts", "types/forecasting.ts", "types/supplier-portal.ts",
     "types/client-portal.ts", "types/product-review.ts", "types/support-ticket.ts",
