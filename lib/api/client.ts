@@ -9,7 +9,7 @@ import axios, {
   type AxiosRequestConfig,
   type AxiosResponse,
 } from "axios";
-import Cookies from "js-cookie";
+import { refreshAccessToken } from "@/lib/auth/refresh-client";
 import { API_ENDPOINTS } from "./endpoints";
 import {
   createApiError,
@@ -111,24 +111,38 @@ function createAxiosInstance(): AxiosInstance {
     timeout: 30000, // 30 second timeout
   });
 
-  // Request interceptor - Add auth token
-  instance.interceptors.request.use(
-    (config) => {
-      const token = Cookies.get("session_id");
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    },
-  );
-
-  // Response interceptor - Handle errors globally
+  // Response interceptor: single-flight refresh-and-retry on 401 (ported
+  // from Proplity, see out/auth-system-port-plan.md, Phase 4), then the
+  // existing error-normalization pass. access_token is httpOnly and sent
+  // automatically via withCredentials — no request interceptor needed to
+  // attach it (the old one manually read a non-httpOnly session_id cookie
+  // that no longer exists).
   instance.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
+      const originalRequest = error?.config as
+        | (AxiosRequestConfig & { _retry?: boolean })
+        | undefined;
+      const isRefreshCall =
+        typeof originalRequest?.url === "string" &&
+        originalRequest.url.includes("/auth/refresh");
+
+      if (
+        error?.response?.status === 401 &&
+        originalRequest &&
+        !originalRequest._retry &&
+        !isRefreshCall
+      ) {
+        originalRequest._retry = true;
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+          return instance(originalRequest);
+        }
+        if (typeof window !== "undefined") {
+          window.location.href = "/";
+        }
+      }
+
       if (isAxiosError(error)) {
         // Transform AxiosError to ApiError for consistent error handling
         return Promise.reject(createApiError(error));

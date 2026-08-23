@@ -45,6 +45,7 @@
     "hooks/use-sync-ssr-query-data.ts", "hooks/use-deferred-radix-select.ts",
     "hooks/use-deferred-radix-select.test.ts", "hooks/use-back-with-refresh.ts",
     "hooks/use-sync-dialog-open-state.ts", "hooks/use-clamp-pagination-index.ts",
+    "hooks/use-auth-refresh.ts",
     "hooks/queries/use-auth.ts", "hooks/queries/use-user-management.ts",
     "hooks/queries/index.ts",
 

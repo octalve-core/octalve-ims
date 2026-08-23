@@ -12,12 +12,12 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import Cookies from "js-cookie";
 import { useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axiosInstance";
 import { getSessionClient } from "@/utils/auth.client";
 import type { User, AuthContextType } from "@/types";
 import { syncSentryUserFromAuth } from "@/lib/monitoring/sentry";
+import { useAuthRefresh } from "@/hooks/use-auth-refresh";
 
 /** Context holding auth state and methods; consumed via useAuth(). */
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,10 +50,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
   const clearAuthData = useCallback(() => {
     setIsLoggedIn(false);
     setUser(null);
-    Cookies.remove("session_id");
     localStorage.removeItem("isAuth");
     localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("token");
     localStorage.removeItem("getSession");
     localStorage.removeItem("prevUserId");
     localStorage.removeItem("stock-inventory-query-cache");
@@ -127,8 +125,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
         });
         localStorage.setItem("isAuth", "true");
         localStorage.setItem("isLoggedIn", "true");
-        const existingToken = localStorage.getItem("token") || session.id;
-        localStorage.setItem("token", existingToken);
         localStorage.setItem("getSession", JSON.stringify(session));
       } else {
         clearAuthData();
@@ -155,9 +151,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     }
     if (localStorage.getItem("isLoggedIn") === null) {
       localStorage.setItem("isLoggedIn", "false");
-    }
-    if (localStorage.getItem("token") === null) {
-      localStorage.setItem("token", "");
     }
     if (localStorage.getItem("getSession") === null) {
       localStorage.setItem("getSession", "");
@@ -199,6 +192,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     syncSentryUserFromAuth(user);
   }, [mounted, user?.id, user?.email, user?.role, user?.name]);
 
+  // Proactive silent refresh of the 15-min access token while logged in.
+  useAuthRefresh(isLoggedIn);
+
   /**
    * Login function - authenticates user and sets session
    * @returns User data from login response
@@ -224,11 +220,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
 
       setIsLoggedIn(true);
       setUser(userData);
-      Cookies.set("session_id", result.sessionId);
-
+      // No client-side cookie/token handling needed: the server sets
+      // access_token/refresh_token as httpOnly cookies directly via
+      // Set-Cookie on the login response (see out/auth-system-port-plan.md).
       localStorage.setItem("isAuth", "true");
       localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("token", result.sessionId);
       localStorage.setItem("getSession", JSON.stringify(result));
 
       return userData;

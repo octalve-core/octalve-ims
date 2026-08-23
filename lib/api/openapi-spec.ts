@@ -27,8 +27,8 @@ export function getOpenApiSpec(options: OpenApiSpecOptions): Record<string, unkn
         sessionCookie: {
           type: "apiKey",
           in: "cookie",
-          name: "session_id",
-          description: "Session cookie set after login. Send credentials: 'include' with same-origin requests.",
+          name: "access_token",
+          description: "HttpOnly access-token cookie set after login (15 min lifetime; renewed via POST /api/auth/refresh). Send credentials: 'include' with same-origin requests.",
         },
       },
     },

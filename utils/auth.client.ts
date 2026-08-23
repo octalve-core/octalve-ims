@@ -3,18 +3,17 @@
  * These functions can be safely imported in client components
  */
 
-import Cookies from "js-cookie";
 import { User } from "@/types";
 
 /**
  * Get session from client-side
  * Makes an API call to verify the token
- * Note: session_id cookie is httpOnly, so Cookies.get() can't read it
+ * Note: access_token cookie is httpOnly, so it can't be read from JS directly
  * We rely on credentials: "include" to automatically send the cookie with the request
  */
 export const getSessionClient = async (): Promise<User | null> => {
   try {
-    // Note: session_id cookie is httpOnly, so Cookies.get() won't work
+    // Note: access_token cookie is httpOnly, can't be read directly from JS
     // We must make the API call with credentials: "include" to send the cookie
     // The API will verify the cookie server-side
 
