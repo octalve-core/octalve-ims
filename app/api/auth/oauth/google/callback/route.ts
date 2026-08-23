@@ -4,7 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { generateToken, sessionCookieOptions } from "@/utils/auth";
+import crypto from "node:crypto";
+import { signAccessToken } from "@/lib/auth/jwt";
+import { setAuthCookies, REFRESH_DAYS } from "@/lib/auth/cookies";
 import {
   getGoogleClientId,
   getGoogleClientSecret,
@@ -248,14 +250,29 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      // Generate JWT token
-      const token = generateToken(user.id);
-      if (!token) {
-        logger.error("Failed to generate token");
-        return NextResponse.redirect(
-          new URL("/login?error=token_generation_failed", request.url)
-        );
-      }
+      // Mint the same access+refresh token pair register/login issue (see
+      // out/auth-system-port-plan.md — OAuth had no Proplity equivalent to
+      // port, this follows the same pattern for consistency).
+      const familyId = crypto.randomUUID();
+      const rawRefreshToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto
+        .createHash("sha256")
+        .update(rawRefreshToken)
+        .digest("hex");
+      await prisma.refreshToken.create({
+        data: {
+          userId: user.id,
+          tokenHash,
+          familyId,
+          expiresAt: new Date(
+            Date.now() + REFRESH_DAYS.default * 24 * 60 * 60 * 1000
+          ),
+        },
+      });
+      const jwtAccessToken = await signAccessToken({
+        sub: user.id,
+        role: user.role ?? "admin",
+      });
 
       // Redirect to role-appropriate page directly (avoids double-redirect chain through /)
       const roleDest =
@@ -271,11 +288,11 @@ export async function GET(request: NextRequest) {
       // Create response and set cookies
       const response = NextResponse.redirect(redirectUrl);
 
-      // REQ-0134: cookie TTL matches JWT (both 1d via sessionCookieOptions)
-      response.cookies.set(
-        "session_id",
-        token,
-        sessionCookieOptions(process.env.NODE_ENV === "production"),
+      setAuthCookies(
+        response.cookies,
+        jwtAccessToken,
+        rawRefreshToken,
+        REFRESH_DAYS.default * 24 * 60 * 60
       );
 
       // Clear OAuth cookies

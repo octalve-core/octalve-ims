@@ -48,7 +48,6 @@
     "hooks/queries/use-auth.ts", "hooks/queries/use-user-management.ts",
     "hooks/queries/index.ts",
 
-    "middleware/authMiddleware.ts",
     "prisma/client.ts", "prisma/rls",
     "eslint.config.mjs", "eslint.tier-boundaries.mjs", "tier-manifest.json"
   ],

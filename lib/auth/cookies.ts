@@ -1,5 +1,3 @@
-import type { cookies as nextCookies } from "next/headers";
-
 /**
  * Two-cookie scheme (ported from Proplity, see out/auth-system-port-plan.md)
  * — replaces the old single `session_id` cookie:
@@ -16,14 +14,32 @@ import type { cookies as nextCookies } from "next/headers";
 const ACCESS_TOKEN_MAX_AGE_SECONDS = 15 * 60; // 15 min, fixed
 const REFRESH_TOKEN_PATH = "/api/auth/refresh";
 
-type CookieStore = Awaited<ReturnType<typeof nextCookies>>;
+/**
+ * Structural type matching both next/headers' cookies() mutable store (used
+ * in Route Handlers) and NextResponse's own .cookies (used when a response
+ * — e.g. a redirect — is built directly, like the OAuth callback route).
+ */
+interface CookieWriter {
+  set(
+    name: string,
+    value: string,
+    options: {
+      httpOnly?: boolean;
+      sameSite?: "lax" | "strict" | "none";
+      secure?: boolean;
+      path?: string;
+      maxAge?: number;
+    }
+  ): void;
+  delete(options: { name: string; path?: string } | string): void;
+}
 
 function isProd(): boolean {
   return process.env.NODE_ENV === "production";
 }
 
 export function setAuthCookies(
-  cookieStore: CookieStore,
+  cookieStore: CookieWriter,
   accessToken: string,
   refreshToken: string,
   refreshMaxAgeSeconds: number
@@ -44,7 +60,7 @@ export function setAuthCookies(
   });
 }
 
-export function clearAuthCookies(cookieStore: CookieStore): void {
+export function clearAuthCookies(cookieStore: CookieWriter): void {
   cookieStore.delete({ name: "access_token", path: "/" });
   cookieStore.delete({ name: "refresh_token", path: REFRESH_TOKEN_PATH });
 }

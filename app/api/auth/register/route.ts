@@ -1,60 +1,36 @@
 /**
  * Register API Route Handler
- * App Router route handler for user registration
- * Migrated from Pages API to App Router
+ * Auth mechanics ported from Proplity — see out/auth-system-port-plan.md.
+ * Rate limiting reuses the existing Redis-backed lib/api/rate-limit.ts
+ * (same 5/60s "auth" preset Proplity used) rather than porting a second,
+ * DB-backed limiter alongside it.
  */
 
+import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
-import { MongoClient } from "mongodb";
 import { registerSchema } from "@/lib/validations";
 import { logger } from "@/lib/logger";
 import { scheduleInvalidateAuthCaches } from "@/lib/cache";
 import { prisma } from "@/prisma/client";
-
-/**
- * Attempt to insert a user document. If a non-sparse unique index on
- * `googleId` blocks the insert (E11000 dup key: { googleId: null }),
- * drop that index and retry once so the registration self-heals.
- */
-async function insertUserWithRetry(
-  userCollection: ReturnType<ReturnType<MongoClient["db"]>["collection"]>,
-  doc: Record<string, unknown>,
-) {
-  try {
-    await userCollection.insertOne(doc);
-  } catch (err: unknown) {
-    const mongoErr = err as { code?: number; message?: string };
-    if (
-      mongoErr.code === 11000 &&
-      typeof mongoErr.message === "string" &&
-      mongoErr.message.includes("googleId")
-    ) {
-      logger.warn(
-        "Non-sparse googleId unique index detected — dropping and recreating as sparse",
-      );
-      try {
-        await userCollection.dropIndex("User_googleId_key");
-      } catch {
-        // Index may already have been dropped; ignore
-      }
-      await userCollection.createIndex(
-        { googleId: 1 },
-        { unique: true, sparse: true, name: "User_googleId_key" },
-      );
-      await userCollection.insertOne(doc);
-      return;
-    }
-    throw err;
-  }
-}
+import { validateCSRF } from "@/lib/auth/csrf";
+import { signAccessToken } from "@/lib/auth/jwt";
+import { setAuthCookies, REFRESH_DAYS } from "@/lib/auth/cookies";
+import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 
 /**
  * POST /api/auth/register
  * Register a new user
  */
 export async function POST(request: NextRequest) {
-  let mongoClient: MongoClient | null = null;
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const rateLimited = await withRateLimit(request, defaultRateLimits.auth);
+  if (rateLimited) return rateLimited;
+
   try {
     const body = await request.json();
 
@@ -74,7 +50,6 @@ export async function POST(request: NextRequest) {
 
     const { name, email, password } = validationResult.data;
 
-    // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return NextResponse.json(
@@ -83,49 +58,59 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 12);
 
-    mongoClient = new MongoClient(process.env.DATABASE_URL!);
-    await mongoClient.connect();
-
-    const db = mongoClient.db();
-    const userCollection = db.collection("User");
-
-    // Generate a unique username
+    // Generate a unique username (Postgres unique index is sparse-by-default
+    // w.r.t. NULLs, so — unlike the old Mongo path this replaces — no
+    // dropIndex/createIndex self-heal is needed for googleId uniqueness).
     const baseUsername = email.split("@")[0];
     let username = baseUsername;
     let counter = 1;
-
-    while (await userCollection.findOne({ username })) {
+    while (await prisma.user.findFirst({ where: { username } })) {
       username = `${baseUsername}${counter}`;
       counter++;
     }
 
-    // Insert user (new signups get admin role for full manipulation power)
-    await insertUserWithRetry(userCollection, {
-      name,
-      email,
-      password: hashedPassword,
-      username,
-      role: "admin",
-      createdAt: new Date(),
+    // New signups get admin role for full manipulation power (existing
+    // Stockly product decision, unchanged by the auth port).
+    const createdUser = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        username,
+        role: "admin",
+      },
     });
 
-    await mongoClient.close();
-    mongoClient = null;
-
-    // Get the created user from Prisma
-    const createdUser = await prisma.user.findUnique({
-      where: { email },
+    const familyId = crypto.randomUUID();
+    const rawRefreshToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(rawRefreshToken)
+      .digest("hex");
+    await prisma.refreshToken.create({
+      data: {
+        userId: createdUser.id,
+        tokenHash,
+        familyId,
+        expiresAt: new Date(Date.now() + REFRESH_DAYS.default * 24 * 60 * 60 * 1000),
+      },
     });
 
-    if (!createdUser) {
-      return NextResponse.json(
-        { error: "Failed to create user" },
-        { status: 500 }
-      );
-    }
+    const accessToken = await signAccessToken({
+      sub: createdUser.id,
+      role: createdUser.role ?? "admin",
+    });
+
+    const cookieStore = await cookies();
+    setAuthCookies(
+      cookieStore,
+      accessToken,
+      rawRefreshToken,
+      REFRESH_DAYS.default * 24 * 60 * 60
+    );
+
     await scheduleInvalidateAuthCaches();
     return NextResponse.json(
       {
@@ -145,9 +130,5 @@ export async function POST(request: NextRequest) {
       { error: `Registration failed: ${message}` },
       { status: 500 }
     );
-  } finally {
-    if (mongoClient) {
-      try { await mongoClient.close(); } catch { /* ignore */ }
-    }
   }
 }
