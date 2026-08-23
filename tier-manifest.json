@@ -1,0 +1,125 @@
+{
+  "$comment": [
+    "Single source of truth for which folders/files belong to which sellable edition.",
+    "4 buckets: shared (infra, always included, must never import UP into core/pro/premium),",
+    "core ⊂ pro ⊂ premium (each tier export includes shared + itself + everything below it).",
+    "Consumed by eslint.tier-boundaries.mjs (import-boundary lint) and scripts/export-tier.ts.",
+    "",
+    "Known non-bugs (do not 'fix' by moving these): some folders intentionally hold Core-tier",
+    "capability today even though a sibling folder holds the Pro/Premium upgrade of the same",
+    "entity, because the underlying features are already split into separate folders:",
+    "  - app/admin/warehouses (Core: single location) vs app/api/stock-transfers (Pro: transfers)",
+    "  - app/admin/invoices (Core: manual PDF) vs lib/stripe + app/api/payments (Pro: online pay)",
+    "Where a folder can't be split cleanly yet (e.g. app/admin/user-management needs Core's",
+    "2-fixed-roles UI now and Pro's custom-role composer later in the SAME folder), that's a",
+    "signal for a future feature milestone to split the folder — not a manifest bug to fix now.",
+    "",
+    "middleware/authMiddleware.ts is confirmed-dead legacy code (superseded by proxy.ts) —",
+    "bucketed as shared for now since it's harmless, flagged here as a deletion candidate."
+  ],
+
+  "shared": [
+    "app/login", "app/register", "app/settings", "app/_not-found", "app/fonts",
+    "app/api-docs", "app/api-status",
+    "app/api/auth", "app/api/health", "app/api/openapi", "app/api/user", "app/api/users",
+    "app/admin/settings", "app/admin/layout.tsx", "app/admin/page.tsx",
+
+    "lib/api", "lib/auth", "lib/auth-server.ts", "lib/cache", "lib/date", "lib/email",
+    "lib/format", "lib/monitoring", "lib/queue", "lib/react-query", "lib/server", "lib/ui",
+    "lib/utils.ts", "lib/validations", "lib/vercel", "lib/logger.ts", "lib/logger.test.ts",
+    "lib/env.ts", "lib/imagekit.ts", "lib/imagekit-errors.ts", "lib/imagekit-errors.test.ts",
+
+    "components/ui", "components/shared", "components/providers", "components/layouts",
+    "components/forms", "components/dialogs", "components/auth", "components/admin", "components/home",
+
+    "contexts/auth-context.tsx", "contexts/shell-ssr-context.tsx", "contexts/index.ts",
+    "utils/auth.ts", "utils/auth.client.ts", "utils/axiosInstance.ts",
+    "types/api.ts", "types/auth.ts", "types/user-management.ts", "types/index.ts",
+    "types/dashboard.ts",
+
+    "hooks/use-toast.ts", "hooks/use-mounted.ts", "hooks/use-debounced-value.ts",
+    "hooks/use-sync-ssr-query-data.ts", "hooks/use-deferred-radix-select.ts",
+    "hooks/use-deferred-radix-select.test.ts", "hooks/use-back-with-refresh.ts",
+    "hooks/use-sync-dialog-open-state.ts", "hooks/use-clamp-pagination-index.ts",
+    "hooks/queries/use-auth.ts", "hooks/queries/use-user-management.ts",
+    "hooks/queries/index.ts",
+
+    "middleware/authMiddleware.ts",
+    "prisma/client.ts", "prisma/rls",
+    "eslint.config.mjs", "eslint.tier-boundaries.mjs", "tier-manifest.json"
+  ],
+
+  "core": [
+    "app/orders", "app/products", "app/invoices", "app/categories", "app/warehouses",
+    "app/suppliers",
+    "app/admin/categories", "app/admin/products", "app/admin/orders", "app/admin/invoices",
+    "app/admin/warehouses", "app/admin/suppliers", "app/admin/user-management",
+    "app/admin/dashboard-overall-insights", "app/admin/personal-orders",
+    "app/admin/personal-invoices", "app/admin/client-orders", "app/admin/client-invoices",
+
+    "app/api/categories", "app/api/products", "app/api/orders", "app/api/invoices",
+    "app/api/warehouses", "app/api/suppliers", "app/api/notifications", "app/api/dashboard",
+    "app/api/email", "app/api/system-config",
+
+    "lib/catalog", "lib/invoices", "lib/notifications", "lib/orders", "lib/pdf",
+    "lib/products", "lib/warehouses", "lib/navigation",
+
+    "components/category", "components/invoices", "components/orders", "components/products",
+    "components/warehouses", "components/Pages",
+
+    "stores/product-store.ts", "stores/index.ts",
+    "hooks/use-order-line-stock-validation.ts", "hooks/use-catalog-quantity-reconcile-preview.ts",
+    "hooks/use-catalog-quantity-reconcile-preview.test.ts",
+    "hooks/queries/use-categories.ts", "hooks/queries/use-orders.ts",
+    "hooks/queries/use-products.ts", "hooks/queries/use-warehouses.ts",
+    "hooks/queries/use-invoices.ts", "hooks/queries/use-notifications.ts",
+    "hooks/queries/use-dashboard.ts", "hooks/queries/use-suppliers.ts",
+    "types/order.ts", "types/product.ts", "types/warehouse.ts", "types/invoice.ts",
+    "types/category.ts", "types/notification.ts", "types/catalog-detail-lists.ts",
+    "types/supplier.ts",
+
+    "lib/auth/can.ts"
+  ],
+
+  "pro": [
+    "app/admin/activity-history", "app/admin/history", "app/admin/insights",
+    "app/business-insights",
+    "app/api/stock-allocations", "app/api/stock-transfers", "app/api/payments",
+    "app/api/audit-logs", "app/api/import-history", "app/api/system-metrics",
+    "app/api/performance", "app/api/admin",
+
+    "lib/stock-allocation", "lib/stripe", "lib/payments", "lib/export", "lib/import",
+    "lib/history", "lib/insights",
+
+    "components/payments", "components/business-insights",
+    "hooks/use-stripe-checkout-return.ts",
+    "hooks/queries/use-stock-allocation.ts", "hooks/queries/use-system-config.ts",
+    "hooks/queries/use-admin-counts.ts", "hooks/queries/use-audit-logs.ts",
+    "hooks/queries/use-history.ts", "hooks/queries/use-payments.ts",
+    "hooks/queries/use-email-preferences.ts",
+    "types/system-config.ts", "types/history.ts", "types/payment.ts", "types/audit-log.ts",
+    "types/warehouse-insights.ts", "types/catalog-insights.ts", "types/stock-allocation.ts"
+  ],
+
+  "premium": [
+    "app/admin/supplier-portal", "app/admin/client-portal", "app/admin/support-tickets",
+    "app/admin/product-reviews", "app/admin/my-activity",
+    "app/client", "app/supplier", "app/support-tickets",
+    "app/api/ai", "app/api/forecasting", "app/api/shipping", "app/api/portal",
+    "app/api/supplier-portal", "app/api/client-portal", "app/api/support-tickets",
+    "app/api/product-reviews",
+
+    "lib/ai", "lib/forecasting", "lib/shippo", "lib/support-tickets", "lib/product-reviews",
+
+    "components/shipping", "components/support-tickets",
+    "components/product-reviews", "components/supplier",
+
+    "types/shipping.ts", "types/forecasting.ts", "types/supplier-portal.ts",
+    "types/client-portal.ts", "types/product-review.ts", "types/support-ticket.ts",
+    "types/portal.ts",
+    "hooks/queries/use-client-portal.ts", "hooks/queries/use-product-reviews.ts",
+    "hooks/queries/use-support-tickets.ts", "hooks/queries/use-forecasting.ts",
+    "hooks/queries/use-portal.ts", "hooks/queries/use-shipping.ts",
+    "hooks/queries/use-supplier-portal.ts"
+  ]
+}
