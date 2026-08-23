@@ -1,0 +1,151 @@
+"use client";
+
+/**
+ * Stock quantity input with live max hint + inline validation (allocate / transfer dialogs).
+ */
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import {
+  DIALOG_FORM_ERROR_TEXT,
+  DIALOG_FORM_SUCCESS_TEXT,
+} from "@/components/shared/dialog-edge-scroll";
+
+export type StockQuantityMode = "allocate" | "transfer";
+
+export type StockQuantityFieldProps = {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+  maxAvailable: number;
+  mode: StockQuantityMode;
+  disabled?: boolean;
+  fieldClassName: string;
+  /** Catalog total — allocate mode breakdown */
+  catalogTotal?: number;
+  /** Sum allocated across all warehouses */
+  allocatedTotal?: number;
+  /** Catalog minus total allocated (can still be placed in warehouses) */
+  unallocatedRemaining?: number;
+  /** REQ-0108 — edit mode reserved floor per warehouse row */
+  minReserved?: number;
+};
+
+function parseQty(raw: string): number | null {
+  if (raw.trim() === "") return null;
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) ? n : null;
+}
+
+export function getStockQuantityValidation(
+  raw: string,
+  maxAvailable: number,
+  mode: StockQuantityMode,
+  minReserved = 0,
+): { valid: boolean; message: string | null } {
+  const qty = parseQty(raw);
+  if (qty === null) {
+    return { valid: false, message: "Enter a whole number." };
+  }
+  if (qty < 0) {
+    return { valid: false, message: "Quantity cannot be negative." };
+  }
+  if (mode === "allocate" && minReserved > 0 && qty < minReserved) {
+    return {
+      valid: false,
+      message: `Quantity cannot be below ${minReserved} reserved unit(s) for this warehouse.`,
+    };
+  }
+  if (mode === "transfer" && qty < 1) {
+    return { valid: false, message: "Transfer at least 1 unit." };
+  }
+  if (mode === "transfer" && qty > maxAvailable) {
+    return {
+      valid: false,
+      message: `Only ${maxAvailable} unit(s) available to transfer.`,
+    };
+  }
+  if (mode === "allocate" && maxAvailable >= 0 && qty > maxAvailable) {
+    return {
+      valid: false,
+      message: `Only ${maxAvailable} unit(s) available in product stock.`,
+    };
+  }
+  return { valid: true, message: null };
+}
+
+export function StockQuantityField({
+  id,
+  value,
+  onChange,
+  maxAvailable,
+  mode,
+  disabled,
+  fieldClassName,
+  catalogTotal,
+  allocatedTotal,
+  unallocatedRemaining,
+  minReserved = 0,
+}: StockQuantityFieldProps) {
+  const validation = getStockQuantityValidation(
+    value,
+    maxAvailable,
+    mode,
+    minReserved,
+  );
+  const qty = parseQty(value);
+
+  const hint =
+    mode === "transfer"
+      ? maxAvailable > 0
+        ? `${maxAvailable} available in this warehouse · up to ${maxAvailable} can transfer`
+        : "Select a product with available stock"
+      : minReserved > 0
+        ? `${minReserved} reserved in this warehouse · minimum ${minReserved}`
+        : catalogTotal !== undefined && unallocatedRemaining !== undefined
+          ? `${catalogTotal} catalog total · ${allocatedTotal ?? 0} allocated · up to ${unallocatedRemaining} can be added here`
+          : null;
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+        <Label htmlFor={id} className="text-sm text-white/80">
+          Quantity *
+        </Label>
+        {hint ? (
+          <span className="text-xs text-white/80">{hint}</span>
+        ) : null}
+      </div>
+      <Input
+        id={id}
+        type="number"
+        min={mode === "transfer" ? 1 : minReserved > 0 ? minReserved : 0}
+        max={maxAvailable > 0 ? maxAvailable : undefined}
+        step={1}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        placeholder={mode === "transfer" ? "1" : "0"}
+        aria-invalid={!validation.valid && value.trim() !== ""}
+        className={cn(
+          "mt-1 h-11 w-full rounded-xl",
+          fieldClassName,
+          !validation.valid && value.trim() !== ""
+            ? "border-rose-400/60 focus-visible:ring-rose-400/40"
+            : null,
+        )}
+      />
+      {!validation.valid && value.trim() !== "" ? (
+        <p className={cn("mt-1", DIALOG_FORM_ERROR_TEXT)} role="alert">
+          {validation.message}
+        </p>
+      ) : validation.valid && qty !== null && qty >= 0 && qty >= minReserved ? (
+        <p className={cn("mt-1", DIALOG_FORM_SUCCESS_TEXT)}>
+          {mode === "transfer"
+            ? `Transferring ${qty} of ${maxAvailable} available unit(s).`
+            : `Allocating ${qty} unit(s) to this warehouse.`}
+        </p>
+      ) : null}
+    </div>
+  );
+}

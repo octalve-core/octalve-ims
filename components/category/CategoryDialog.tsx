@@ -1,0 +1,591 @@
+"use client";
+
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts";
+import { logger } from "@/lib/logger";
+import {
+  useCategories,
+  useCreateCategory,
+  useUpdateCategory,
+} from "@/hooks/queries";
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getSortedRowModel,
+  SortingState,
+  useReactTable,
+} from "@tanstack/react-table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { clearBodyScrollLock, cn } from "@/lib/utils";
+import {
+  DialogTableScrollArea,
+  DIALOG_EDGE_SCROLL_BODY,
+  DIALOG_EDGE_SCROLL_HEADER,
+  DIALOG_EDGE_SCROLL_INNER,
+  DIALOG_EDGE_SCROLL_SHELL,
+  DIALOG_FORM_FIELD_SKY,
+  DIALOG_TABLE_FRAME_SKY,
+  DIALOG_TABLE_HEAD_ROW,
+  DIALOG_TABLE_ROW_EVEN,
+  DIALOG_TABLE_ROW_HOVER,
+  DIALOG_TABLE_ROW_ODD,
+  DIALOG_TABLE_SECTION,
+  DIALOG_TABLE_SECTION_TITLE,
+  DIALOG_TABLE_SURFACE,
+  DIALOG_TABLE_TEXT,
+  DIALOG_TABLE_TEXT_MUTED,
+  GLASS_GHOST_BUTTON,
+  DialogSubmitButton,
+  DialogFormLabel,
+  DialogHeaderBrand,
+} from "@/components/shared";
+import { Category } from "@/types";
+import { createCategoryColumns } from "./CategoryTableColumns";
+import { Plus, Tag, X, FileText, StickyNote } from "lucide-react";
+
+const CATEGORY_DIALOG_CONTENT_CLASS = `${DIALOG_EDGE_SCROLL_SHELL} poppins border-sky-400/30 dark:border-sky-400/30 shadow-[0_30px_80px_rgba(2,132,199,0.35)] dark:shadow-[0_30px_80px_rgba(2,132,199,0.25)]`;
+
+interface AddCategoryDialogProps {
+  children?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  editingCategory?: Category | null;
+  onEditCategory?: (category: Category) => void;
+}
+
+export default function AddCategoryDialog({
+  children,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  editingCategory: externalEditingCategory,
+  onEditCategory,
+}: AddCategoryDialogProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  // Use controlled or internal state
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = useCallback(
+    (value: boolean) => {
+      if (isControlled) {
+        controlledOnOpenChange?.(value);
+      } else {
+        setInternalOpen(value);
+        controlledOnOpenChange?.(value);
+      }
+    },
+    [isControlled, controlledOnOpenChange],
+  );
+  const [categoryName, setCategoryName] = useState("");
+  const [categoryDescription, setCategoryDescription] = useState("");
+  const [categoryNotes, setCategoryNotes] = useState("");
+  const [categoryStatus, setCategoryStatus] = useState(true); // Default to active
+  const [internalEditingCategory, setInternalEditingCategory] =
+    useState<Category | null>(null);
+
+  // Use external or internal editing category
+  const editingCategory =
+    externalEditingCategory !== undefined
+      ? externalEditingCategory
+      : internalEditingCategory;
+
+  const setEditingCategory =
+    externalEditingCategory !== undefined && onEditCategory
+      ? onEditCategory
+      : setInternalEditingCategory;
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryDescription, setNewCategoryDescription] = useState("");
+  const [newCategoryNotes, setNewCategoryNotes] = useState("");
+  const [newCategoryStatus, setNewCategoryStatus] = useState(true);
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  // Sync external editingCategory with form fields
+  useEffect(() => {
+    if (externalEditingCategory) {
+      setNewCategoryName(externalEditingCategory.name);
+      setNewCategoryDescription(externalEditingCategory.description || "");
+      setNewCategoryNotes(externalEditingCategory.notes || "");
+      setNewCategoryStatus(externalEditingCategory.status ?? true);
+    } else if (externalEditingCategory === null) {
+      // Clear form when editingCategory is explicitly set to null
+      setNewCategoryName("");
+      setNewCategoryDescription("");
+      setNewCategoryNotes("");
+      setNewCategoryStatus(true);
+    }
+  }, [externalEditingCategory]);
+
+  // Reset form fields when dialog closes (only when not editing)
+  useEffect(() => {
+    if (!open && !editingCategory) {
+      setCategoryName("");
+      setCategoryDescription("");
+      setCategoryNotes("");
+      setCategoryStatus(true);
+    }
+  }, [open, editingCategory]);
+
+  // Use TanStack Query for data fetching
+  const { data: categories = [], isLoading } = useCategories();
+
+  // Use TanStack Query mutations
+  const createCategoryMutation = useCreateCategory();
+  const updateCategoryMutation = useUpdateCategory();
+
+  const { toast } = useToast();
+  const { user, isLoggedIn } = useAuth();
+
+  // Determine loading states from mutations
+  const isSubmitting = createCategoryMutation.isPending;
+  const isEditing = updateCategoryMutation.isPending;
+  const isAddValid = categoryName.trim() !== "";
+  const isEditValid = newCategoryName.trim() !== "";
+
+  const handleAddCategory = async () => {
+    if (categoryName.trim() === "") {
+      toast({
+        title: "Error",
+        description: "Category name cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "User ID is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await createCategoryMutation.mutateAsync({
+        name: categoryName,
+        userId: user.id,
+        status: categoryStatus,
+        description: categoryDescription.trim() || null,
+        notes: categoryNotes.trim() || null,
+      });
+
+      // Clear inputs on success (toast is handled by mutation hook)
+      setCategoryName("");
+      setCategoryDescription("");
+      setCategoryNotes("");
+      setCategoryStatus(true);
+    } catch (error) {
+      // Error toast is handled by the mutation hook
+      logger.error("Error adding category:", error);
+    }
+  };
+
+  // Handle Edit Category - called from table actions
+  const handleEditCategory = useCallback(
+    (category: Category) => {
+      if (externalEditingCategory !== undefined && onEditCategory) {
+        // If controlled, call the external handler
+        onEditCategory(category);
+      } else {
+        // If internal, set state directly
+        setInternalEditingCategory(category);
+      }
+      setNewCategoryName(category.name);
+      setNewCategoryDescription(category.description || "");
+      setNewCategoryNotes(category.notes || "");
+      setNewCategoryStatus(category.status ?? true);
+      // Open dialog if controlled
+      if (isControlled) {
+        setOpen(true);
+      }
+    },
+    [externalEditingCategory, onEditCategory, isControlled, setOpen],
+  );
+
+  // Handle Update Category
+  const handleUpdateCategory = async () => {
+    if (!editingCategory) return;
+
+    if (newCategoryName.trim() === "") {
+      toast({
+        title: "Error",
+        description: "Category name cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await updateCategoryMutation.mutateAsync({
+        id: editingCategory.id,
+        name: newCategoryName,
+        status: newCategoryStatus,
+        description: newCategoryDescription.trim() || null,
+        notes: newCategoryNotes.trim() || null,
+      });
+
+      // Clear editing state on success (toast is handled by mutation hook)
+      if (externalEditingCategory === undefined) {
+        setInternalEditingCategory(null);
+      } else if (onEditCategory) {
+        onEditCategory(null as any);
+      }
+      setNewCategoryName("");
+      setNewCategoryDescription("");
+      setNewCategoryNotes("");
+      setNewCategoryStatus(true);
+      // Close dialog if controlled
+      if (isControlled) {
+        setOpen(false);
+      }
+    } catch (error) {
+      // Error toast is handled by the mutation hook
+      logger.error("Error editing category:", error);
+    }
+  };
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    if (externalEditingCategory === undefined) {
+      setInternalEditingCategory(null);
+    } else if (onEditCategory) {
+      onEditCategory(null as any);
+    }
+    setNewCategoryName("");
+    setNewCategoryDescription("");
+    setNewCategoryNotes("");
+    setNewCategoryStatus(true);
+    // Close dialog if controlled
+    if (isControlled) {
+      setOpen(false);
+    }
+  };
+
+  // Create table columns with edit handler
+  const columns = useMemo<ColumnDef<Category>[]>(
+    () => createCategoryColumns(handleEditCategory, { context: "dialog" }),
+    [handleEditCategory],
+  );
+
+  // Set up TanStack Table
+  const table = useReactTable({
+    data: categories || [],
+    columns,
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
+
+  const handleOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      setOpen(nextOpen);
+      if (!nextOpen) {
+        setTimeout(clearBodyScrollLock, 100);
+      }
+    },
+    [setOpen],
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        {children || (
+          <Button className="h-10 font-medium">+Add Category</Button>
+        )}
+      </DialogTrigger>
+      <DialogContent className={CATEGORY_DIALOG_CONTENT_CLASS}>
+        <DialogHeaderBrand
+          className={DIALOG_EDGE_SCROLL_HEADER}
+          icon={Tag}
+          tone="sky"
+          title={editingCategory ? "Edit Category" : "Add Category"}
+          description={
+            editingCategory
+              ? "Update the category name"
+              : "Enter the name of the new category"
+          }
+        />
+        <div className={DIALOG_EDGE_SCROLL_BODY}>
+          <div className={DIALOG_EDGE_SCROLL_INNER}>
+            {/* Edit Category Form (shown when editing) */}
+            {editingCategory ? (
+              <div className="mt-4">
+                <div className="pb-4">
+                  <DialogFormLabel icon={Tag} required wrapperClassName="mb-2">
+                    Category Name
+                  </DialogFormLabel>
+                  <Input
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="Category Name"
+                    className={cn("mt-2 w-full", DIALOG_FORM_FIELD_SKY)}
+                  />
+                </div>
+                <div className="pb-4">
+                  <DialogFormLabel icon={FileText} optional wrapperClassName="mb-2">
+                    Description
+                  </DialogFormLabel>
+                  <Textarea
+                    value={newCategoryDescription}
+                    onChange={(e) => setNewCategoryDescription(e.target.value)}
+                    placeholder="Enter category description..."
+                    rows={3}
+                    maxLength={500}
+                    className={cn("mt-2 w-full", DIALOG_FORM_FIELD_SKY)}
+                  />
+                </div>
+                <div className="pb-4">
+                  <DialogFormLabel icon={StickyNote} optional wrapperClassName="mb-2">
+                    Notes
+                  </DialogFormLabel>
+                  <Textarea
+                    value={newCategoryNotes}
+                    onChange={(e) => setNewCategoryNotes(e.target.value)}
+                    placeholder="Enter category notes..."
+                    rows={3}
+                    maxLength={1000}
+                    className={cn("mt-2 w-full", DIALOG_FORM_FIELD_SKY)}
+                  />
+                </div>
+                <div className="pb-4 flex items-start gap-2 min-w-0">
+                  <Checkbox
+                    id="edit-category-status"
+                    checked={newCategoryStatus}
+                    onCheckedChange={(checked) =>
+                      setNewCategoryStatus(checked === true)
+                    }
+                    className="mt-0.5 shrink-0 border-sky-400/30 data-[state=checked]:bg-sky-500/70"
+                  />
+                  <Label
+                    htmlFor="edit-category-status"
+                    className="min-w-0 flex-1 text-sm font-medium leading-snug text-white/80 cursor-pointer"
+                  >
+                    Active (Inactive categories will not appear while creating
+                    products)
+                  </Label>
+                </div>
+                <DialogFooter className="mt-9 mb-4 flex w-full min-w-0 flex-col sm:flex-row items-center gap-2">
+                  <Button
+                    onClick={handleCancelEdit}
+                    variant="secondary"
+                    className={cn("w-full sm:w-auto px-11 gap-2", GLASS_GHOST_BUTTON)}
+                  >
+                    <X className="h-4 w-4 shrink-0" aria-hidden />
+                    Cancel
+                  </Button>
+                  <DialogSubmitButton
+                    type="button"
+                    onClick={handleUpdateCategory}
+                    isPending={isEditing}
+                    pendingLabel="Saving…"
+                    label="Save Changes"
+                    icon={Plus}
+                    hue="sky"
+                    disabled={!isEditValid}
+                    className="px-11"
+                  />
+                </DialogFooter>
+              </div>
+            ) : (
+              <>
+                <div className="pb-4">
+                  <DialogFormLabel icon={Tag} required wrapperClassName="mb-2">
+                    Category Name
+                  </DialogFormLabel>
+                  <Input
+                    value={categoryName}
+                    onChange={(e) => setCategoryName(e.target.value)}
+                    placeholder="New Category"
+                    className={cn("w-full", DIALOG_FORM_FIELD_SKY)}
+                  />
+                </div>
+                <div className="pb-4">
+                  <DialogFormLabel icon={FileText} optional wrapperClassName="mb-2">
+                    Description
+                  </DialogFormLabel>
+                  <Textarea
+                    value={categoryDescription}
+                    onChange={(e) => setCategoryDescription(e.target.value)}
+                    placeholder="Enter category description..."
+                    rows={3}
+                    maxLength={500}
+                    className={cn("mt-2 w-full", DIALOG_FORM_FIELD_SKY)}
+                  />
+                </div>
+                <div className="pb-4">
+                  <DialogFormLabel icon={StickyNote} optional wrapperClassName="mb-2">
+                    Notes
+                  </DialogFormLabel>
+                  <Textarea
+                    value={categoryNotes}
+                    onChange={(e) => setCategoryNotes(e.target.value)}
+                    placeholder="Enter category notes..."
+                    rows={3}
+                    maxLength={1000}
+                    className={cn("mt-2 w-full", DIALOG_FORM_FIELD_SKY)}
+                  />
+                </div>
+                <div className="pb-4 flex items-start gap-2 min-w-0">
+                  <Checkbox
+                    id="category-status"
+                    checked={categoryStatus}
+                    onCheckedChange={(checked) =>
+                      setCategoryStatus(checked === true)
+                    }
+                    className="mt-0.5 shrink-0 border-sky-400/30 data-[state=checked]:bg-sky-500/70"
+                  />
+                  <Label
+                    htmlFor="category-status"
+                    className="min-w-0 flex-1 text-sm font-medium leading-snug text-white/80 cursor-pointer"
+                  >
+                    Active (Inactive categories will not appear while creating
+                    products)
+                  </Label>
+                </div>
+                <DialogFooter className="mt-9 mb-4 flex w-full min-w-0 flex-col sm:flex-row items-center gap-2">
+                  <DialogClose asChild>
+                    <Button
+                      variant={"secondary"}
+                      className={cn("w-full sm:w-auto px-11 gap-2", GLASS_GHOST_BUTTON)}
+                    >
+                      <X className="h-4 w-4 shrink-0" aria-hidden />
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                  <DialogSubmitButton
+                    type="button"
+                    onClick={handleAddCategory}
+                    isPending={isSubmitting}
+                    pendingLabel="Creating…"
+                    label="Add Category"
+                    icon={Plus}
+                    hue="sky"
+                    disabled={!isAddValid}
+                    className="px-11"
+                  />
+                </DialogFooter>
+              </>
+            )}
+
+            {/* Categories Table — x-scroll contained here, not on the dialog shell */}
+            <div className={DIALOG_TABLE_SECTION}>
+              <h3
+                className={cn(
+                  "text-sm sm:text-base font-medium mb-4",
+                  DIALOG_TABLE_SECTION_TITLE,
+                )}
+              >
+                Categories{" "}
+                {categories && categories.length > 0 && (
+                  <span className={DIALOG_TABLE_SECTION_TITLE}>
+                    ({categories.length})
+                  </span>
+                )}
+              </h3>
+              <DialogTableScrollArea frameClassName={DIALOG_TABLE_FRAME_SKY}>
+                <Table className={cn(DIALOG_TABLE_TEXT, DIALOG_TABLE_SURFACE)}>
+                  <TableHeader>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <TableRow
+                        key={headerGroup.id}
+                        className={DIALOG_TABLE_HEAD_ROW}
+                      >
+                        {headerGroup.headers.map((header) => (
+                          <TableHead
+                            key={header.id}
+                            style={{
+                              width: `${header.column.columnDef.size || 100}%`,
+                            }}
+                          >
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext(),
+                                )}
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={columns.length}
+                          className={cn("text-center", DIALOG_TABLE_TEXT_MUTED)}
+                        >
+                          Loading...
+                        </TableCell>
+                      </TableRow>
+                    ) : table.getRowModel().rows?.length ? (
+                      table.getRowModel().rows.map((row, index) => (
+                        <TableRow
+                          key={row.id}
+                          data-state={row.getIsSelected() && "selected"}
+                          className={cn(
+                            index % 2 === 0
+                              ? DIALOG_TABLE_ROW_EVEN
+                              : DIALOG_TABLE_ROW_ODD,
+                            DIALOG_TABLE_ROW_HOVER,
+                          )}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell
+                              key={cell.id}
+                              style={{
+                                width: `${cell.column.columnDef.size || 100}%`,
+                              }}
+                            >
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext(),
+                              )}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={columns.length}
+                          className={cn("text-center", DIALOG_TABLE_TEXT_MUTED)}
+                        >
+                          No categories found.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </DialogTableScrollArea>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

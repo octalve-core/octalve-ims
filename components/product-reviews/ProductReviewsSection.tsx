@@ -1,0 +1,472 @@
+"use client";
+
+/**
+ * REQ-0163/0164/0165/0167 — product reviews on detail + compact Order/Invoice line items.
+ * REQ-0167: compact under price (right); amber glass Write; edit/delete row under rating.
+ */
+
+import React, { useState } from "react";
+import { SafeAvatarImage } from "@/components/ui/safe-avatar-image";
+import { resolveAvatarSourcesFromSeed } from "@/lib/ui/user-avatar-sources";
+import { CARD_EMPTY_MESSAGE_CLASS } from "@/lib/ui/card-empty-styles";
+import { SectionTitleRow } from "@/lib/ui/section-title-row";
+import {
+  getRatingDisplay,
+  truncateReviewComment,
+} from "@/lib/ui/review-rating-display";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts";
+import {
+  useReviewsByProduct,
+  useReviewEligibility,
+  useDeleteProductReview,
+} from "@/hooks/queries";
+import {
+  ClientCompactDateTime,
+  GLASS_BUTTON_SHELL_RESET,
+  GLASS_COMPACT_AMBER_BUTTON,
+} from "@/components/shared";
+import { AlertDialogWrapper } from "@/components/dialogs";
+import { cn } from "@/lib/utils";
+import { queryKeys, useSyncSsrQueryDataMany } from "@/lib/react-query";
+import type { ProductReview, ReviewEligibilitySlot } from "@/types";
+import WriteEditReviewDialog from "./WriteEditReviewDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Loader2, MessageSquare, Pencil, Star, Trash2 } from "lucide-react";
+
+function StarRating({ value }: { value: number }) {
+  const { starClass } = getRatingDisplay(value);
+  return (
+    <div className="flex">
+      {[1, 2, 3, 4, 5].map((v) => (
+        <Star
+          key={v}
+          className={cn(
+            "h-4 w-4",
+            value >= v
+              ? starClass
+              : "text-gray-300 dark:text-gray-500 fill-transparent",
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
+export type ProductReviewsSectionProps = {
+  productId: string;
+  productName: string;
+  /** Optional SKU for WriteEditReviewDialog header */
+  productSku?: string | null;
+  /** When on order detail, pass orderId to only show eligibility for this order */
+  orderId?: string;
+  /** Optional: show compact (e.g. inside order item row) */
+  compact?: boolean;
+  variant?: "amber" | "violet" | "sky";
+  /** REQ-0026 — SSR-passed reviews; skips client fetch on first paint */
+  initialReviews?: ProductReview[];
+  /** REQ-0026 — SSR-passed eligibility for this product/order */
+  initialEligibility?: {
+    eligible: boolean;
+    slots: ReviewEligibilitySlot[];
+  };
+};
+
+const variantConfig = {
+  amber: {
+    border: "border-amber-400/20",
+    gradient:
+      "bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent",
+    shadow:
+      "shadow-[0_15px_40px_rgba(245,158,11,0.12)] dark:shadow-[0_15px_40px_rgba(245,158,11,0.08)]",
+    iconBg:
+      "border-amber-300/30 bg-amber-100/50 dark:border-amber-400/30 dark:bg-amber-500/20",
+    button: "border-amber-400/30 from-amber-500/50 to-amber-500/30 text-white",
+  },
+  violet: {
+    border: "border-violet-400/20",
+    gradient:
+      "bg-gradient-to-br from-violet-500/10 via-violet-500/5 to-transparent",
+    shadow: "shadow-[0_15px_40px_rgba(139,92,246,0.12)]",
+    iconBg:
+      "border-violet-300/30 bg-violet-100/50 dark:border-violet-400/30 dark:bg-violet-500/20",
+    button:
+      "border-violet-400/30 from-violet-500/50 to-violet-500/30 text-white",
+  },
+  sky: {
+    border: "border-sky-400/20",
+    gradient: "bg-gradient-to-br from-sky-500/10 via-sky-500/5 to-transparent",
+    shadow: "shadow-[0_15px_40px_rgba(2,132,199,0.12)]",
+    iconBg:
+      "border-sky-300/30 bg-sky-100/50 dark:border-sky-400/30 dark:bg-sky-500/20",
+    button: "border-sky-400/30 from-sky-500/50 to-sky-500/30 text-white",
+  },
+};
+
+export default function ProductReviewsSection({
+  productId,
+  productName,
+  productSku,
+  orderId,
+  compact = false,
+  variant = "amber",
+  initialReviews,
+  initialEligibility,
+}: ProductReviewsSectionProps) {
+  const { user } = useAuth();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingReview, setEditingReview] = useState<ProductReview | null>(
+    null,
+  );
+  /** REQ-0165 — pending delete target for AlertDialog */
+  const [deleteTarget, setDeleteTarget] = useState<ProductReview | null>(null);
+
+  const { data: reviews = [], isLoading: reviewsLoading } = useReviewsByProduct(
+    productId,
+    {
+      status: "all",
+      initialData: initialReviews,
+    },
+  );
+  const { data: eligibility, isLoading: eligibilityLoading } =
+    useReviewEligibility(productId, orderId, {
+      initialData: initialEligibility,
+    });
+
+  useSyncSsrQueryDataMany([
+    {
+      queryKey: queryKeys.productReviews.byProduct(productId, "all"),
+      serverData: initialReviews,
+    },
+    {
+      queryKey: queryKeys.productReviews.eligibility(productId, orderId),
+      serverData: initialEligibility,
+    },
+  ]);
+
+  const deleteReview = useDeleteProductReview();
+
+  const approvedReviews = reviews.filter((r) => r.status === "approved");
+  const myReviews = user ? reviews.filter((r) => r.userId === user.id) : [];
+  const myPendingReviews = user
+    ? reviews.filter((r) => r.userId === user.id && r.status === "pending")
+    : [];
+  // Show approved + current user's pending so their new review appears immediately after submit
+  const reviewsToShow = [...approvedReviews, ...myPendingReviews];
+  const eligible = eligibility?.eligible ?? false;
+  const firstSlot = eligibility?.slots?.[0];
+  // REQ-0165 — hide Write when this order already has my review (belt + eligibility patch)
+  const alreadyReviewedThisOrder = myReviews.some(
+    (r) => !orderId || r.orderId === orderId,
+  );
+  const showWrite = Boolean(user) && eligible && !alreadyReviewedThisOrder;
+
+  const handleEdit = (review: ProductReview) => {
+    setEditingReview(review);
+    setDialogOpen(true);
+  };
+  const handleWriteNew = () => {
+    setEditingReview(null);
+    setDialogOpen(true);
+  };
+  const handleDialogClose = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) setEditingReview(null);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteReview.mutate(deleteTarget.id, {
+      onSuccess: () => {
+        setDeleteTarget(null);
+        setEditingReview(null);
+      },
+    });
+  };
+
+  const deleteDescription = deleteTarget
+    ? `Delete your review of "${productName}"${
+        deleteTarget.comment
+          ? `: "${truncateReviewComment(deleteTarget.comment)}"`
+          : ""
+      }? This cannot be undone.`
+    : "Are you sure you want to delete this review? This cannot be undone.";
+
+  const config = variantConfig[variant];
+
+  const deleteDialog = (
+    <AlertDialogWrapper
+      open={!!deleteTarget}
+      onOpenChange={(open) => !open && setDeleteTarget(null)}
+      title="Delete review"
+      description={deleteDescription}
+      actionLabel="Delete"
+      actionLoadingLabel="Deleting..."
+      isLoading={deleteReview.isPending}
+      onAction={handleConfirmDelete}
+      onCancel={() => setDeleteTarget(null)}
+    />
+  );
+
+  const reviewDialog = (
+    <WriteEditReviewDialog
+      open={dialogOpen}
+      onOpenChange={handleDialogClose}
+      productId={productId}
+      productName={productName}
+      productSku={productSku}
+      orderId={editingReview ? undefined : firstSlot?.orderId}
+      orderItemId={editingReview ? undefined : firstSlot?.orderItemId}
+      existingReview={editingReview}
+      onSuccess={() => {}}
+    />
+  );
+
+  if (compact) {
+    // REQ-0163 — never show Loader2 in compact (SSR mismatch); wait for settled eligibility
+    // REQ-0167 — same row: stars/rating/comment left · edit+delete right (justify-between)
+    return (
+      <>
+        <div className="flex flex-col gap-1.5 w-full min-w-0">
+          {eligibilityLoading && !initialEligibility ? null : showWrite ? (
+            <div className="flex w-full justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleWriteNew}
+                className={cn(
+                  "group",
+                  GLASS_BUTTON_SHELL_RESET,
+                  GLASS_COMPACT_AMBER_BUTTON,
+                )}
+              >
+                <MessageSquare className="h-3.5 w-3.5 shrink-0" />
+                Write review
+              </Button>
+            </div>
+          ) : null}
+          {myReviews.map((r) => {
+            const ratingUi = getRatingDisplay(r.rating);
+            return (
+              <div
+                key={r.id}
+                className="flex w-full min-w-0 items-center justify-between gap-2"
+              >
+                <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
+                  <StarRating value={r.rating} />
+                  <span
+                    className={cn(
+                      "text-xs font-normal tabular-nums shrink-0",
+                      ratingUi.textClass,
+                    )}
+                  >
+                    {r.rating}/5
+                  </span>
+                  {r.comment ? (
+                    <span
+                      className="text-xs text-gray-600 dark:text-gray-300 truncate min-w-0"
+                      title={r.comment}
+                    >
+                      {r.comment}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="flex shrink-0 items-center gap-0.5">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleEdit(r)}
+                    aria-label="Edit review"
+                    className="h-8 w-8 rounded-lg text-gray-600 dark:text-gray-300"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setDeleteTarget(r)}
+                    disabled={deleteReview.isPending}
+                    aria-label="Delete review"
+                    className="h-8 w-8 rounded-lg text-rose-600 dark:text-rose-400"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {reviewDialog}
+        {deleteDialog}
+      </>
+    );
+  }
+
+  return (
+    <article
+      className={cn(
+        "rounded-[20px] border p-2 sm:p-4 backdrop-blur-md",
+        "bg-white/60 dark:bg-white/5",
+        config.border,
+        config.gradient,
+        config.shadow,
+      )}
+    >
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2">
+          <div className={cn("p-2 rounded-xl border", config.iconBg)}>
+            <Star className="h-5 w-5 text-amber-500" />
+          </div>
+          <SectionTitleRow
+            as="h3"
+            title="Reviews"
+            count={!reviewsLoading ? reviewsToShow.length : undefined}
+          />
+        </div>
+        {user && (
+          <div className="flex items-center gap-2">
+            {eligibilityLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+            ) : showWrite ? (
+              <Button
+                type="button"
+                onClick={handleWriteNew}
+                size="sm"
+                className={cn(
+                  "rounded-xl border bg-gradient-to-r shadow-sm",
+                  config.button,
+                )}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Write a review
+              </Button>
+            ) : null}
+          </div>
+        )}
+      </div>
+
+      {reviewsLoading ? (
+        <div className="space-y-2 py-4">
+          {[1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-16 rounded-xl bg-gray-200/50 dark:bg-white/10 animate-pulse"
+            />
+          ))}
+        </div>
+      ) : reviewsToShow.length === 0 ? (
+        <p className={CARD_EMPTY_MESSAGE_CLASS}>
+          No reviews yet.
+          {user && showWrite && " Click “Write a review” above."}
+        </p>
+      ) : (
+        <ul className="space-y-4">
+          {reviewsToShow.map((review) => {
+            const displayName =
+              review.reviewerName?.trim() ||
+              review.reviewerEmail ||
+              (review.userId === user?.id ? "You" : "User");
+            const avatar = resolveAvatarSourcesFromSeed(
+              review.userId,
+              review.reviewerImage,
+            );
+            return (
+              <li
+                key={review.id}
+                className={cn(
+                  "rounded-xl border border-amber-200/30 dark:border-white/10 p-4",
+                  "bg-white/40 dark:bg-white/5",
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <StarRating value={review.rating} />
+                      <span
+                        className={cn(
+                          "text-xs font-normal tabular-nums",
+                          getRatingDisplay(review.rating).textClass,
+                        )}
+                      >
+                        {review.rating}/5
+                      </span>
+                      {review.status === "pending" && (
+                        <span className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-500/20 px-2 py-0.5 rounded-full">
+                          Pending approval
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-700 dark:text-gray-200 mt-2 whitespace-pre-wrap">
+                      {review.comment}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <SafeAvatarImage
+                        src={avatar.src}
+                        fallbackSrc={avatar.fallbackSrc}
+                        alt=""
+                        width={32}
+                        height={32}
+                        className="h-8 w-8 rounded-full object-cover border border-amber-200/90 dark:border-white/30 flex-shrink-0"
+                      />
+                      <span className="text-xs sm:text-sm font-normal text-gray-600 dark:text-white/80 ">
+                        {displayName}
+                      </span>
+                      <span className="text-gray-400 ">•</span>
+                      <ClientCompactDateTime
+                        date={review.createdAt}
+                        semantic="created"
+                        className="text-xs font-normal text-muted-foreground dark:text-white/80 "
+                      />
+                    </div>
+                  </div>
+                  {user && review.userId === user.id && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg"
+                        >
+                          <span className="sr-only">Actions</span>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="rounded-xl">
+                        <DropdownMenuItem
+                          onClick={() => handleEdit(review)}
+                          className="cursor-pointer"
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit review
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setDeleteTarget(review)}
+                          disabled={deleteReview.isPending}
+                          className="cursor-pointer text-rose-600 dark:text-rose-400"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete review
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {reviewDialog}
+      {deleteDialog}
+    </article>
+  );
+}

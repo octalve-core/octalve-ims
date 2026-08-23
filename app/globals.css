@@ -1,0 +1,247 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.poppins {
+  font-family: var(--font-poppins);
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 72.2% 50.6%;
+    --primary-foreground: 0 85.7% 97.3%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 72.2% 50.6%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 9%;
+    --radius: 0.5rem;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 72.2% 50.6%;
+    --primary-foreground: 0 85.7% 97.3%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 72.2% 50.6%;
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 98%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 0 0% 9%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply text-foreground;
+  }
+
+  /*
+   * App shell: single scroll on #main-content — hide document/browser scrollbar (double-bar fix).
+   * Auth routes keep document scroll via :has(.auth-page-root) override below.
+   * Do NOT put scrollbar-gutter on html here — it insets FABs/menus from the viewport edge
+   * (Firefox) while #main-content already reserves its own gutter.
+   */
+  html:not(:has(.auth-page-root)) {
+    height: 100%;
+    overflow: hidden;
+  }
+  html:not(:has(.auth-page-root)) body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /*
+   * Scroll lives on #main-content / sidebars — NOT html/body.
+   * scrollbar-gutter: stable on the scroll container prevents content width shift when scrollbar appears.
+   */
+  #main-content,
+  aside.overflow-y-auto {
+    scrollbar-gutter: stable;
+  }
+
+  /*
+   * REQ-0033 / REQ-0216 — auth routes scroll on document; reserve gutter so Role Select
+   * RemoveScroll does not change layout width (Firefox classic scrollbar).
+   */
+  html:has(.auth-page-root) {
+    scrollbar-gutter: stable;
+    height: auto;
+    overflow: auto;
+  }
+  html:has(.auth-page-root) body {
+    height: auto;
+    overflow: auto;
+  }
+
+  #main-content,
+  aside.overflow-y-auto,
+  .overflow-y-auto,
+  .overflow-auto {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, 0.45) transparent;
+  }
+
+  #main-content::-webkit-scrollbar,
+  aside.overflow-y-auto::-webkit-scrollbar,
+  .overflow-y-auto::-webkit-scrollbar,
+  .overflow-auto::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  #main-content::-webkit-scrollbar-track,
+  aside.overflow-y-auto::-webkit-scrollbar-track,
+  .overflow-y-auto::-webkit-scrollbar-track,
+  .overflow-auto::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  #main-content::-webkit-scrollbar-thumb,
+  aside.overflow-y-auto::-webkit-scrollbar-thumb,
+  .overflow-y-auto::-webkit-scrollbar-thumb,
+  .overflow-auto::-webkit-scrollbar-thumb {
+    background-color: rgba(100, 116, 139, 0.45);
+    border-radius: 9999px;
+  }
+
+  .dark #main-content::-webkit-scrollbar-thumb,
+  .dark aside.overflow-y-auto::-webkit-scrollbar-thumb,
+  .dark .overflow-y-auto::-webkit-scrollbar-thumb,
+  .dark .overflow-auto::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.4);
+  }
+}
+
+/*
+ * REQ-0216 — Beat react-remove-scroll-bar's injected stylesheet.
+ * Must stay OUTSIDE @layer (unlayered beats @layer base) and use higher specificity
+ * than `body[data-scroll-locked]` so margin-right:gap !important cannot win.
+ * Auth: gutter reserved above; App shell: cancel false gap from document lock.
+ */
+html body[data-scroll-locked] {
+  padding-right: 0 !important;
+  margin-right: 0 !important;
+  --removed-body-scroll-bar-size: 0px;
+}
+html body.with-scroll-bars-hidden,
+html .with-scroll-bars-hidden {
+  padding-right: 0 !important;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Phase 13.1 - Reusable animation utility (design system) */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* REQ-0030 — auth page entrance (CSS-only; no hydration mismatch) */
+@keyframes authEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-enter {
+  animation: authEnter 0.45s ease-out forwards;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-enter {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* REQ-0032 — viewport illustration zoom + horizontal nudge (CSS-only) */
+@keyframes authBgFloat {
+  0%,
+  100% {
+    transform: scale(1) translateX(0);
+  }
+  33% {
+    transform: scale(1.08) translateX(-14px);
+  }
+  66% {
+    transform: scale(1.12) translateX(14px);
+  }
+}
+
+.auth-bg-float {
+  animation: authBgFloat 22s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-bg-float {
+    animation: none;
+    transform: none;
+  }
+}

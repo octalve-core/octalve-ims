@@ -1,0 +1,1065 @@
+/**
+ * Invoice Dialog Component
+ * Dialog for generating invoices from orders
+ * Uses indigo glassmorphic styling (different from orders/violet, products/rose)
+ */
+
+"use client";
+
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { usePathname } from "next/navigation";
+import {
+  useCreateInvoice,
+  useUpdateInvoice,
+  useOrders,
+  useClientOrders,
+} from "@/hooks/queries";
+import { useSyncDialogOpenState } from "@/hooks/use-sync-dialog-open-state";
+import {
+  createInvoiceSchema,
+  updateInvoiceSchema,
+  type UpdateInvoiceFormData,
+} from "@/lib/validations";
+import type {
+  CreateInvoiceInput,
+  Invoice,
+  Order,
+  InvoiceStatus,
+} from "@/types";
+import { useAuth } from "@/contexts";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Boxes,
+  FileText,
+  Package,
+  Save,
+  ShoppingCart,
+  StickyNote,
+  Tag,
+  X,
+} from "lucide-react";
+import { useForm, FormProvider } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { FormField, FormNumberField } from "@/components/forms";
+import {
+  DeferredSelectGate,
+  DIALOG_FORM_FIELD_INDIGO,
+  DIALOG_SELECT_CONTENT_CLASS,
+  DIALOG_SELECT_ITEM_CLASS,
+  DialogDateField,
+  DialogFormLabel,
+  DialogHeaderBrand,
+  DialogSubmitButton,
+  GLASS_GHOST_BUTTON,
+} from "@/components/shared";
+import { AvatarInlineLink } from "@/components/shared/AvatarInlineLink";
+import { ClientCompactDateTime } from "@/components/shared/ClientFormatDisplay";
+import { CopyableText } from "@/components/shared/CopyableText";
+import {
+  OrderStatusBadge,
+  PaymentStatusBadge,
+  InvoiceStatusBadge,
+} from "@/lib/ui/semantic-badges";
+import { ProductThumb } from "@/components/products/ProductOptionRow";
+import { getOrderItemUnitCounts } from "@/lib/orders/order-list-meta";
+import { cn } from "@/lib/utils";
+import { OrderPickerCommand } from "./OrderPickerCommand";
+
+/** ISO date string for native date inputs (REQ-0126). */
+function toDateInputValue(value?: Date | string | null): string {
+  if (!value) return "";
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? "" : (d.toISOString().split("T")[0] ?? "");
+}
+
+interface InvoiceDialogProps {
+  children?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  editingInvoice?: Invoice | null;
+  onEditInvoice?: (invoice: Invoice | null) => void;
+  /** Pre-select an order in create mode (REQ-0061 — "Create Invoice" from order row/detail) */
+  initialOrderId?: string;
+}
+
+const fmt = (v: number) =>
+  `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+/**
+ * Invoice Dialog Component
+ * Generates invoices from orders
+ * Uses indigo glassmorphic styling (border-indigo-400/30, shadow indigo)
+ */
+export default function InvoiceDialog({
+  children,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  editingInvoice: externalEditingInvoice,
+  onEditInvoice,
+  initialOrderId,
+}: InvoiceDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const [internalEditingInvoice, setInternalEditingInvoice] =
+    useState<Invoice | null>(null);
+  const dialogCloseRef = useRef<HTMLButtonElement | null>(null);
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  // Form state (tax/shipping/discount come from the selected order — not editable)
+  const [selectedOrderId, setSelectedOrderId] = useState<string>("");
+  const [dueDate, setDueDate] = useState<string>("");
+  const [notes, setNotes] = useState<string>("");
+
+  // Use controlled or internal state
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = useCallback(
+    (value: boolean) => {
+      if (isControlled) {
+        controlledOnOpenChange?.(value);
+      } else {
+        setInternalOpen(value);
+        controlledOnOpenChange?.(value);
+      }
+    },
+    [isControlled, controlledOnOpenChange],
+  );
+
+  // Use external or internal editing invoice
+  const editingInvoice =
+    externalEditingInvoice !== undefined
+      ? externalEditingInvoice
+      : internalEditingInvoice;
+
+  const setEditingInvoice =
+    externalEditingInvoice !== undefined && onEditInvoice
+      ? onEditInvoice
+      : setInternalEditingInvoice;
+
+  const pathname = usePathname();
+  const isAdminInvoicesPage = pathname?.startsWith("/admin/invoices");
+  const isAdmin = user?.role === "admin";
+  // Client-orders leg also loads when pre-selecting an order (REQ-0061 —
+  // "Create Invoice" from a client order row on /admin/orders)
+  const needsClientOrdersLeg =
+    isAdmin && (isAdminInvoicesPage || Boolean(initialOrderId));
+
+  // Fetch orders only when dialog is open — avoids background admin/client-orders API calls
+  const { data: selfOrders = [] } = useOrders(undefined, { enabled: open });
+  const { data: clientOrders = [] } = useClientOrders(undefined, {
+    enabled: open && needsClientOrdersLeg,
+  });
+
+  // /admin/invoices: show self + client orders with placer name
+  // /invoices: show only self orders (product owner's own)
+  const orders = React.useMemo(() => {
+    if (!needsClientOrdersLeg) return selfOrders;
+    const byId = new Map<string, Order & { _source?: string }>();
+    selfOrders.forEach((o) => byId.set(o.id, { ...o, _source: "self" }));
+    clientOrders.forEach((o) => {
+      if (!byId.has(o.id)) byId.set(o.id, { ...o, _source: "client" });
+    });
+    return Array.from(byId.values());
+  }, [needsClientOrdersLeg, selfOrders, clientOrders]);
+
+  const availableOrders = orders.filter(
+    (order) => order.status !== "cancelled",
+  );
+
+  // Use TanStack Query mutations
+  const createInvoiceMutation = useCreateInvoice();
+  const updateInvoiceMutation = useUpdateInvoice();
+  const isCreating = createInvoiceMutation.isPending;
+  const isUpdating = updateInvoiceMutation.isPending;
+  const isSubmitting = isCreating || isUpdating;
+
+  // ==================== EDIT INVOICE FORM ====================
+  // Initialize edit form with invoice data
+  const editFormMethods = useForm<UpdateInvoiceFormData>({
+    resolver: zodResolver(updateInvoiceSchema),
+    defaultValues: editingInvoice
+      ? {
+          id: editingInvoice.id,
+          status: editingInvoice.status,
+          amountPaid: editingInvoice.amountPaid,
+          tax: editingInvoice.tax ?? undefined,
+          shipping: editingInvoice.shipping ?? undefined,
+          discount: editingInvoice.discount ?? undefined,
+          total: editingInvoice.total,
+          amountDue: editingInvoice.amountDue,
+          dueDate: editingInvoice.dueDate
+            ? new Date(editingInvoice.dueDate).toISOString().split("T")[0]
+            : "",
+          sentAt: editingInvoice.sentAt
+            ? new Date(editingInvoice.sentAt).toISOString().split("T")[0]
+            : "",
+          paidAt: editingInvoice.paidAt
+            ? new Date(editingInvoice.paidAt).toISOString().split("T")[0]
+            : "",
+          cancelledAt: editingInvoice.cancelledAt
+            ? new Date(editingInvoice.cancelledAt).toISOString().split("T")[0]
+            : "",
+          paymentLink: editingInvoice.paymentLink || "",
+          notes: editingInvoice.notes || "",
+        }
+      : {
+          id: "",
+          status: "draft",
+          amountPaid: 0,
+          tax: undefined,
+          shipping: undefined,
+          discount: undefined,
+          total: 0,
+          amountDue: 0,
+          dueDate: "",
+          sentAt: "",
+          paidAt: "",
+          cancelledAt: "",
+          paymentLink: "",
+          notes: "",
+        },
+  });
+
+  const {
+    reset: editReset,
+    watch: editWatch,
+    setValue: editSetValue,
+  } = editFormMethods;
+
+  // REQ-0198 — sync edit form on open / invoice change (no useEffect bounce)
+  useSyncDialogOpenState(
+    open,
+    () => {
+      if (editingInvoice) {
+        const taxVal = editingInvoice.tax ?? 0;
+        const shippingVal = editingInvoice.shipping ?? 0;
+        const discountVal = editingInvoice.discount ?? 0;
+        const subtotalVal = editingInvoice.subtotal ?? 0;
+        const totalVal = Math.max(
+          0,
+          subtotalVal + taxVal + shippingVal - discountVal,
+        );
+        editReset({
+          id: editingInvoice.id,
+          status: editingInvoice.status,
+          amountPaid: editingInvoice.amountPaid,
+          tax: taxVal,
+          shipping: shippingVal,
+          discount: discountVal,
+          total: totalVal,
+          amountDue: Math.max(0, totalVal - (editingInvoice.amountPaid ?? 0)),
+          dueDate: editingInvoice.dueDate
+            ? new Date(editingInvoice.dueDate).toISOString().split("T")[0]
+            : "",
+          sentAt: editingInvoice.sentAt
+            ? new Date(editingInvoice.sentAt).toISOString().split("T")[0]
+            : "",
+          paidAt: editingInvoice.paidAt
+            ? new Date(editingInvoice.paidAt).toISOString().split("T")[0]
+            : "",
+          cancelledAt: editingInvoice.cancelledAt
+            ? new Date(editingInvoice.cancelledAt).toISOString().split("T")[0]
+            : "",
+          paymentLink: editingInvoice.paymentLink || "",
+          notes: editingInvoice.notes || "",
+        });
+      } else if (externalEditingInvoice === null) {
+        editReset({
+          id: "",
+          status: "draft",
+          amountPaid: 0,
+          tax: undefined,
+          shipping: undefined,
+          discount: undefined,
+          total: 0,
+          amountDue: 0,
+          dueDate: "",
+          sentAt: "",
+          paidAt: "",
+          cancelledAt: "",
+          paymentLink: "",
+          notes: "",
+        });
+      }
+    },
+    editingInvoice?.id ??
+      (externalEditingInvoice === null ? "clear" : "idle"),
+  );
+
+  // Derive total = subtotal + tax + shipping - discount when tax, shipping, or discount change (dynamic calculation)
+  const watchedTax = editWatch("tax");
+  const watchedShipping = editWatch("shipping");
+  const watchedDiscount = editWatch("discount");
+  useEffect(() => {
+    if (!open || !editingInvoice) return;
+    const subtotalVal = editingInvoice.subtotal ?? 0;
+    const taxVal = Number(watchedTax) || 0;
+    const shippingVal = Number(watchedShipping) || 0;
+    const discountVal = Number(watchedDiscount) || 0;
+    const totalVal = Math.max(
+      0,
+      subtotalVal + taxVal + shippingVal - discountVal,
+    );
+    editSetValue("total", totalVal);
+  }, [
+    open,
+    editingInvoice,
+    watchedTax,
+    watchedShipping,
+    watchedDiscount,
+    editSetValue,
+  ]);
+
+  // Keep amountDue in sync with total - amountPaid in the edit form (dynamic calculation)
+  const watchedAmountPaid = editWatch("amountPaid");
+  const watchedTotal = editWatch("total");
+  useEffect(() => {
+    if (!open || !editingInvoice) return;
+    const paid = Number(watchedAmountPaid) || 0;
+    const tot = Number(watchedTotal) || 0;
+    editSetValue("amountDue", Math.max(0, tot - paid));
+  }, [open, editingInvoice, watchedAmountPaid, watchedTotal, editSetValue]);
+
+  // Handle edit invoice submission
+  const handleUpdateInvoice = async (data: UpdateInvoiceFormData) => {
+    if (!editingInvoice) return;
+
+    try {
+      // Derive total = subtotal + tax + shipping - discount and amountDue = total - amountPaid (never send stale values)
+      const subtotalVal = editingInvoice.subtotal ?? 0;
+      const taxVal = data.tax ?? 0;
+      const shippingVal = data.shipping ?? 0;
+      const discountVal = data.discount ?? 0;
+      const total = Math.max(
+        0,
+        subtotalVal + taxVal + shippingVal - discountVal,
+      );
+      const amountPaid = data.amountPaid ?? editingInvoice.amountPaid;
+      const amountDue = Math.max(0, total - amountPaid);
+
+      // Prepare update data - convert date strings to ISO strings for API
+      const updateData = {
+        id: data.id,
+        status: data.status,
+        amountPaid: data.amountPaid,
+        tax: data.tax,
+        shipping: data.shipping,
+        discount: data.discount,
+        total,
+        amountDue,
+        dueDate: data.dueDate
+          ? new Date(data.dueDate).toISOString()
+          : undefined,
+        sentAt: data.sentAt ? new Date(data.sentAt).toISOString() : undefined,
+        paidAt: data.paidAt ? new Date(data.paidAt).toISOString() : undefined,
+        cancelledAt: data.cancelledAt
+          ? new Date(data.cancelledAt).toISOString()
+          : undefined,
+        paymentLink: data.paymentLink || undefined,
+        notes: data.notes || undefined,
+      };
+
+      // Update invoice using TanStack Query mutation
+      await updateInvoiceMutation.mutateAsync(updateData);
+
+      // Clear editing state on success (toast is handled by mutation hook)
+      if (externalEditingInvoice === undefined) {
+        setInternalEditingInvoice(null);
+      } else if (onEditInvoice) {
+        onEditInvoice(null);
+      }
+
+      // Close dialog if controlled
+      if (isControlled) {
+        setOpen(false);
+      } else {
+        // For internal state, close after a brief delay
+        setTimeout(() => {
+          setOpen(false);
+        }, 500);
+      }
+    } catch (error) {
+      // Error toast is handled by the mutation hook
+    }
+  };
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    if (externalEditingInvoice === undefined) {
+      setInternalEditingInvoice(null);
+    } else if (onEditInvoice) {
+      onEditInvoice(null);
+    }
+    // Close dialog if controlled
+    if (isControlled) {
+      setOpen(false);
+    }
+  };
+
+  // ==================== CREATE INVOICE FORM ====================
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open && !editingInvoice && !isControlled) {
+      setSelectedOrderId("");
+      setDueDate("");
+      setNotes("");
+    }
+  }, [open, editingInvoice, isControlled]);
+
+  // REQ-0061: pre-select order when opened via "Create Invoice" from an order row/detail
+  useEffect(() => {
+    if (open && !editingInvoice && initialOrderId) {
+      setSelectedOrderId(initialOrderId);
+    }
+  }, [open, editingInvoice, initialOrderId]);
+
+  const selectedOrder = availableOrders.find(
+    (order) => order.id === selectedOrderId,
+  );
+
+  // Handle form submission
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+
+      if (!selectedOrderId) {
+        toast({
+          title: "Order Required",
+          description: "Please select an order to generate an invoice.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!dueDate) {
+        toast({
+          title: "Due Date Required",
+          description: "Please select a due date for the invoice.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Use order's actual tax/shipping/discount (calculated at order time)
+      const orderTax = selectedOrder?.tax ?? 0;
+      const orderShipping = selectedOrder?.shipping ?? 0;
+      const orderDiscount = selectedOrder?.discount ?? 0;
+
+      const invoiceData: CreateInvoiceInput = {
+        orderId: selectedOrderId,
+        dueDate: new Date(dueDate).toISOString(),
+        tax: orderTax > 0 ? orderTax : undefined,
+        shipping: orderShipping > 0 ? orderShipping : undefined,
+        discount: orderDiscount > 0 ? orderDiscount : undefined,
+        notes: notes.trim() || undefined,
+      };
+
+      // Validate using Zod schema
+      const validationResult = createInvoiceSchema.safeParse(invoiceData);
+      if (!validationResult.success) {
+        const errorMessages = validationResult.error.errors
+          .map((err) => `${err.path.join(".")}: ${err.message}`)
+          .join(". ");
+        toast({
+          title: "Validation Error",
+          description:
+            errorMessages || "Please fix the form errors before submitting.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      try {
+        await createInvoiceMutation.mutateAsync(invoiceData);
+
+        // Reset form
+        setSelectedOrderId("");
+        setDueDate("");
+        setNotes("");
+
+        // Close dialog
+        setOpen(false);
+      } catch (error) {
+        // Error toast is handled by the mutation hook
+      }
+    },
+    [
+      selectedOrderId,
+      selectedOrder,
+      dueDate,
+      notes,
+      createInvoiceMutation,
+      setOpen,
+      toast,
+    ],
+  );
+
+  // Handle cancel
+  const handleCancel = useCallback(() => {
+    setSelectedOrderId("");
+    setDueDate("");
+    setNotes("");
+    setOpen(false);
+  }, [setOpen]);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      {children && <DialogTrigger asChild>{children}</DialogTrigger>}
+      <DialogContent
+        className="p-2 sm:p-4 sm:px-8 poppins max-h-[90vh] overflow-y-auto border-indigo-400/30 dark:border-indigo-400/30 shadow-[0_30px_80px_rgba(99,102,241,0.45)] dark:shadow-[0_30px_80px_rgba(99,102,241,0.25)]"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        <DialogHeaderBrand
+          icon={FileText}
+          tone="indigo"
+          title={
+            editingInvoice
+              ? `Edit Invoice ${editingInvoice.invoiceNumber}`
+              : "Generate Invoice from Order"
+          }
+          description={
+            editingInvoice
+              ? "Update invoice status, payment information, dates, and notes."
+              : "Select an order and set invoice details to generate a new invoice."
+          }
+        />
+
+        {/* Edit Invoice Form (shown when editing) */}
+        {editingInvoice ? (
+          <FormProvider {...editFormMethods}>
+            <form
+              onSubmit={editFormMethods.handleSubmit(handleUpdateInvoice, () => {
+                // REQ-0151 — DialogDateField errors were silent; surface validation fail
+                toast({
+                  title: "Check invoice fields",
+                  description:
+                    "Fix invalid dates or fields before updating the invoice.",
+                  variant: "destructive",
+                });
+              })}
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                {/* Invoice Status — REQ-0126 DialogFormLabel + badge select items */}
+                <div className="flex flex-col gap-2">
+                  <DialogFormLabel htmlFor="invoice-status">
+                    Invoice Status
+                  </DialogFormLabel>
+                  <DeferredSelectGate
+                    enabled={open}
+                    placeholder={
+                      <div
+                        className={cn(
+                          "flex h-11 w-full items-center rounded-md px-2",
+                          DIALOG_FORM_FIELD_INDIGO,
+                        )}
+                        aria-hidden
+                      >
+                        <InvoiceStatusBadge
+                          status={
+                            (editWatch("status") ||
+                              editingInvoice.status) as InvoiceStatus
+                          }
+                          size="detail"
+                          contrast="solid"
+                        />
+                      </div>
+                    }
+                  >
+                    {({ selectRemountKey }) => (
+                      <Select
+                        key={selectRemountKey}
+                        value={
+                          editFormMethods.watch("status") ||
+                          editingInvoice.status
+                        }
+                        onValueChange={(value) =>
+                          editFormMethods.setValue(
+                            "status",
+                            value as InvoiceStatus,
+                          )
+                        }
+                      >
+                        <SelectTrigger
+                          id="invoice-status"
+                          className={cn(
+                            "h-11 w-full",
+                            DIALOG_FORM_FIELD_INDIGO,
+                          )}
+                        >
+                          <SelectValue placeholder="Select Status">
+                            {/* REQ-0150 — solid white-on-hue when selected */}
+                            <InvoiceStatusBadge
+                              status={
+                                (editWatch("status") ||
+                                  editingInvoice.status) as InvoiceStatus
+                              }
+                              size="detail"
+                              contrast="solid"
+                            />
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent
+                          className={cn(DIALOG_SELECT_CONTENT_CLASS, "z-[100]")}
+                          position="popper"
+                          sideOffset={5}
+                          align="start"
+                        >
+                          {(
+                            [
+                              "draft",
+                              "sent",
+                              "paid",
+                              "overdue",
+                              "cancelled",
+                            ] as const
+                          ).map((value) => (
+                            <SelectItem
+                              key={value}
+                              value={value}
+                              className={DIALOG_SELECT_ITEM_CLASS}
+                            >
+                              {/* Opaque + isolate — resists SelectItem focus text inherit */}
+                              <span className="pointer-events-none inline-flex">
+                                <InvoiceStatusBadge
+                                  status={value}
+                                  size="detail"
+                                  contrast="opaque"
+                                />
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </DeferredSelectGate>
+                </div>
+
+                {/* Amount Paid — aligned label with status */}
+                <div className="flex flex-col gap-2">
+                  <DialogFormLabel htmlFor="amount-paid">
+                    Amount Paid
+                  </DialogFormLabel>
+                  <FormNumberField
+                    name="amountPaid"
+                    label="Amount Paid"
+                    placeholder="0.00"
+                    allowNegative={false}
+                    labelClassName="sr-only"
+                    inputClassName={cn("h-11", DIALOG_FORM_FIELD_INDIGO)}
+                  />
+                </div>
+
+                {/* Order Pricing Summary (read-only — values come from the order) */}
+                <div className="sm:col-span-2 p-4 border border-indigo-400/20 rounded-lg bg-white/5 space-y-2">
+                  <div className="flex justify-between text-sm text-white/70">
+                    <span>Subtotal:</span>
+                    <span>{fmt(editingInvoice.subtotal ?? 0)}</span>
+                  </div>
+                  {(editingInvoice.tax ?? 0) > 0 && (
+                    <div className="flex justify-between text-sm text-white/70">
+                      <span>Tax:</span>
+                      <span>{fmt(editingInvoice.tax ?? 0)}</span>
+                    </div>
+                  )}
+                  {(editingInvoice.shipping ?? 0) > 0 && (
+                    <div className="flex justify-between text-sm text-white/70">
+                      <span>Shipping:</span>
+                      <span>{fmt(editingInvoice.shipping ?? 0)}</span>
+                    </div>
+                  )}
+                  {(editingInvoice.discount ?? 0) > 0 && (
+                    <div className="flex justify-between text-sm text-white/70">
+                      <span>Discount:</span>
+                      <span className="text-red-400">
+                        -{fmt(editingInvoice.discount ?? 0)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-base font-medium text-white pt-2 border-t border-indigo-400/20">
+                    <span>Total:</span>
+                    <span>{fmt(editingInvoice.total ?? 0)}</span>
+                  </div>
+                </div>
+
+                {/* Due Date — REQ-0126 DialogDateField */}
+                <DialogDateField
+                  id="edit-due-date"
+                  label="Due Date"
+                  labelIcon={null}
+                  value={String(
+                    editWatch("dueDate") ??
+                      toDateInputValue(editingInvoice.dueDate),
+                  )}
+                  onChange={(v) =>
+                    editFormMethods.setValue("dueDate", v, {
+                      shouldValidate: true,
+                    })
+                  }
+                  inputClassName={DIALOG_FORM_FIELD_INDIGO}
+                />
+
+                {/* Sent At */}
+                {editWatch("status") === "sent" ||
+                editWatch("status") === "paid" ||
+                editWatch("status") === "overdue" ? (
+                  <DialogDateField
+                    id="edit-sent-at"
+                    label="Sent At"
+                    optional
+                    labelIcon={null}
+                    value={String(
+                      editWatch("sentAt") ??
+                        toDateInputValue(editingInvoice.sentAt),
+                    )}
+                    onChange={(v) =>
+                      editFormMethods.setValue("sentAt", v, {
+                        shouldValidate: true,
+                      })
+                    }
+                    inputClassName={DIALOG_FORM_FIELD_INDIGO}
+                  />
+                ) : null}
+
+                {/* Paid At */}
+                {editWatch("status") === "paid" ? (
+                  <DialogDateField
+                    id="edit-paid-at"
+                    label="Paid At"
+                    optional
+                    labelIcon={null}
+                    value={String(
+                      editWatch("paidAt") ??
+                        toDateInputValue(editingInvoice.paidAt),
+                    )}
+                    onChange={(v) =>
+                      editFormMethods.setValue("paidAt", v, {
+                        shouldValidate: true,
+                      })
+                    }
+                    inputClassName={DIALOG_FORM_FIELD_INDIGO}
+                  />
+                ) : null}
+
+                {/* Cancelled At */}
+                {editWatch("status") === "cancelled" ? (
+                  <DialogDateField
+                    id="edit-cancelled-at"
+                    label="Cancelled At"
+                    optional
+                    labelIcon={null}
+                    value={String(
+                      editWatch("cancelledAt") ??
+                        toDateInputValue(editingInvoice.cancelledAt),
+                    )}
+                    onChange={(v) =>
+                      editFormMethods.setValue("cancelledAt", v, {
+                        shouldValidate: true,
+                      })
+                    }
+                    inputClassName={DIALOG_FORM_FIELD_INDIGO}
+                  />
+                ) : null}
+
+                {/* Payment Link */}
+                <FormField
+                  name="paymentLink"
+                  label="Payment Link"
+                  placeholder="https://..."
+                  type="url"
+                  labelClassName="text-white/80"
+                  className="sm:col-span-2"
+                  inputClassName={DIALOG_FORM_FIELD_INDIGO}
+                />
+
+                {/* Notes */}
+                <div className="sm:col-span-2">
+                  <FormField
+                    name="notes"
+                    label="Notes"
+                    placeholder="Enter invoice notes..."
+                    labelClassName="text-white/80"
+                    inputClassName={DIALOG_FORM_FIELD_INDIGO}
+                  />
+                </div>
+              </div>
+
+              <DialogFooter className="mt-9 mb-4 flex flex-col sm:flex-row items-center gap-2">
+                {/* REQ-0150 — type=button so Cancel does not submit/unmount the form */}
+                <Button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  variant="secondary"
+                  className={cn(
+                    "w-full sm:w-auto px-11 gap-2",
+                    GLASS_GHOST_BUTTON,
+                  )}
+                >
+                  <X className="h-4 w-4 shrink-0" aria-hidden />
+                  Cancel
+                </Button>
+                <DialogSubmitButton
+                  isPending={isUpdating}
+                  pendingLabel="Updating invoice…"
+                  label="Update Invoice"
+                  icon={Save}
+                  hue="indigo"
+                  disabled={isUpdating}
+                  className="px-11"
+                />
+              </DialogFooter>
+            </form>
+          </FormProvider>
+        ) : (
+          /* Create Invoice Form (shown when not editing) */
+          <form onSubmit={handleSubmit}>
+            <div className="space-y-4 mt-4">
+              {/* Order Selection */}
+              <div className="space-y-2">
+                <DialogFormLabel
+                  htmlFor="order-select"
+                  icon={ShoppingCart}
+                  required
+                >
+                  Select Order
+                </DialogFormLabel>
+                {/* REQ-0060: searchable order picker (type-to-filter) replaces plain Select */}
+                <OrderPickerCommand
+                  orders={availableOrders}
+                  selectedOrderId={selectedOrderId}
+                  onSelect={setSelectedOrderId}
+                  showPlacer={Boolean(isAdminInvoicesPage && isAdmin)}
+                  triggerId="order-select"
+                  triggerClassName={DIALOG_FORM_FIELD_INDIGO}
+                />
+                {selectedOrder && (
+                  <div className="rounded-md border border-indigo-400/20 bg-white/5 p-3 space-y-2">
+                    {/* REQ-0187 — glass-safe densify; solid badges on dark dialog glass */}
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/80">
+                      <CopyableText
+                        value={selectedOrder.orderNumber}
+                        className="font-medium text-white"
+                      >
+                        {selectedOrder.orderNumber}
+                      </CopyableText>
+                      <OrderStatusBadge
+                        status={selectedOrder.status}
+                        size="detail"
+                        contrast="solid"
+                      />
+                      <PaymentStatusBadge
+                        status={selectedOrder.paymentStatus}
+                        size="detail"
+                        contrast="solid"
+                      />
+                      <ClientCompactDateTime
+                        date={selectedOrder.createdAt}
+                        className="text-xs text-white/70"
+                      />
+                      {(selectedOrder.placedByName ||
+                        selectedOrder.placedByEmail) && (
+                        <AvatarInlineLink
+                          label={
+                            selectedOrder.placedByName ||
+                            selectedOrder.placedByEmail ||
+                            ""
+                          }
+                          seed={
+                            selectedOrder.placedByUserId ?? selectedOrder.userId
+                          }
+                          image={selectedOrder.placedByImage}
+                          size={16}
+                          linkClassName="text-xs font-normal text-white/70"
+                        />
+                      )}
+                    </div>
+                    {(() => {
+                      const { itemCount, unitCount } = getOrderItemUnitCounts(
+                        selectedOrder.items,
+                      );
+                      return (
+                        <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-white/70">
+                          <span className="font-medium text-white/90">
+                            {fmt(selectedOrder.total)}
+                          </span>
+                          <span aria-hidden>·</span>
+                          <span className="inline-flex items-center gap-1">
+                            <Package className="h-3 w-3 shrink-0" aria-hidden />
+                            {itemCount} item{itemCount === 1 ? "" : "s"}
+                          </span>
+                          <span aria-hidden>·</span>
+                          <span className="inline-flex items-center gap-1">
+                            <Boxes className="h-3 w-3 shrink-0" aria-hidden />
+                            {unitCount} unit{unitCount === 1 ? "" : "s"}
+                          </span>
+                        </p>
+                      );
+                    })()}
+                    {selectedOrder.items && selectedOrder.items.length > 0 && (
+                      <ul className="space-y-1.5">
+                        {selectedOrder.items.map((item) => (
+                          <li
+                            key={item.id}
+                            className="flex items-start gap-2 text-xs text-white/85 min-w-0"
+                          >
+                            <ProductThumb
+                              name={item.productName}
+                              imageUrl={item.imageUrl}
+                              size="sm"
+                            />
+                            <span className="min-w-0 flex-1 space-y-0.5">
+                              <span className="flex flex-wrap items-baseline gap-x-1.5">
+                                <span className="truncate font-medium text-white">
+                                  {item.productName}
+                                </span>
+                                {item.sku ? (
+                                  <span className="shrink-0 font-mono text-[11px] text-white/60">
+                                    · {item.sku}
+                                  </span>
+                                ) : null}
+                                <span className="shrink-0 text-white/70">
+                                  · ×{item.quantity}
+                                </span>
+                              </span>
+                              {(item.categoryName || item.supplierName) && (
+                                <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-white/60">
+                                  {item.categoryName ? (
+                                    <span className="inline-flex items-center gap-1">
+                                      <Tag
+                                        className="h-3 w-3 shrink-0"
+                                        aria-hidden
+                                      />
+                                      {item.categoryName}
+                                    </span>
+                                  ) : null}
+                                  {item.supplierName ? (
+                                    <AvatarInlineLink
+                                      label={item.supplierName}
+                                      seed={item.supplierId ?? item.supplierName}
+                                      size={14}
+                                      linkClassName="text-[11px] font-normal text-white/60"
+                                    />
+                                  ) : null}
+                                </span>
+                              )}
+                            </span>
+                            <span className="shrink-0 text-white/80">
+                              {fmt(item.subtotal)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <DialogDateField
+                id="due-date"
+                label="Due Date"
+                value={dueDate}
+                onChange={setDueDate}
+                inputClassName={DIALOG_FORM_FIELD_INDIGO}
+                min={new Date().toISOString().split("T")[0]}
+                required
+                labelIcon={null}
+              />
+
+              {/* Order Pricing Summary (read-only — values calculated at order time) */}
+              {selectedOrder && (
+                <div className="p-4 border border-indigo-400/20 rounded-lg bg-white/5 space-y-2">
+                  <div className="flex justify-between text-sm text-white/70">
+                    <span>Subtotal:</span>
+                    <span>{fmt(selectedOrder.subtotal ?? 0)}</span>
+                  </div>
+                  {(selectedOrder.tax ?? 0) > 0 && (
+                    <div className="flex justify-between text-sm text-white/70">
+                      <span>Tax (7%):</span>
+                      <span>{fmt(selectedOrder.tax ?? 0)}</span>
+                    </div>
+                  )}
+                  {(selectedOrder.shipping ?? 0) > 0 && (
+                    <div className="flex justify-between text-sm text-white/70">
+                      <span>Shipping:</span>
+                      <span>{fmt(selectedOrder.shipping ?? 0)}</span>
+                    </div>
+                  )}
+                  {(selectedOrder.discount ?? 0) > 0 && (
+                    <div className="flex justify-between text-sm text-white/70">
+                      <span>Discount:</span>
+                      <span className="text-red-400">
+                        -{fmt(selectedOrder.discount ?? 0)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-base font-medium text-white pt-2 border-t border-indigo-400/20">
+                    <span>Invoice Total:</span>
+                    <span>{fmt(selectedOrder.total ?? 0)}</span>
+                  </div>
+                  <p className="text-xs text-white/50 pt-1">
+                    Tax, shipping, and discount are calculated from the order
+                    and cannot be changed.
+                  </p>
+                </div>
+              )}
+
+              {/* Notes */}
+              <div className="space-y-2">
+                <DialogFormLabel htmlFor="notes" icon={StickyNote} optional>
+                  Notes
+                </DialogFormLabel>
+                <Textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Add any additional notes for this invoice..."
+                  rows={3}
+                  className={cn("w-full", DIALOG_FORM_FIELD_INDIGO)}
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="mt-9 mb-4 flex flex-col sm:flex-row items-center gap-2">
+              <Button
+                type="button"
+                onClick={handleCancel}
+                variant="secondary"
+                className={cn(
+                  "w-full sm:w-auto px-11 gap-2",
+                  GLASS_GHOST_BUTTON,
+                )}
+              >
+                <X className="h-4 w-4 shrink-0" aria-hidden />
+                Cancel
+              </Button>
+              <DialogSubmitButton
+                isPending={isCreating}
+                pendingLabel="Generating invoice…"
+                label="Generate Invoice"
+                icon={FileText}
+                hue="indigo"
+                disabled={isCreating || !selectedOrderId || !dueDate}
+                className="px-11"
+              />
+            </DialogFooter>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

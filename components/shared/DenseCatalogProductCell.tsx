@@ -1,0 +1,155 @@
+"use client";
+
+/**
+ * REQ-0173 — denser admin catalog product cell (forecast + Top Products).
+ *   [thumb] Name · SKU[copy]
+ *           Tag Category · AvatarInlineLink supplier (circle ring)
+ * REQ-0223 — optional href builders for store vs admin detail urgent tables.
+ * REQ-0225 — `layout="stack"`: name text-xs + copy, SKU below + copy (client portal).
+ */
+
+import Link from "next/link";
+import { Tag } from "lucide-react";
+import { AvatarInlineLink } from "@/components/shared/AvatarInlineLink";
+import { CopyableText } from "@/components/shared/CopyableText";
+import { ProductThumb } from "@/components/products/ProductOptionRow";
+import { cn } from "@/lib/utils";
+
+export type DenseCatalogProductCellProps = {
+  productId: string;
+  productName: string;
+  sku: string;
+  imageUrl?: string | null;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  supplierId?: string | null;
+  supplierName?: string | null;
+  supplierImage?: string | null;
+  /** Defaults to `/admin/products/{id}` */
+  productHref?: (productId: string) => string;
+  /** Defaults to `/admin/categories/{id}` */
+  categoryHref?: (categoryId: string) => string;
+  /** Defaults to `/admin/suppliers/{id}` */
+  supplierHref?: (supplierId: string) => string;
+  /**
+   * `inline` (default) — Name · SKU on one row.
+   * `stack` — name (text-xs + copy) above SKU (mono + copy).
+   */
+  layout?: "inline" | "stack";
+};
+
+export function DenseCatalogProductCell({
+  productId,
+  productName,
+  sku,
+  imageUrl,
+  categoryId,
+  categoryName,
+  supplierId,
+  supplierName,
+  supplierImage,
+  productHref = (id) => `/admin/products/${id}`,
+  categoryHref = (id) => `/admin/categories/${id}`,
+  supplierHref = (id) => `/admin/suppliers/${id}`,
+  layout = "inline",
+}: DenseCatalogProductCellProps) {
+  const skuText = (sku ?? "").trim();
+  const hasSku = skuText.length > 0;
+  const hasCategory = Boolean(categoryId && categoryName);
+  const hasSupplier = Boolean(supplierId && supplierName);
+  const stack = layout === "stack";
+
+  return (
+    <div className="flex items-start gap-2 min-w-0">
+      <ProductThumb
+        name={productName}
+        imageUrl={imageUrl}
+        size="sm"
+        className="rounded-lg shrink-0"
+      />
+      <div className="flex min-w-0 flex-col gap-0.5">
+        {stack ? (
+          <>
+            <CopyableText
+              value={productName}
+              className="min-w-0 max-w-full"
+            >
+              <Link
+                href={productHref(productId)}
+                prefetch
+                className="text-xs font-normal text-sky-600 dark:text-sky-400 hover:text-sky-500 dark:hover:text-sky-300 truncate max-w-full"
+              >
+                {productName}
+              </Link>
+            </CopyableText>
+            {hasSku ? (
+              <CopyableText
+                value={skuText}
+                className="font-mono text-xs text-gray-500 dark:text-gray-300"
+              >
+                <span className="truncate">{skuText}</span>
+              </CopyableText>
+            ) : null}
+          </>
+        ) : (
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 min-w-0">
+            <Link
+              href={productHref(productId)}
+              prefetch
+              className="text-sm font-normal text-sky-600 dark:text-sky-400 hover:text-sky-500 dark:hover:text-sky-300 truncate max-w-full"
+            >
+              {productName}
+            </Link>
+            {hasSku ? (
+              <>
+                <span aria-hidden className="text-gray-400 dark:text-gray-500">
+                  ·
+                </span>
+                <CopyableText
+                  value={skuText}
+                  className="font-mono text-xs text-gray-500 dark:text-gray-300"
+                >
+                  <span className="truncate">{skuText}</span>
+                </CopyableText>
+              </>
+            ) : null}
+          </div>
+        )}
+        {(hasCategory || hasSupplier) && (
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-x-1.5 gap-y-0.5 min-w-0 text-xs",
+            )}
+          >
+            {hasCategory ? (
+              <Link
+                href={categoryHref(categoryId!)}
+                prefetch
+                className="inline-flex items-center gap-1 text-sky-600 dark:text-sky-400 hover:text-sky-500 dark:hover:text-sky-300 min-w-0"
+              >
+                <Tag className="h-3 w-3 shrink-0" aria-hidden />
+                <span className="truncate">{categoryName}</span>
+              </Link>
+            ) : null}
+            {hasCategory && hasSupplier ? (
+              <span aria-hidden className="text-gray-400 dark:text-gray-500">
+                ·
+              </span>
+            ) : null}
+            {hasSupplier ? (
+              <AvatarInlineLink
+                seed={supplierId!}
+                image={supplierImage}
+                label={supplierName!}
+                href={supplierHref(supplierId!)}
+                size={20}
+                linkClassName="text-xs font-normal"
+                className="gap-1.5"
+              />
+            ) : null}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

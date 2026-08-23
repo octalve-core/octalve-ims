@@ -1,0 +1,235 @@
+/**
+ * Support Ticket query hooks
+ * TanStack Query hooks for support ticket data fetching and mutations
+ * REQ-0200 — useSupportTicketOwnerProducts for create Related product picker
+ */
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiClient, getErrorMessage } from "@/lib/api";
+import {
+  queryKeys,
+  invalidateAllRelatedQueries,
+  cancelOrRemoveDetailQuery,
+  withInitialData,
+  patchDetailCache,
+  patchListCaches,
+  removeFromListCaches,
+} from "@/lib/react-query";
+import { useToast } from "@/hooks/use-toast";
+import type {
+  SupportTicket,
+  SupportTicketReply,
+  SupportTicketOwnerProduct,
+  CreateSupportTicketInput,
+  CreateSupportTicketReplyInput,
+  UpdateSupportTicketInput,
+} from "@/types";
+
+export type SupportTicketViewFilter =
+  | "all"
+  | "assigned_to_me"
+  | "created_by_me";
+
+export function useSupportTickets(
+  view?: SupportTicketViewFilter,
+  initialData?: SupportTicket[],
+) {
+  return useQuery({
+    queryKey: queryKeys.supportTickets.list({ view: view ?? "all" }),
+    queryFn: async () => {
+      const response = await apiClient.supportTickets.getAll(
+        view && view !== "all" ? { view } : undefined,
+      );
+      return response.data;
+    },
+    ...withInitialData(initialData),
+  });
+}
+
+export function useSupportTicket(id: string, initialData?: SupportTicket) {
+  return useQuery({
+    queryKey: queryKeys.supportTickets.detail(id),
+    queryFn: async () => {
+      const response = await apiClient.supportTickets.getById(id);
+      return response.data;
+    },
+    enabled: !!id,
+    ...withInitialData(initialData),
+  });
+}
+
+/**
+ * REQ-0200 — Owner-scoped products for create Related product picker.
+ * Key under supportTickets.all so invalidateAllRelatedQueries clears after CRUD.
+ */
+export function useSupportTicketOwnerProducts(
+  ownerId: string | null | undefined,
+  options?: { enabled?: boolean },
+) {
+  const enabled =
+    (options?.enabled ?? true) && !!ownerId && ownerId.trim().length > 0;
+  return useQuery({
+    queryKey: queryKeys.supportTickets.ownerProducts(ownerId ?? ""),
+    queryFn: async (): Promise<SupportTicketOwnerProduct[]> => {
+      const response = await apiClient.supportTickets.getOwnerProducts(
+        ownerId!.trim(),
+      );
+      return response.data;
+    },
+    enabled,
+  });
+}
+
+export function useCreateSupportTicket() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (data: CreateSupportTicketInput) => {
+      const response = await apiClient.supportTickets.create(data);
+      return response.data;
+    },
+    onSuccess: (data: SupportTicket) => {
+      patchDetailCache(
+        queryClient,
+        queryKeys.supportTickets.detail(data.id),
+        data,
+      );
+      patchListCaches(queryClient, queryKeys.supportTickets.all, data, {
+        prependIfMissing: true,
+      });
+      invalidateAllRelatedQueries(queryClient);
+      toast({
+        title: "Ticket created",
+        description: `Support ticket "${data.subject}" has been created.`,
+      });
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: "Create failed",
+        description:
+          getErrorMessage(error) || "Failed to create support ticket.",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useUpdateSupportTicket() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: UpdateSupportTicketInput;
+    }) => {
+      const response = await apiClient.supportTickets.update(id, data);
+      return response.data;
+    },
+    onSuccess: (data: SupportTicket) => {
+      patchDetailCache(
+        queryClient,
+        queryKeys.supportTickets.detail(data.id),
+        data,
+      );
+      patchListCaches(queryClient, queryKeys.supportTickets.all, data);
+      invalidateAllRelatedQueries(queryClient);
+      toast({
+        title: "Ticket updated",
+        description: `Support ticket "${data.subject}" has been updated.`,
+      });
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: "Update failed",
+        description:
+          getErrorMessage(error) || "Failed to update support ticket.",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useSupportTicketReplies(
+  ticketId: string,
+  initialData?: SupportTicketReply[],
+) {
+  return useQuery({
+    queryKey: [...queryKeys.supportTickets.detail(ticketId), "replies"],
+    queryFn: async () => {
+      const response = await apiClient.supportTickets.getReplies(ticketId);
+      return response.data;
+    },
+    enabled: !!ticketId,
+    ...withInitialData(initialData),
+  });
+}
+
+export function useCreateSupportTicketReply(ticketId: string) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (data: CreateSupportTicketReplyInput) => {
+      const response = await apiClient.supportTickets.createReply(
+        ticketId,
+        data,
+      );
+      return response.data;
+    },
+    onSuccess: (data: SupportTicketReply) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.supportTickets.detail(ticketId),
+      });
+      invalidateAllRelatedQueries(queryClient);
+      toast({
+        title: "Reply sent",
+        description: "Your reply has been added to the ticket.",
+      });
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: "Reply failed",
+        description:
+          getErrorMessage(error) || "Failed to add reply.",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useDeleteSupportTicket() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await apiClient.supportTickets.delete(id);
+      return response.data;
+    },
+    onSuccess: (_data, id) => {
+      removeFromListCaches(queryClient, queryKeys.supportTickets.all, id);
+      cancelOrRemoveDetailQuery(
+        queryClient,
+        queryKeys.supportTickets.detail(id),
+      );
+      invalidateAllRelatedQueries(queryClient);
+      toast({
+        title: "Ticket deleted",
+        description: "Support ticket has been deleted.",
+      });
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: "Delete failed",
+        description:
+          getErrorMessage(error) || "Failed to delete support ticket.",
+        variant: "destructive",
+      });
+    },
+  });
+}

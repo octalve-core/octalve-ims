@@ -1,0 +1,603 @@
+"use client";
+
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts";
+import { logger } from "@/lib/logger";
+import {
+  useSuppliers,
+  useCreateSupplier,
+  useUpdateSupplier,
+} from "@/hooks/queries";
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getSortedRowModel,
+  SortingState,
+  useReactTable,
+} from "@tanstack/react-table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { clearBodyScrollLock, cn } from "@/lib/utils";
+import {
+  DialogTableScrollArea,
+  DIALOG_EDGE_SCROLL_BODY,
+  DIALOG_EDGE_SCROLL_HEADER,
+  DIALOG_EDGE_SCROLL_INNER,
+  DIALOG_EDGE_SCROLL_SHELL,
+  DIALOG_FORM_FIELD_EMERALD,
+  DIALOG_TABLE_FRAME_EMERALD,
+  DIALOG_TABLE_HEAD_ROW,
+  DIALOG_TABLE_ROW_EVEN,
+  DIALOG_TABLE_ROW_HOVER,
+  DIALOG_TABLE_ROW_ODD,
+  DIALOG_TABLE_SECTION,
+  DIALOG_TABLE_SECTION_TITLE,
+  DIALOG_TABLE_SURFACE,
+  DIALOG_TABLE_TEXT,
+  DIALOG_TABLE_TEXT_MUTED,
+  GLASS_GHOST_BUTTON,
+  DialogSubmitButton,
+  DialogFormLabel,
+  DialogHeaderBrand,
+} from "@/components/shared";
+import { Supplier } from "@/types";
+import { createSupplierColumns } from "./SupplierTableColumns";
+import { Plus, Truck, X, FileText, StickyNote } from "lucide-react";
+
+const SUPPLIER_DIALOG_CONTENT_CLASS = `${DIALOG_EDGE_SCROLL_SHELL} poppins border-emerald-400/30 dark:border-emerald-400/30 shadow-[0_30px_80px_rgba(16,185,129,0.35)] dark:shadow-[0_30px_80px_rgba(16,185,129,0.25)]`;
+
+interface AddSupplierDialogProps {
+  children?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  editingSupplier?: Supplier | null;
+  onEditSupplier?: (supplier: Supplier) => void;
+}
+
+export default function AddSupplierDialog({
+  children,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  editingSupplier: externalEditingSupplier,
+  onEditSupplier,
+}: AddSupplierDialogProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  // Use controlled or internal state
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = useCallback(
+    (value: boolean) => {
+      if (isControlled) {
+        controlledOnOpenChange?.(value);
+      } else {
+        setInternalOpen(value);
+        controlledOnOpenChange?.(value);
+      }
+    },
+    [isControlled, controlledOnOpenChange],
+  );
+  const [supplierName, setSupplierName] = useState("");
+  const [supplierDescription, setSupplierDescription] = useState("");
+  const [supplierNotes, setSupplierNotes] = useState("");
+  const [supplierStatus, setSupplierStatus] = useState(true); // Default to active
+  const [internalEditingSupplier, setInternalEditingSupplier] =
+    useState<Supplier | null>(null);
+
+  // Use external or internal editing supplier
+  const editingSupplier =
+    externalEditingSupplier !== undefined
+      ? externalEditingSupplier
+      : internalEditingSupplier;
+
+  const setEditingSupplier =
+    externalEditingSupplier !== undefined && onEditSupplier
+      ? onEditSupplier
+      : setInternalEditingSupplier;
+  const [newSupplierName, setNewSupplierName] = useState("");
+  const [newSupplierDescription, setNewSupplierDescription] = useState("");
+  const [newSupplierNotes, setNewSupplierNotes] = useState("");
+  const [newSupplierStatus, setNewSupplierStatus] = useState(true);
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  // Sync external editingSupplier with form fields
+  useEffect(() => {
+    if (externalEditingSupplier) {
+      setNewSupplierName(externalEditingSupplier.name);
+      setNewSupplierDescription(externalEditingSupplier.description || "");
+      setNewSupplierNotes(externalEditingSupplier.notes || "");
+      setNewSupplierStatus(externalEditingSupplier.status ?? true);
+    } else if (externalEditingSupplier === null) {
+      // Clear form when editingSupplier is explicitly set to null
+      setNewSupplierName("");
+      setNewSupplierDescription("");
+      setNewSupplierNotes("");
+      setNewSupplierStatus(true);
+    }
+  }, [externalEditingSupplier]);
+
+  // Reset form fields when dialog closes (only when not editing)
+  useEffect(() => {
+    if (!open && !editingSupplier) {
+      setSupplierName("");
+      setSupplierDescription("");
+      setSupplierNotes("");
+      setSupplierStatus(true);
+    }
+  }, [open, editingSupplier]);
+
+  // Use TanStack Query for data fetching
+  const { data: suppliers = [], isLoading } = useSuppliers();
+
+  // Use TanStack Query mutations
+  const createSupplierMutation = useCreateSupplier();
+  const updateSupplierMutation = useUpdateSupplier();
+
+  const { toast } = useToast();
+  const { user, isLoggedIn } = useAuth();
+
+  // Determine loading states from mutations
+  const isSubmitting = createSupplierMutation.isPending;
+  const isEditing = updateSupplierMutation.isPending;
+  const isAddValid = supplierName.trim() !== "";
+  const isEditValid = newSupplierName.trim() !== "";
+
+  const handleAddSupplier = async () => {
+    if (supplierName.trim() === "") {
+      toast({
+        title: "Error",
+        description: "Supplier name cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "User ID is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await createSupplierMutation.mutateAsync({
+        name: supplierName,
+        userId: user.id,
+        status: supplierStatus,
+        description: supplierDescription.trim() || null,
+        notes: supplierNotes.trim() || null,
+      });
+
+      // Clear inputs on success (toast is handled by mutation hook)
+      setSupplierName("");
+      setSupplierDescription("");
+      setSupplierNotes("");
+      setSupplierStatus(true);
+    } catch (error) {
+      // Error toast is handled by the mutation hook
+      logger.error("Error adding supplier:", error);
+    }
+  };
+
+  // Handle Edit Supplier - called from table actions
+  const handleEditSupplier = useCallback(
+    (supplier: Supplier) => {
+      if (externalEditingSupplier !== undefined && onEditSupplier) {
+        // If controlled, call the external handler
+        onEditSupplier(supplier);
+      } else {
+        // If internal, set state directly
+        setInternalEditingSupplier(supplier);
+      }
+      setNewSupplierName(supplier.name);
+      setNewSupplierDescription(supplier.description || "");
+      setNewSupplierNotes(supplier.notes || "");
+      setNewSupplierStatus(supplier.status ?? true);
+      // Open dialog if controlled
+      if (isControlled) {
+        setOpen(true);
+      }
+    },
+    [externalEditingSupplier, onEditSupplier, isControlled, setOpen],
+  );
+
+  // Handle Update Supplier
+  const handleUpdateSupplier = async () => {
+    if (!editingSupplier) return;
+
+    if (newSupplierName.trim() === "") {
+      toast({
+        title: "Error",
+        description: "Supplier name cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await updateSupplierMutation.mutateAsync({
+        id: editingSupplier.id,
+        name: newSupplierName,
+        status: newSupplierStatus,
+        description: newSupplierDescription.trim() || null,
+        notes: newSupplierNotes.trim() || null,
+      });
+
+      // Clear editing state on success (toast is handled by mutation hook)
+      if (externalEditingSupplier === undefined) {
+        setInternalEditingSupplier(null);
+      } else if (onEditSupplier) {
+        onEditSupplier(null as any);
+      }
+      setNewSupplierName("");
+      setNewSupplierDescription("");
+      setNewSupplierNotes("");
+      setNewSupplierStatus(true);
+      // Close dialog if controlled
+      if (isControlled) {
+        setOpen(false);
+      }
+    } catch (error) {
+      // Error toast is handled by the mutation hook
+      logger.error("Error editing supplier:", error);
+    }
+  };
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    if (externalEditingSupplier === undefined) {
+      setInternalEditingSupplier(null);
+    } else if (onEditSupplier) {
+      onEditSupplier(null as any);
+    }
+    setNewSupplierName("");
+    setNewSupplierDescription("");
+    setNewSupplierNotes("");
+    setNewSupplierStatus(true);
+    // Close dialog if controlled
+    if (isControlled) {
+      setOpen(false);
+    }
+  };
+
+  // Create table columns with edit handler; close dialog before navigating so overlay/scroll-lock don't block the new page
+  const columns = useMemo<ColumnDef<Supplier>[]>(
+    () =>
+      createSupplierColumns(handleEditSupplier, () => setOpen(false), {
+        context: "dialog",
+      }),
+    [handleEditSupplier, setOpen],
+  );
+
+  // Set up TanStack Table
+  const table = useReactTable({
+    data: suppliers || [],
+    columns,
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
+
+  const handleOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      setOpen(nextOpen);
+      if (!nextOpen) {
+        // Radix scroll lock can persist after close; clear so page stays clickable (#3797)
+        setTimeout(clearBodyScrollLock, 100);
+      }
+    },
+    [setOpen],
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        {children || (
+          <Button className="h-10 font-medium">+Add Supplier</Button>
+        )}
+      </DialogTrigger>
+      <DialogContent className={SUPPLIER_DIALOG_CONTENT_CLASS}>
+        <DialogHeaderBrand
+          className={DIALOG_EDGE_SCROLL_HEADER}
+          icon={Truck}
+          tone="emerald"
+          title={editingSupplier ? "Edit Supplier" : "Add Supplier"}
+          description={
+            editingSupplier
+              ? "Update the supplier name"
+              : "Enter the name of the new supplier"
+          }
+        />
+        <div className={DIALOG_EDGE_SCROLL_BODY}>
+          <div className={DIALOG_EDGE_SCROLL_INNER}>
+            {/* Conditional rendering for Add/Edit forms */}
+            {editingSupplier ? (
+              <div className="mt-4">
+                <div className="pb-4">
+                  <DialogFormLabel icon={Truck} required wrapperClassName="mb-2">
+                    Supplier Name
+                  </DialogFormLabel>
+                  <Input
+                    value={newSupplierName}
+                    onChange={(e) => setNewSupplierName(e.target.value)}
+                    placeholder="Supplier Name"
+                    className={cn("mt-2 w-full", DIALOG_FORM_FIELD_EMERALD)}
+                  />
+                </div>
+                <div className="pb-4">
+                  <DialogFormLabel icon={FileText} optional wrapperClassName="mb-2">
+                    Description
+                  </DialogFormLabel>
+                  <Textarea
+                    value={newSupplierDescription}
+                    onChange={(e) => setNewSupplierDescription(e.target.value)}
+                    placeholder="Enter supplier description..."
+                    rows={3}
+                    maxLength={500}
+                    className={cn("mt-2 w-full", DIALOG_FORM_FIELD_EMERALD)}
+                  />
+                </div>
+                <div className="pb-4">
+                  <DialogFormLabel icon={StickyNote} optional wrapperClassName="mb-2">
+                    Notes
+                  </DialogFormLabel>
+                  <Textarea
+                    value={newSupplierNotes}
+                    onChange={(e) => setNewSupplierNotes(e.target.value)}
+                    placeholder="Enter supplier notes..."
+                    rows={3}
+                    maxLength={1000}
+                    className={cn("mt-2 w-full", DIALOG_FORM_FIELD_EMERALD)}
+                  />
+                </div>
+                <div className="pb-4 flex items-start gap-2 min-w-0">
+                  <Checkbox
+                    id="edit-supplier-status"
+                    checked={newSupplierStatus}
+                    onCheckedChange={(checked) =>
+                      setNewSupplierStatus(checked === true)
+                    }
+                    className="mt-0.5 shrink-0 border-emerald-400/30 data-[state=checked]:bg-emerald-500/70"
+                  />
+                  <Label
+                    htmlFor="edit-supplier-status"
+                    className="min-w-0 flex-1 text-sm font-medium leading-snug text-white/80 dark:text-white/80 cursor-pointer"
+                  >
+                    Active (Inactive suppliers will not appear while creating
+                    products)
+                  </Label>
+                </div>
+                <DialogFooter className="mt-9 mb-4 flex w-full min-w-0 flex-col sm:flex-row items-center gap-2">
+                  <Button
+                    onClick={handleCancelEdit}
+                    variant="secondary"
+                    className={cn("w-full sm:w-auto px-11 gap-2", GLASS_GHOST_BUTTON)}
+                  >
+                    <X className="h-4 w-4 shrink-0" aria-hidden />
+                    Cancel
+                  </Button>
+                  <DialogSubmitButton
+                    type="button"
+                    onClick={handleUpdateSupplier}
+                    isPending={isEditing}
+                    pendingLabel="Saving…"
+                    label="Save Changes"
+                    icon={Plus}
+                    hue="emerald"
+                    disabled={!isEditValid}
+                    className="px-11"
+                  />
+                </DialogFooter>
+              </div>
+            ) : (
+              <>
+                <div className="pb-4">
+                  <DialogFormLabel
+                    htmlFor="supplier-create-name"
+                    icon={Truck}
+                    required
+                    wrapperClassName="mb-2"
+                  >
+                    Supplier Name
+                  </DialogFormLabel>
+                  <Input
+                    id="supplier-create-name"
+                    value={supplierName}
+                    onChange={(e) => setSupplierName(e.target.value)}
+                    placeholder="New Supplier"
+                    className={cn("mt-2 w-full", DIALOG_FORM_FIELD_EMERALD)}
+                  />
+                </div>
+                <div className="pb-4">
+                  <DialogFormLabel icon={FileText} optional wrapperClassName="mb-2">
+                    Description
+                  </DialogFormLabel>
+                  <Textarea
+                    value={supplierDescription}
+                    onChange={(e) => setSupplierDescription(e.target.value)}
+                    placeholder="Enter supplier description..."
+                    rows={3}
+                    maxLength={500}
+                    className={cn("mt-2 w-full", DIALOG_FORM_FIELD_EMERALD)}
+                  />
+                </div>
+                <div className="pb-4">
+                  <DialogFormLabel icon={StickyNote} optional wrapperClassName="mb-2">
+                    Notes
+                  </DialogFormLabel>
+                  <Textarea
+                    value={supplierNotes}
+                    onChange={(e) => setSupplierNotes(e.target.value)}
+                    placeholder="Enter supplier notes..."
+                    rows={3}
+                    maxLength={1000}
+                    className={cn("mt-2 w-full", DIALOG_FORM_FIELD_EMERALD)}
+                  />
+                </div>
+                <div className="pb-4 flex items-start gap-2 min-w-0">
+                  <Checkbox
+                    id="supplier-status"
+                    checked={supplierStatus}
+                    onCheckedChange={(checked) =>
+                      setSupplierStatus(checked === true)
+                    }
+                    className="mt-0.5 shrink-0 border-emerald-400/30 data-[state=checked]:bg-emerald-500/70"
+                  />
+                  <Label
+                    htmlFor="supplier-status"
+                    className="min-w-0 flex-1 text-sm font-medium leading-snug text-white/80 dark:text-white/80 cursor-pointer"
+                  >
+                    Active (Inactive suppliers will not appear while creating
+                    products)
+                  </Label>
+                </div>
+                <DialogFooter className="mt-9 mb-4 flex w-full min-w-0 flex-col sm:flex-row items-center gap-2">
+                  <DialogClose asChild>
+                    <Button
+                      variant={"secondary"}
+                      className={cn("w-full sm:w-auto px-11 gap-2", GLASS_GHOST_BUTTON)}
+                    >
+                      <X className="h-4 w-4 shrink-0" aria-hidden />
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                  <DialogSubmitButton
+                    type="button"
+                    onClick={handleAddSupplier}
+                    isPending={isSubmitting}
+                    pendingLabel="Creating…"
+                    label="Add Supplier"
+                    icon={Plus}
+                    hue="emerald"
+                    disabled={!isAddValid}
+                    className="px-11"
+                  />
+                </DialogFooter>
+              </>
+            )}
+
+            {/* Suppliers Table — x-scroll contained here, not on the dialog shell */}
+            <div className={DIALOG_TABLE_SECTION}>
+              <h3
+                className={cn(
+                  "text-sm sm:text-base font-medium mb-4",
+                  DIALOG_TABLE_SECTION_TITLE,
+                )}
+              >
+                Suppliers{" "}
+                {suppliers && suppliers.length > 0 && (
+                  <span className={DIALOG_TABLE_SECTION_TITLE}>
+                    ({suppliers.length})
+                  </span>
+                )}
+              </h3>
+              <DialogTableScrollArea
+                frameClassName={DIALOG_TABLE_FRAME_EMERALD}
+              >
+                <Table className={cn(DIALOG_TABLE_TEXT, DIALOG_TABLE_SURFACE)}>
+                  <TableHeader>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <TableRow
+                        key={headerGroup.id}
+                        className={DIALOG_TABLE_HEAD_ROW}
+                      >
+                        {headerGroup.headers.map((header) => (
+                          <TableHead
+                            key={header.id}
+                            style={{
+                              width: `${header.column.columnDef.size || 100}%`,
+                            }}
+                          >
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext(),
+                                )}
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={columns.length}
+                          className={cn("text-center", DIALOG_TABLE_TEXT_MUTED)}
+                        >
+                          Loading...
+                        </TableCell>
+                      </TableRow>
+                    ) : table.getRowModel().rows?.length ? (
+                      table.getRowModel().rows.map((row, index) => (
+                        <TableRow
+                          key={row.id}
+                          data-state={row.getIsSelected() && "selected"}
+                          className={cn(
+                            index % 2 === 0
+                              ? DIALOG_TABLE_ROW_EVEN
+                              : DIALOG_TABLE_ROW_ODD,
+                            DIALOG_TABLE_ROW_HOVER,
+                          )}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell
+                              key={cell.id}
+                              style={{
+                                width: `${cell.column.columnDef.size || 100}%`,
+                              }}
+                            >
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext(),
+                              )}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={columns.length}
+                          className={cn("text-center", DIALOG_TABLE_TEXT_MUTED)}
+                        >
+                          No suppliers found.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </DialogTableScrollArea>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

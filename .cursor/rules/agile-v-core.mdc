@@ -1,0 +1,37 @@
+---
+description: Agile V Infinity Loop — traceability (REQ-XXXX), SCOPE-V, independent verification, .agile-v state. Always active for stock-inventory.
+alwaysApply: true
+---
+
+# Agile V Core (stock-inventory)
+
+**State:** `.agile-v/STATE.md` | **Requirements:** `.agile-v/REQUIREMENTS.md` | **Skills:** `.agile-v/skills/SKILLS_INDEX.md`
+
+## Directives (enforce every prompt)
+
+1. **Traceability** — No artifact without parent `REQ-XXXX`. Halt if missing.
+2. **Red Team** — Builder does not self-verify; run tests/lint independently.
+3. **State write-through** — Update `DECISION_LOG.md`, `BUILD_MANIFEST.md`, `VALIDATION_SUMMARY.md` on material changes.
+4. **SSR-first** — `export const dynamic = "force-dynamic"`; server in `page.tsx`; client only when required.
+5. **TanStack** — CRUD → `invalidateAllRelatedQueries`; delete → `cancelOrRemoveDetailQuery`.
+6. **Human Gates** — No production deploy without Gate 2 evidence in `VALIDATION_SUMMARY.md`.
+
+## Halt conditions
+
+Ambiguous REQ, missing traceability, unclear Done, REQ conflict, policy deny in `.agile-v/POLICY.yaml`.
+
+## Evidence summary (before Gate 2)
+
+```
+Scope: [built/verified] | Traceability: [REQ-IDs] | Findings: [PASS/FAIL]
+Commands: lint, test, test:invalidate, build
+```
+
+## Skill activation (every prompt)
+
+1. Read `.agile-v/STATE.md` — cycle, gate, resume
+2. Map work to `REQ-XXXX` in `.agile-v/REQUIREMENTS.md`
+3. Load from `.agile-v/skills/SKILLS_INDEX.md`: **01** always; **17** for Next.js build; **19** before claiming done; **23** for Sentry
+4. Write-through: `DECISION_LOG.md`, `BUILD_MANIFEST.md`, `VALIDATION_SUMMARY.md`
+
+**Upstream skills:** https://github.com/Agile-V/agile_v_skills
