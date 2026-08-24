@@ -125,7 +125,6 @@ All user-facing POST/PUT JSON bodies use `safeParse` + `logger.warn` on fail. Ne
 | Suppliers | `createSupplierBodySchema` / `updateSupplierBodySchema` → `app/api/suppliers/route.ts` |
 | Warehouses | `lib/validations/warehouse.ts` → `app/api/warehouses/route.ts` |
 | API barrel | `getErrorHttpStatus`, `isExpectedClientError` from `@/lib/api` |
-| Audit doc | `docs/SENTRY_ERRORS.md` (tracked) |
 
 ## Sentry remediation (2026-05-19)
 
@@ -159,20 +158,6 @@ All user-facing POST/PUT JSON bodies use `safeParse` + `logger.warn` on fail. Ne
 - Routes: `app/api/**/route.ts`
 - Shared responses: `lib/api/response-helpers.ts`
 - Repositories: `prisma/*.ts`
-
-## Agile V (Infinity Loop) — C1 active
-
-| Artifact | Path |
-|----------|------|
-| Resume | `.agile-v/STATE.md` |
-| REQs | `.agile-v/REQUIREMENTS.md` (REQ-0001…0046) |
-| Skills (24) | `.agile-v/skills/SKILLS_INDEX.md` |
-| Gates | `.agile-v/VALIDATION_SUMMARY.md`, `REVALIDATION_LOG.md` |
-| Cursor rule | `.cursor/rules/agile-v-core.mdc` (`alwaysApply: true`) |
-
-**Every session:** STATE → REQ map → skill 01+17 → Red Team → write-through DECISION/BUILD/VALIDATION.
-
-**C1 open:** Gate 2 PENDING (Sentry 24h). **Done:** REQ-0220…0224. **Next:** Vercel Ready → smoke → Sentry 24h (**REQ-0009**).
 
 ## REQ-0136 cache / badges / hydration (2026-07-27)
 

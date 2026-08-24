@@ -147,7 +147,6 @@ Prevents `NotFoundError: removeChild` when App Router navigates between pages wh
 | Products API | `app/api/products/route.ts` — POST/PUT `safeParse`, `logger.warn` on validation fail |
 | Catalog APIs | `app/api/{categories,suppliers,warehouses}/route.ts` — same pattern (REQ-0012) |
 | API error barrel | `lib/api/index.ts` — `getErrorHttpStatus`, `isExpectedClientError` |
-| Sentry audit | `docs/SENTRY_ERRORS.md` — historical cases + fix status |
 | Client form | `components/products/ProductFormDialog.tsx` — unified Zod submit |
 | Invoice UX | `hooks/queries/use-invoices.ts` — 409 toast |
 | OAuth deny | `app/api/auth/oauth/google/callback/route.ts` — silent `access_denied` |
@@ -343,10 +342,9 @@ flowchart LR
 
 ## 7g. Post-deploy observability (REQ-0009)
 
-1. Confirm Vercel production = commit `9a2e37c` (REQ-0013; or later on `main`)
+1. Confirm the deployed commit on `main` matches what you intended to ship
 2. Smoke: bell dropdown, create product w/o category (400, no Sentry), duplicate invoice (409 toast)
-3. Sentry **octalve-ims** — 24h: compare cases 1–7 vs `docs/SENTRY_ERRORS.md`
-4. Log result in `.agile-v/REVALIDATION_LOG.md`; CAPA if regression
+3. Sentry **octalve-ims** — watch the first 24h for new issues
 
 ## 8. Quality gates (audit 2026-07-26 REQ-0212)
 
