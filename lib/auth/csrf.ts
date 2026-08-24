@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 
 /**
  * Header-based CSRF defense (ported verbatim from Proplity, see
- * out/auth-system-port-plan.md). Trusts the browser-controlled Origin
+ * docs/auth-system-port-plan.md). Trusts the browser-controlled Origin
  * header (falls back to Referer) — a page's own JS cannot forge either for
  * a cross-origin request, so comparing against Host/X-Forwarded-Host is
  * enough without a separate CSRF token. Requests with neither header

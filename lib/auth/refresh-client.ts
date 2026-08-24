@@ -1,6 +1,6 @@
 /**
  * Client-safe single-flight refresh dedup, ported from Proplity's
- * lib/apiClient.ts — see out/auth-system-port-plan.md, Phase 4.
+ * lib/apiClient.ts — see docs/auth-system-port-plan.md, Phase 4.
  *
  * Deliberately separate from jwt.ts/session.ts (which pull in `jose` and
  * `next/headers`, server-only) so this stays safe to import into client

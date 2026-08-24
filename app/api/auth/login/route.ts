@@ -1,6 +1,6 @@
 /**
  * Login API Route Handler
- * Auth mechanics ported from Proplity — see out/auth-system-port-plan.md.
+ * Auth mechanics ported from Proplity — see docs/auth-system-port-plan.md.
  * No longer returns the access token in the response body (the old
  * `session_id` cookie was httpOnly server-side but the token was ALSO
  * echoed back in the JSON body, and contexts/auth-context.tsx used to

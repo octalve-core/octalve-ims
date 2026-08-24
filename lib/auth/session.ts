@@ -4,7 +4,7 @@ import { verifyToken, type AccessTokenPayload } from "./jwt";
 /**
  * Lightweight, DB-free session read — decodes the `access_token` JWT only
  * (ported from Proplity's getServerSession(), see
- * out/auth-system-port-plan.md). Use this where only identity+role is
+ * docs/auth-system-port-plan.md). Use this where only identity+role is
  * needed and a DB round-trip isn't worth it.
  *
  * This is deliberately NOT a replacement for

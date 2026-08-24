@@ -1,6 +1,6 @@
 /**
  * Register API Route Handler
- * Auth mechanics ported from Proplity — see out/auth-system-port-plan.md.
+ * Auth mechanics ported from Proplity — see docs/auth-system-port-plan.md.
  * Rate limiting reuses the existing Redis-backed lib/api/rate-limit.ts
  * (same 5/60s "auth" preset Proplity used) rather than porting a second,
  * DB-backed limiter alongside it.

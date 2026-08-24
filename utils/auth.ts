@@ -3,7 +3,7 @@
  * Used by API routes (getSessionFromRequest) and client (getSessionClient via /api/auth/session).
  *
  * JWT signing/verification itself now lives in lib/auth/jwt.ts (jose-based,
- * Edge-compatible — see out/auth-system-port-plan.md); this file's
+ * Edge-compatible — see docs/auth-system-port-plan.md); this file's
  * getSessionFromRequest wraps that to keep returning a full Prisma User row,
  * since ~150 existing call sites across the codebase depend on that shape
  * (email, name, etc.), not just {sub, role}. For new code that only needs
@@ -22,7 +22,7 @@ type User = PrismaUser;
 
 /**
  * Get session from App Router NextRequest — reads the `access_token` cookie
- * (was `session_id`; see out/auth-system-port-plan.md for the two-cookie
+ * (was `session_id`; see docs/auth-system-port-plan.md for the two-cookie
  * scheme this replaced it with).
  */
 export const getSessionFromRequest = async (request: {

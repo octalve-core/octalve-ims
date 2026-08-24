@@ -1,5 +1,5 @@
 // Prisma schema for octalve-ims (Postgres). Ported from the original MongoDB
-// schema; see out/auth-system-port-plan.md for the auth-model provenance
+// schema; see docs/auth-system-port-plan.md for the auth-model provenance
 // (RefreshToken/VerificationToken/LoginAttempt ported from Proplity) and
 // /home/rojitech/.claude/plans/clever-moseying-haven.md for the Milestone 0
 // migration plan (tenancy/RBAC models, id-strategy, relation-promotion scope).
@@ -68,7 +68,7 @@ model Permission {
 }
 
 // ---------------------------------------------------------------------------
-// Auth — ported from Proplity, see out/auth-system-port-plan.md
+// Auth — ported from Proplity, see docs/auth-system-port-plan.md
 // ---------------------------------------------------------------------------
 
 model RefreshToken {
@@ -138,7 +138,7 @@ model Product {
   supplierId       String // primary/default supplier — kept as a plain scalar for backward
   // compatibility with existing single-supplier code paths; ProductSupplier
   // below is an additive many-to-many for Pro+ features that need it, not a
-  // replacement (see out/auth-system-port-plan.md-adjacent Milestone 0 notes)
+  // replacement (see docs/auth-system-port-plan.md-adjacent Milestone 0 notes)
   userId           String // actor — created by
   createdBy        String
   updatedBy        String?
@@ -365,7 +365,7 @@ model User {
   googleId          String?
   image             String?
   /// Legacy free-text fast-path role, mirrored into the JWT `role` claim
-  /// (see out/auth-system-port-plan.md). Core's 2 fixed roles read this;
+  /// (see docs/auth-system-port-plan.md). Core's 2 fixed roles read this;
   /// Pro+ custom-role permission checks use roleRelation/roleId instead.
   role              String? // user | admin | supplier | client | retailer
   roleId            String?

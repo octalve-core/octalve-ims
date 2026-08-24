@@ -1,7 +1,7 @@
 /**
  * Change Password API Route Handler — new route (the original codebase had no dedicated
  * password-change endpoint). Ported from Proplity, see
- * out/auth-system-port-plan.md. Revokes every active refresh token for the
+ * docs/auth-system-port-plan.md. Revokes every active refresh token for the
  * user (same "log out everywhere" semantics as logout), forcing full
  * re-login on all devices/sessions after a password change.
  */

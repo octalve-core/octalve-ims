@@ -4,7 +4,7 @@
  * visitors are redirected to /login instantly without starting a
  * serverless function.
  *
- * Ported from Proplity, see out/auth-system-port-plan.md, Phase 5. Upgraded
+ * Ported from Proplity, see docs/auth-system-port-plan.md, Phase 5. Upgraded
  * from a lightweight cookie-EXISTENCE check to real verification because
  * this now uses `jose` (Edge-compatible) instead of the old `jsonwebtoken`
  * library, which needs Node crypto APIs unavailable on the Edge runtime —

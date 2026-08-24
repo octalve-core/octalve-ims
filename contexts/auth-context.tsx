@@ -222,7 +222,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       setUser(userData);
       // No client-side cookie/token handling needed: the server sets
       // access_token/refresh_token as httpOnly cookies directly via
-      // Set-Cookie on the login response (see out/auth-system-port-plan.md).
+      // Set-Cookie on the login response (see docs/auth-system-port-plan.md).
       localStorage.setItem("isAuth", "true");
       localStorage.setItem("isLoggedIn", "true");
       localStorage.setItem("getSession", JSON.stringify(result));

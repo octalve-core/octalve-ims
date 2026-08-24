@@ -1,6 +1,6 @@
 /**
  * Logout API Route Handler
- * Ported from Proplity, see out/auth-system-port-plan.md. Can't read
+ * Ported from Proplity, see docs/auth-system-port-plan.md. Can't read
  * refresh_token directly (it's path-scoped away from this route — see
  * lib/auth/cookies.ts), so revokes by userId via the access-token session
  * instead: same "log out everywhere" blast radius as change-password, not

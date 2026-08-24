@@ -1,7 +1,7 @@
 /**
  * Verify Email API Route Handler — new route (the original codebase had no email
  * verification flow at all; ported from Proplity, see
- * out/auth-system-port-plan.md). Deliberately CSRF-exempt: reached via an
+ * docs/auth-system-port-plan.md). Deliberately CSRF-exempt: reached via an
  * emailed link, a legitimate cross-origin-by-nature flow that can't rely
  * on a pre-existing same-origin session.
  */

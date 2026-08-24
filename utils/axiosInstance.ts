@@ -10,7 +10,7 @@ import { refreshAccessToken } from "@/lib/auth/refresh-client";
  * the one hit elsewhere in the codebase is an unrelated internal-cron-key
  * check), so that header was dead weight even before this port. The 401
  * response interceptor below adds the single-flight refresh-and-retry
- * pattern ported from Proplity — see out/auth-system-port-plan.md, Phase 4.
+ * pattern ported from Proplity — see docs/auth-system-port-plan.md, Phase 4.
  */
 
 const axiosInstance = axios.create({

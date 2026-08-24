@@ -251,7 +251,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Mint the same access+refresh token pair register/login issue (see
-      // out/auth-system-port-plan.md — OAuth had no Proplity equivalent to
+      // docs/auth-system-port-plan.md — OAuth had no Proplity equivalent to
       // port, this follows the same pattern for consistency).
       const familyId = crypto.randomUUID();
       const rawRefreshToken = crypto.randomBytes(32).toString("hex");

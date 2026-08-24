@@ -1,5 +1,5 @@
 /**
- * Two-cookie scheme (ported from Proplity, see out/auth-system-port-plan.md)
+ * Two-cookie scheme (ported from Proplity, see docs/auth-system-port-plan.md)
  * — replaces the old single `session_id` cookie:
  *
  * - `access_token`: short-lived (15 min) JWT, path `/` (sent with every

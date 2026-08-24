@@ -1,7 +1,7 @@
 /**
  * Refresh API Route Handler — new route, did not exist before this port.
  * Ported from Proplity byte-for-byte in mechanism (see
- * out/auth-system-port-plan.md, Phase 3, step 3 — this is the single most
+ * docs/auth-system-port-plan.md, Phase 3, step 3 — this is the single most
  * important piece to get exactly right).
  *
  * Atomic rotation-guard: a single `updateMany` conditioned on

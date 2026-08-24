@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 /**
  * Proactive silent refresh, ported from Proplity — see
- * out/auth-system-port-plan.md, Phase 4. Fires 2 minutes before the 15-min
+ * docs/auth-system-port-plan.md, Phase 4. Fires 2 minutes before the 15-min
  * access token expires so a user mid-session never hits a hard 401.
  *
  * Multi-tab safety: refresh rotates the shared httpOnly cookie, so if this

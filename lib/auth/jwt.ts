@@ -2,7 +2,7 @@ import { SignJWT, jwtVerify } from "jose";
 
 /**
  * Edge-compatible access-token signing/verification (ported from Proplity —
- * see out/auth-system-port-plan.md). Uses `jose`, not `jsonwebtoken`: the
+ * see docs/auth-system-port-plan.md). Uses `jose`, not `jsonwebtoken`: the
  * old utils/auth.ts JWT layer used `jsonwebtoken`, which needs Node crypto
  * APIs unavailable on the Edge runtime — that's why proxy.ts previously
  * could only do a cookie-existence check instead of real verification.

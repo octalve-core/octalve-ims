@@ -4,7 +4,7 @@ import type { AccessTokenPayload } from "./jwt";
 
 /**
  * Route-handler wrapper (ported from Proplity's lib/api/withAuth.ts, see
- * out/auth-system-port-plan.md): requires a valid session, optionally
+ * docs/auth-system-port-plan.md): requires a valid session, optionally
  * requires the session's role to be one of `roles`. Composes with, doesn't
  * replace, lib/auth/can.ts — use withAuth for "must be logged in, maybe
  * must have role X" at the top of a route, and can() inside the handler

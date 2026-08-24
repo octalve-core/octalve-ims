@@ -111,7 +111,7 @@ function createAxiosInstance(): AxiosInstance {
   });
 
   // Response interceptor: single-flight refresh-and-retry on 401 (ported
-  // from Proplity, see out/auth-system-port-plan.md, Phase 4), then the
+  // from Proplity, see docs/auth-system-port-plan.md, Phase 4), then the
   // existing error-normalization pass. access_token is httpOnly and sent
   // automatically via withCredentials — no request interceptor needed to
   // attach it (the old one manually read a non-httpOnly session_id cookie
