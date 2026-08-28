@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
-import { getOwnerProductsForSupport } from "@/lib/server/support-tickets-data";
+import { getOwnerProductsForSupport } from "@/lib/support-tickets/support-tickets-data";
 
 export async function GET(request: NextRequest) {
   try {

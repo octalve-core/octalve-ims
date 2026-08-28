@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth-server";
 import { getDashboardForAdmin } from "@/lib/server/dashboard-data";
-import { getForecastingForUser } from "@/lib/server/forecasting-data";
+import { getForecastingForUser } from "@/lib/forecasting/forecasting-data";
 import AdminDashboardMergedView from "@/components/admin/AdminDashboardMergedView";
 
 /** Store Dashboard & Analytics — blocking SSR (REQ-0025, no Suspense flash). */

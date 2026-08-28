@@ -7,7 +7,7 @@ import { prisma } from "@/prisma/client";
 import type { Prisma } from "@prisma/client";
 import type { CreateInvoiceInput, UpdateInvoiceInput, InvoiceFilters } from "@/types/invoice";
 import { logger } from "@/lib/logger";
-import { applyIncrementalInvoicePayment } from "@/lib/payments/order-payment-from-amounts";
+import { applyIncrementalInvoicePayment } from "@/lib/invoices/order-payment-sync";
 import { resolveInvoiceBillingAddressInput } from "@/lib/invoices/resolve-invoice-billing-address";
 
 /** Shared Prisma where clauses for invoice list filters (issuer, client, store-by-orderIds). */

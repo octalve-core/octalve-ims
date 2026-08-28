@@ -58,7 +58,7 @@ import {
   formatChartCountLabel,
 } from "@/lib/ui/chart-point-label";
 import { useAuth } from "@/contexts";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import PageWithSidebar from "@/components/layouts/PageWithSidebar";
 import BusinessInsightsSidebar from "@/components/layouts/BusinessInsightsSidebar";
 import {
@@ -75,11 +75,8 @@ import {
   ProductStockStatusBadge,
   StockQuantityLeftBadge,
 } from "@/lib/ui/semantic-badges";
-import {
-  useProducts,
-  useOrders,
-  useWarehouseStockSummary,
-} from "@/hooks/queries";
+import { useProducts, useOrders } from "@/hooks/queries";
+import { useWarehouseStockSummary } from "@/hooks/queries/use-stock-allocation";
 import {
   isDataSlotLoading,
   isDataSlotUnsettled,
@@ -910,7 +907,7 @@ export default function BusinessInsightPage({
   }, []);
 
   return (
-    <Navbar>
+    <AppShell>
       <PageWithSidebar
         sidebarContent={
           <BusinessInsightsSidebar
@@ -1891,6 +1888,6 @@ export default function BusinessInsightPage({
           </div>
         </PageContentWrapper>
       </PageWithSidebar>
-    </Navbar>
+    </AppShell>
   );
 }

@@ -20,7 +20,7 @@ import { createAuditLog } from "@/prisma/audit-log";
 import type { UpdateInvoiceInput } from "@/types";
 import { getInvoiceDetailForPage } from "@/lib/server/invoice-detail-data";
 import { scheduleInvalidateInvoiceCaches } from "@/lib/cache";
-import { syncOrderPaymentStatusFromInvoice } from "@/lib/payments/order-payment-from-amounts";
+import { syncOrderPaymentStatusFromInvoice } from "@/lib/invoices/order-payment-sync";
 
 /**
  * GET /api/invoices/:id

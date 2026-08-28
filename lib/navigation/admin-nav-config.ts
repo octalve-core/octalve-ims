@@ -25,8 +25,16 @@ export type AdminNavItemConfig = {
 
 export const ADMIN_MY_STORE_ITEMS: AdminNavItemConfig[] = [
   {
+    href: "/",
+    label: "Dashboard",
+  },
+  {
     href: "/admin/dashboard-overall-insights",
     label: "Store Overview",
+  },
+  {
+    href: "/business-insights",
+    label: "Business Insights",
   },
   {
     href: "/admin/orders",
@@ -55,6 +63,14 @@ export const ADMIN_MANAGEMENT_ITEMS: AdminNavItemConfig[] = [
     href: "/admin/products",
     label: "Products",
     countKey: "products",
+  },
+  {
+    href: "/categories",
+    label: "Categories",
+  },
+  {
+    href: "/suppliers",
+    label: "Suppliers",
   },
   {
     href: "/admin/warehouses",

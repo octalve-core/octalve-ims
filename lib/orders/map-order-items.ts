@@ -4,7 +4,7 @@
  */
 
 import type { OrderItem } from "@/types";
-import { computeProportionalLineAmount } from "@/lib/orders/proportional-line-amount";
+import { computeProportionalLineAmount } from "@/lib/proportional-line-amount";
 
 /** Raw order line item shape from Prisma include (order detail + invoice enrichment). */
 export type OrderItemRaw = {

@@ -8,7 +8,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import ProductList from "@/components/products/ProductList";
 import ClientProductList from "@/components/products/ClientProductList";
 import { PageContentWrapper } from "@/components/shared";
@@ -71,7 +71,7 @@ export default function ProductsPage({
   }, []);
 
   return (
-    <Navbar>
+    <AppShell>
       <PageContentWrapper>
         {isClient ? (
           <ClientProductList
@@ -102,6 +102,6 @@ export default function ProductsPage({
           />
         )}
       </PageContentWrapper>
-    </Navbar>
+    </AppShell>
   );
 }

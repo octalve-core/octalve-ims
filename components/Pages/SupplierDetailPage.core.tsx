@@ -1,0 +1,649 @@
+/**
+ * Supplier Detail Page — Core tier variant.
+ * Same as SupplierDetailPage.tsx but without the Premium AI-forecast rollup
+ * (lib/forecasting/category-forecast-rollup.ts is premium-only). Picked by
+ * scripts/export-tier.ts in place of the default file when exporting Core
+ * (and Pro, via fallback — lib/forecasting is excluded from Pro too).
+ */
+
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  Package,
+  Calendar,
+  Truck,
+  DollarSign,
+  BarChart3,
+  ShoppingCart,
+  FileText,
+  StickyNote,
+  Edit,
+  Copy,
+  Trash2,
+  Hash,
+  Wallet,
+  CheckCircle2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ActiveInactiveBadge } from "@/lib/ui/semantic-badges";
+import {
+  useSupplier,
+  useCreateSupplier,
+  useDeleteSupplier,
+  useForecastingSummary,
+} from "@/hooks/queries";
+import { resolveDetailAuditUserHref } from "@/lib/navigation/audit-user-href";
+import { useBackWithRefresh } from "@/hooks/use-back-with-refresh";
+import { useAuth } from "@/contexts";
+import AppShell from "@/components/layouts/AppShell";
+import {
+  ClientDateTime,
+  ClientRelativeTime,
+  CopyableText,
+  PageContentWrapper,
+  DataSlotPulse,
+  PageSectionHeader,
+  glassDetailBackButtonClass,
+  glassDetailFooterButtonClass,
+  DETAIL_HEADER_BACK_ICON_CLASS,
+  DialogSubmitButton,
+  AuditUserDetailRow,
+  CatalogInsightsSection,
+  CatalogSnapshotCompanion,
+  DetailInfoRowGroup,
+  CatalogDetailProductGrid,
+  CatalogDetailRecentOrdersList,
+  SectionTitleRow,
+  GlassCard,
+  GlassCardBody,
+  GLASS_CARD_VARIANT_CONFIG as variantConfig,
+} from "@/components/shared";
+import {
+  buildCatalogStockChartData,
+  buildSalesChartData,
+} from "@/lib/ui/catalog-insights-chart-data";
+import { DetailInfoRow } from "@/components/orders/detail";
+import SupplierDialog from "@/components/supplier/SupplierDialog";
+import { AlertDialogWrapper } from "@/components/dialogs";
+import type { ForecastingSummary, Supplier } from "@/types";
+import {
+  isDataSlotLoading,
+  isDataSlotUnsettled,
+  queryKeys,
+  useSyncSsrQueryData,
+} from "@/lib/react-query";
+import { cn } from "@/lib/utils";
+import { toDateOrNull } from "@/lib/format";
+import {
+  TYPO_BODY_MUTED,
+  TYPO_CARD_TITLE,
+  TYPO_SUBTITLE,
+} from "@/lib/ui/typography-scale";
+import {
+  APP_SHELL_DETAIL_CLASS,
+  DETAIL_PAGE_HEADER_SPACING_CLASS,
+} from "@/lib/ui/shell-layout-styles";
+
+export type SupplierDetailPageProps = {
+  embedInAdmin?: boolean;
+  initialSupplier?: Supplier;
+  /** REQ-0084 — cache-read forecast for admin (non-blocking SSR). */
+  initialForecasting?: ForecastingSummary | null;
+};
+
+export default function SupplierDetailPage({
+  embedInAdmin,
+  initialSupplier,
+  initialForecasting,
+}: SupplierDetailPageProps = {}) {
+  const params = useParams();
+  const router = useRouter();
+  const { handleBack, navigateTo } = useBackWithRefresh("supplier");
+  const supplierId = params?.id as string;
+  const { user, isCheckingAuth } = useAuth();
+
+  const PageWrapper = embedInAdmin ? React.Fragment : AppShell;
+
+  // Fetch supplier details
+  const supplierQuery = useSupplier(supplierId, initialSupplier);
+  const supplier = supplierQuery.data;
+  const dataLoading = isDataSlotLoading(supplierQuery, initialSupplier);
+
+  useSyncSsrQueryData(queryKeys.suppliers.detail(supplierId), initialSupplier);
+  useSyncSsrQueryData(
+    queryKeys.forecasting.summary(),
+    initialForecasting ?? undefined,
+  );
+
+  const isAdminRole = user?.role === "admin" || Boolean(embedInAdmin);
+  const forecastQuery = useForecastingSummary(initialForecasting ?? undefined, {
+    enabled: isAdminRole,
+  });
+  const forecastLoading = isDataSlotUnsettled(
+    forecastQuery,
+    initialForecasting ?? undefined,
+  );
+
+  const createSupplierMutation = useCreateSupplier();
+  const deleteSupplierMutation = useDeleteSupplier();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const isCopying = createSupplierMutation.isPending;
+  const isDeleting = deleteSupplierMutation.isPending;
+  const isGlobalDemo = Boolean(supplier?.isGlobalDemo);
+  const isClientRole = user?.role === "client";
+  const isSupplierRole = user?.role === "supplier";
+  const disableCrud = isClientRole || isSupplierRole;
+
+  const ownerProductsHref = (ownerId: string) =>
+    embedInAdmin
+      ? `/admin/products?ownerId=${ownerId}`
+      : `/products?ownerId=${ownerId}`;
+
+  // Edit: open supplier dialog with current supplier (same as SupplierActions via onEdit)
+  const handleEditSupplier = () => {
+    if (!supplier) return;
+    setEditingSupplier(supplier as Supplier);
+    setEditDialogOpen(true);
+  };
+
+  // Duplicate: create a copy (same as SupplierActions, use mutate + callbacks to avoid unhandled rejection)
+  const handleDuplicateSupplier = () => {
+    if (!supplier || !user?.id) return;
+    createSupplierMutation.mutate({
+      name: `${supplier?.name} (copy)`,
+      userId: user.id,
+      status: supplier?.status ?? true,
+      description: supplier?.description ?? undefined,
+      notes: supplier?.notes ?? undefined,
+    });
+  };
+
+  // Delete: confirm then delete (same pattern as ProductActions / SupplierActions)
+  const handleConfirmDeleteSupplier = () => {
+    if (!supplier) return;
+    deleteSupplierMutation.mutate(supplier?.id, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        navigateTo("/");
+      },
+      onError: () => {
+        setDeleteDialogOpen(false);
+      },
+    });
+  }; // Redirect if not authenticated
+  useEffect(() => {
+    if (!isCheckingAuth && !user) {
+      router.push("/login");
+    }
+  }, [user, isCheckingAuth, router]);
+
+  // Show error state
+  if (supplierQuery.isError) {
+    return (
+      <PageWrapper>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-2">
+          <div className="text-center">
+            <h2 className="text-sm sm:text-base font-medium text-gray-700 dark:text-white mb-2">
+              Supplier Not Found
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              {supplierQuery.error instanceof Error
+                ? supplierQuery.error.message
+                : "Failed to load supplier details"}
+            </p>
+            <Button onClick={() => router.push("/")} variant="outline">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Home
+            </Button>
+          </div>
+        </div>
+      </PageWrapper>
+    );
+  }
+
+  // Format dates
+  // REQ-0136 — never fall back to `new Date()` ("now"): SSR/client render at different
+  // instants and that non-determinism is a classic hydration-mismatch source.
+  const createdAt = toDateOrNull(supplier?.createdAt);
+  const updatedAt = supplier?.updatedAt ? new Date(supplier?.updatedAt) : null;
+
+  // Supplier statistics
+  const stats = supplier?.statistics || {
+    totalProducts: 0,
+    totalQuantitySold: 0,
+    totalRevenue: 0,
+    uniqueOrders: 0,
+    totalValue: 0,
+  };
+
+  const insights = supplier?.supplierInsights;
+  const salesChartData = insights ? buildSalesChartData(insights) : [];
+  const stockChartData = insights ? buildCatalogStockChartData(insights) : [];
+  const products = supplier?.products ?? [];
+  const recentOrders = supplier?.recentOrders ?? [];
+  const productHref = (productId: string) =>
+    embedInAdmin ? `/admin/products/${productId}` : `/products/${productId}`;
+  const supplierHref = (supplierId: string) =>
+    embedInAdmin
+      ? `/admin/suppliers/${supplierId}`
+      : `/suppliers/${supplierId}`;
+  const categoryHref = (id: string) =>
+    embedInAdmin ? `/admin/categories/${id}` : `/categories/${id}`;
+  const orderHref = (orderId: string) =>
+    embedInAdmin ? `/admin/orders/${orderId}` : `/orders/${orderId}`;
+  const invoiceHref = (invoiceId: string) =>
+    embedInAdmin ? `/admin/invoices/${invoiceId}` : `/invoices/${invoiceId}`;
+
+  return (
+    <PageWrapper>
+      <PageContentWrapper>
+        <div className={APP_SHELL_DETAIL_CLASS}>
+          {/* Header */}
+          <PageSectionHeader
+            as="h1"
+            className={DETAIL_PAGE_HEADER_SPACING_CLASS}
+            tone="teal"
+            icon={Truck}
+            leading={
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleBack}
+                className={DETAIL_HEADER_BACK_ICON_CLASS}
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            }
+            title={
+              dataLoading ? (
+                <DataSlotPulse variant="text-lg" className="w-48" />
+              ) : (
+                supplier?.name && (
+                  <CopyableText value={supplier.name}>
+                    {supplier.name}
+                  </CopyableText>
+                )
+              )
+            }
+            description={
+              dataLoading ? (
+                <DataSlotPulse variant="date" />
+              ) : !createdAt ? (
+                <span className="text-gray-500 dark:text-white/60">—</span>
+              ) : (
+                <ClientRelativeTime
+                  date={createdAt}
+                  prefix="Created "
+                  semantic="created"
+                />
+              )
+            }
+            trailing={
+              dataLoading ? (
+                <DataSlotPulse variant="badge" className="self-center" />
+              ) : supplier != null ? (
+                // REQ-0187 — compact status caption; parity with WarehouseDetailPage
+                <div className="flex shrink-0 flex-col items-end justify-center gap-0.5 self-center">
+                  <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-gray-500 dark:text-white/60">
+                    <CheckCircle2 className="h-3 w-3 shrink-0" aria-hidden />
+                    Status
+                  </span>
+                  <ActiveInactiveBadge
+                    active={Boolean(supplier.status)}
+                    size="compact"
+                    className="self-end text-sm shrink-0"
+                  />
+                </div>
+              ) : undefined
+            }
+          />
+
+          {/* Supplier Information and Statistics */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-4">
+            {/* Supplier Information */}
+            <GlassCard variant="orange">
+              <GlassCardBody>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-orange-300/30 bg-orange-100/50 dark:border-white/15 dark:bg-white/10">
+                    <Truck className="h-4 w-4 text-gray-700 dark:text-white" />
+                  </div>
+                  <div>
+                    <h3 className={TYPO_CARD_TITLE}>Supplier Information</h3>
+                    <p className={TYPO_SUBTITLE}>
+                      Supplier metadata and audit fields
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {!dataLoading && supplier && (
+                    <DetailInfoRow
+                      icon={Hash}
+                      label="Supplier ID:"
+                      tone="violet"
+                    >
+                      <CopyableText value={supplier.id}>
+                        <span className="font-mono text-xs">{supplier.id}</span>
+                      </CopyableText>
+                    </DetailInfoRow>
+                  )}
+                  <DetailInfoRow
+                    icon={Truck}
+                    label="Name:"
+                    tone="orange"
+                    loading={dataLoading}
+                  >
+                    {!dataLoading && supplier?.name && (
+                      <CopyableText value={supplier.name}>
+                        {supplier.name}
+                      </CopyableText>
+                    )}
+                  </DetailInfoRow>
+                  {!dataLoading && supplier && (
+                    <DetailInfoRow icon={Truck} label="Status:" tone="emerald">
+                      <ActiveInactiveBadge active={Boolean(supplier.status)} />
+                    </DetailInfoRow>
+                  )}
+                  {!dataLoading && supplier?.description && (
+                    <DetailInfoRow
+                      icon={FileText}
+                      label="Description:"
+                      tone="amber"
+                    >
+                      {supplier.description}
+                    </DetailInfoRow>
+                  )}
+                  {!dataLoading && supplier?.notes && (
+                    <DetailInfoRow icon={StickyNote} label="Notes:" tone="teal">
+                      {supplier.notes}
+                    </DetailInfoRow>
+                  )}
+                  <DetailInfoRowGroup>
+                    <DetailInfoRow
+                      icon={Calendar}
+                      label="Created:"
+                      tone="teal"
+                      loading={dataLoading && !createdAt}
+                    >
+                      {createdAt ? (
+                        <ClientDateTime date={createdAt} semantic="created" />
+                      ) : null}
+                    </DetailInfoRow>
+                    {(dataLoading || updatedAt) && (
+                      <DetailInfoRow
+                        icon={Calendar}
+                        label="Updated:"
+                        tone="sky"
+                        loading={dataLoading && !updatedAt}
+                      >
+                        {updatedAt ? (
+                          <ClientDateTime date={updatedAt} semantic="updated" />
+                        ) : null}
+                      </DetailInfoRow>
+                    )}
+                  </DetailInfoRowGroup>
+                  <AuditUserDetailRow
+                    label="Created by:"
+                    tone="violet"
+                    user={supplier?.creator}
+                    loading={dataLoading && !supplier?.creator}
+                    href={
+                      supplier?.creator
+                        ? resolveDetailAuditUserHref(
+                            supplier.creator.id,
+                            isAdminRole,
+                          )
+                        : undefined
+                    }
+                  />
+                  <AuditUserDetailRow
+                    label="Updated by:"
+                    tone="blue"
+                    user={supplier?.updater}
+                    loading={dataLoading && !supplier?.updater}
+                    href={
+                      supplier?.updater
+                        ? resolveDetailAuditUserHref(
+                            supplier.updater.id,
+                            isAdminRole,
+                          )
+                        : undefined
+                    }
+                  />
+                </div>
+              </GlassCardBody>
+            </GlassCard>
+
+            {/* Statistics */}
+            <GlassCard variant="teal">
+              <GlassCardBody>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-teal-300/30 bg-teal-100/50 dark:border-white/15 dark:bg-white/10">
+                    <BarChart3 className="h-4 w-4 text-gray-700 dark:text-white" />
+                  </div>
+                  <div>
+                    <h3 className={TYPO_CARD_TITLE}>Statistics</h3>
+                    <p className={TYPO_SUBTITLE}>
+                      Summary of products and sales data
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2 mt-4">
+                  <DetailInfoRow
+                    icon={Package}
+                    label="Total Products:"
+                    tone="sky"
+                    loading={dataLoading}
+                  >
+                    {!dataLoading && stats.totalProducts}
+                  </DetailInfoRow>
+                  <DetailInfoRow
+                    icon={Package}
+                    label="Total Quantity Sold:"
+                    tone="violet"
+                    loading={dataLoading}
+                  >
+                    {!dataLoading && stats.totalQuantitySold}
+                  </DetailInfoRow>
+                  <DetailInfoRow
+                    icon={DollarSign}
+                    label="Total Revenue:"
+                    tone="emerald"
+                    loading={dataLoading}
+                  >
+                    {!dataLoading && (
+                      <span className="text-emerald-600 dark:text-emerald-400">
+                        ${stats.totalRevenue.toFixed(2)}
+                      </span>
+                    )}
+                  </DetailInfoRow>
+                  <DetailInfoRow
+                    icon={ShoppingCart}
+                    label="Orders Containing Products:"
+                    tone="amber"
+                    loading={dataLoading}
+                  >
+                    {!dataLoading && stats.uniqueOrders}
+                  </DetailInfoRow>
+                  <DetailInfoRow
+                    icon={Wallet}
+                    label="Inventory value (list price):"
+                    tone="blue"
+                    loading={dataLoading}
+                  >
+                    {!dataLoading && (
+                      <span className="inline-flex flex-wrap items-baseline gap-x-1.5">
+                        <span className="text-sky-600 dark:text-sky-400">
+                          ${(stats.totalValue ?? 0).toFixed(2)}
+                        </span>
+                        <span className={cn("text-xs", TYPO_BODY_MUTED)}>
+                          (price × on-hand qty)
+                        </span>
+                      </span>
+                    )}
+                  </DetailInfoRow>
+                </div>
+              </GlassCardBody>
+            </GlassCard>
+          </div>
+
+          {insights && (
+            <CatalogInsightsSection
+              insights={insights}
+              // REQ-0221 — densify present → no metric pulse
+              dataLoading={false}
+              isAdminRole={isAdminRole}
+              forecastLoading={forecastLoading}
+              title="Supplier Insights"
+              subtitle="Derived demand and inventory signals"
+              salesChartTitle="Sales Trend (6 months)"
+              salesChartDescription="Revenue from supplier order lines"
+              salesChartData={salesChartData}
+              stockChartData={stockChartData}
+              productHref={productHref}
+              showUrgentForecastTable={false}
+              stockChartCompanion={
+                <CatalogSnapshotCompanion
+                  stats={stats}
+                  stockSignals={{
+                    lowStockCount: insights.lowStockCount,
+                    outOfStockCount: insights.outOfStockCount,
+                  }}
+                  dataLoading={false}
+                />
+              }
+            />
+          )}
+
+          {/* Products from this Supplier — REQ-0086 category parity */}
+          <GlassCard variant="sky">
+            <GlassCardBody>
+              <SectionTitleRow
+                as="h3"
+                icon={Truck}
+                iconClassName="text-sky-600 dark:text-sky-400"
+                iconTile
+                title="Products from this Supplier"
+                subtitle="Catalog products linked to this supplier"
+                count={
+                  !dataLoading && products.length > 0
+                    ? products.length
+                    : undefined
+                }
+              />
+              <CatalogDetailProductGrid
+                loading={dataLoading}
+                products={products}
+                emptyMessage="No products from this supplier yet."
+                productHref={productHref}
+                ownerProductsHref={ownerProductsHref}
+                supplierHref={supplierHref}
+                categoryHref={categoryHref}
+              />
+            </GlassCardBody>
+          </GlassCard>
+
+          {/* Recent Orders — REQ-0086 category parity */}
+          <GlassCard variant="violet">
+            <GlassCardBody>
+              <SectionTitleRow
+                as="h3"
+                icon={ShoppingCart}
+                iconClassName="text-violet-600 dark:text-violet-400"
+                iconTile
+                title="Recent Orders"
+                subtitle="Latest orders for products from this supplier"
+                count={
+                  !dataLoading && recentOrders.length > 0
+                    ? recentOrders.length
+                    : undefined
+                }
+              />
+              <CatalogDetailRecentOrdersList
+                loading={dataLoading}
+                orders={recentOrders}
+                emptyMessage="No recent orders for products from this supplier."
+                orderHref={orderHref}
+                productHref={productHref}
+                ownerProductsHref={ownerProductsHref}
+                categoryHref={categoryHref}
+                invoiceHref={invoiceHref}
+                isAdminRole={isAdminRole}
+              />
+            </GlassCardBody>
+          </GlassCard>
+
+          {/* Actions — Back, Edit, Duplicate, Delete; responsive (stack on small, row on larger) */}
+          <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+            <Button
+              onClick={handleBack}
+              className={glassDetailBackButtonClass("w-full sm:w-auto gap-2")}
+            >
+              <ArrowLeft className="h-4 w-4 shrink-0" />
+              Back
+            </Button>
+            <Button
+              onClick={handleEditSupplier}
+              disabled={disableCrud || isGlobalDemo}
+              className={glassDetailFooterButtonClass("blue")}
+            >
+              <Edit className="h-4 w-4 shrink-0" />
+              Edit Supplier
+            </Button>
+            <Button
+              onClick={handleDuplicateSupplier}
+              disabled={isCopying || disableCrud || isGlobalDemo}
+              className={glassDetailFooterButtonClass("violet")}
+            >
+              <Copy className="h-4 w-4 shrink-0" />
+              {isCopying ? "Duplicating..." : "Create Duplicate"}
+            </Button>
+            <DialogSubmitButton
+              type="button"
+              onClick={() => setDeleteDialogOpen(true)}
+              isPending={isDeleting}
+              pendingLabel="Deleting…"
+              label="Delete Supplier"
+              icon={Trash2}
+              hue="rose"
+              disabled={disableCrud || isGlobalDemo}
+              className="w-full sm:w-auto gap-2"
+            />
+          </div>
+
+          {/* Delete confirmation — same pattern as SupplierActions */}
+          <AlertDialogWrapper
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            title="Are you absolutely sure?"
+            description={`This action cannot be undone. This will permanently delete the supplier "${supplier?.name}".`}
+            actionLabel="Delete"
+            actionLoadingLabel="Deleting..."
+            isLoading={isDeleting}
+            onAction={handleConfirmDeleteSupplier}
+            onCancel={() => setDeleteDialogOpen(false)}
+            actionVariant="destructive"
+          />
+
+          {/* Edit dialog — opened by "Edit Supplier"; toasts from mutation hooks */}
+          <SupplierDialog
+            open={editDialogOpen}
+            onOpenChange={(open) => {
+              setEditDialogOpen(open);
+              if (!open) setEditingSupplier(null);
+            }}
+            editingSupplier={editingSupplier}
+            onEditSupplier={(s) => setEditingSupplier(s)}
+          >
+            <div style={{ display: "none" }} aria-hidden />
+          </SupplierDialog>
+        </div>
+      </PageContentWrapper>
+    </PageWrapper>
+  );
+}

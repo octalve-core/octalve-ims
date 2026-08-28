@@ -24,7 +24,7 @@ import { checkAndSendStockAlerts } from "@/lib/email/notifications";
 import { scheduleInvalidateImportCaches } from "@/lib/cache";
 
 /**
- * POST /api/products/import
+ * POST /api/products-import
  * Import products from CSV/Excel file
  */
 export async function POST(request: NextRequest) {

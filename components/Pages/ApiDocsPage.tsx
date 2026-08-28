@@ -20,7 +20,7 @@ import {
   Package,
   Users,
 } from "lucide-react";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import {
   PageContentWrapper,
   PageSectionHeader,
@@ -908,7 +908,7 @@ export default function ApiDocsPage() {
         },
         {
           method: "POST",
-          path: "/api/products/import",
+          path: "/api/products-import",
           description: "Bulk import products (CSV/Excel)",
           parameters: [],
           response: {
@@ -1090,7 +1090,7 @@ export default function ApiDocsPage() {
   };
 
   return (
-    <Navbar>
+    <AppShell>
       <PageContentWrapper>
         <div className="flex flex-col gap-6">
           {/* Header — PageSectionHeader parity (REQ-0075 AC3) */}
@@ -1495,6 +1495,6 @@ export default function ApiDocsPage() {
           </Tabs>
         </div>
       </PageContentWrapper>
-    </Navbar>
+    </AppShell>
   );
 }

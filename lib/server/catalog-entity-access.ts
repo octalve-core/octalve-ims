@@ -7,11 +7,27 @@ import { getSupplierByUserId } from "@/prisma/supplier";
 import { prisma } from "@/prisma/client";
 import { mergeProductListWhere } from "@/lib/products/product-query";
 import type { SessionForDetail } from "@/lib/server/order-detail-data";
+import { can } from "@/lib/auth/can";
 
 export type SupplierEntityRef = {
   id: string;
   name: string;
 };
+
+/**
+ * Coarse-grained gate on catalog (Products/Category/Supplier) detail pages —
+ * a no-op against every legacy Core role today (all grant Products/view, see
+ * lib/auth/can.ts), but the hook a Pro+ custom role that explicitly revokes
+ * Products/view needs: without this, nothing in the supplier/owner scoping
+ * below would ever consult Permission rows at all. Row-level scoping
+ * (supplierCanAccessCategory etc.) still applies on top of this — this only
+ * answers "is this session allowed to view catalog detail pages at all".
+ */
+export async function canViewCatalogEntities(
+  session: SessionForDetail,
+): Promise<boolean> {
+  return can(session, "Products", "view");
+}
 
 /**
  * Resolve the supplier catalog entity linked to a supplier login user.

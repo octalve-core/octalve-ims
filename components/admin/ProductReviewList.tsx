@@ -6,7 +6,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { useProductReviews, useDashboard } from "@/hooks/queries";
+import { useDashboard } from "@/hooks/queries";
+import { useProductReviews } from "@/hooks/queries/use-product-reviews";
 import { isDataSlotLoading, isDataSlotUnsettled, queryKeys, useSyncSsrQueryData } from "@/lib/react-query";
 import { useAuth } from "@/contexts";
 import { APP_SHELL_WIDTH_CLASS } from "@/lib/ui/shell-layout-styles";

@@ -34,7 +34,7 @@ import {
 import { useBackWithRefresh } from "@/hooks/use-back-with-refresh";
 import { resolveDetailAuditUserHref } from "@/lib/navigation/audit-user-href";
 import { useAuth } from "@/contexts";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import {
   ClientDateTime,
   ClientRelativeTime,
@@ -104,7 +104,7 @@ export default function CategoryDetailPage({
   const categoryId = params?.id as string;
   const { user, isCheckingAuth } = useAuth();
 
-  const PageWrapper = embedInAdmin ? React.Fragment : Navbar;
+  const PageWrapper = embedInAdmin ? React.Fragment : AppShell;
   const isClientRole = user?.role === "client";
   const isSupplierRole = user?.role === "supplier";
   const isAdminRole = user?.role === "admin" || Boolean(embedInAdmin);

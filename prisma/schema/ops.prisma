@@ -1,0 +1,58 @@
+// Operations — import, system config, audit. TIER: mixed per-model —
+// SystemConfig is core (app/api/system-config); ImportHistory and AuditLog
+// are Pro (app/api/import-history, app/api/audit-logs).
+
+model ImportHistory {
+  id          String    @id @default(cuid())
+  userId      String // actor
+  businessId  String?
+  importType  String // "products", "orders", "suppliers", "categories"
+  fileName    String
+  fileSize    Int
+  totalRows   Int
+  successRows Int
+  failedRows  Int
+  errors      Json?
+  status      String    @default("completed") // "processing", "completed", "failed"
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+  completedAt DateTime? @db.Timestamptz(3)
+}
+
+model SystemConfig {
+  id          String    @id @default(cuid())
+  businessId  String?
+  key         String    @unique
+  value       String
+  type        String    @default("string") // string, number, boolean, json
+  label       String
+  description String?
+  category    String    @default("general") // general, email, shipping, payment, notifications, appearance
+  isPublic    Boolean   @default(false)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime? @db.Timestamptz(3)
+  updatedBy   String? // actor
+
+  @@index([category])
+  @@index([isPublic])
+}
+
+/// Audit Log — entityId is deliberately NOT a typed relation: its target
+/// model varies by entityType (polymorphic), which Postgres FKs can't
+/// express. Do not "fix" this into a foreign key.
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String // actor
+  businessId String?
+  action     String // create, update, delete, login, logout, etc.
+  entityType String // product, order, invoice, user, etc.
+  entityId   String? // polymorphic — see comment above
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType])
+  @@index([createdAt])
+}

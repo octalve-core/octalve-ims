@@ -61,11 +61,8 @@ import {
   productSupplierImage,
 } from "@/components/products/ProductOptionRow";
 import { WarehouseTypeBadge } from "@/lib/ui/semantic-badges";
-import {
-  useCreateStockTransfer,
-  useProducts,
-  useWarehouses,
-} from "@/hooks/queries";
+import { useProducts, useWarehouses } from "@/hooks/queries";
+import { useCreateStockTransfer } from "@/hooks/queries/use-stock-allocation";
 import type { Product, StockAllocation } from "@/types";
 import { cn } from "@/lib/utils";
 

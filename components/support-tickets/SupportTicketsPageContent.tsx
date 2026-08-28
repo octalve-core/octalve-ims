@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import { PageContentWrapper, PageSectionHeader } from "@/components/shared";
 import { PaginationType } from "@/components/shared/PaginationSelector";
-import { useSupportTickets } from "@/hooks/queries";
+import { useSupportTickets } from "@/hooks/queries/use-support-tickets";
 import { isDataSlotLoading, isDataSlotUnsettled, queryKeys, useSyncSsrQueryData } from "@/lib/react-query";
 import { APP_SHELL_WIDTH_CLASS } from "@/lib/ui/shell-layout-styles";
 import { MessageSquare, MessageCircle, Plus } from "lucide-react";
@@ -81,7 +81,7 @@ export default function SupportTicketsPageContent({
   const tableDataLoading = isDataSlotLoading(ticketsQuery, initialTickets);
 
   return (
-    <Navbar>
+    <AppShell>
       <PageContentWrapper>
         <div className="flex flex-col poppins">
           <PageSectionHeader
@@ -195,6 +195,6 @@ export default function SupportTicketsPageContent({
           />
         </div>
       </PageContentWrapper>
-    </Navbar>
+    </AppShell>
   );
 }

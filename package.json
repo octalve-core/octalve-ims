@@ -22,7 +22,12 @@
     "script:seed-demo-catalog": "tsx scripts/seed-demo-catalog.ts",
     "script:delete-all-suppliers": "tsx scripts/delete-all-suppliers.ts",
     "script:delete-all-categories": "tsx scripts/delete-all-categories.ts",
-    "script:delete-user": "tsx scripts/delete-user.ts"
+    "script:delete-user": "tsx scripts/delete-user.ts",
+    "script:test-redis": "tsx --env-file=.env scripts/test-redis.ts",
+    "check:manifest": "tsx scripts/check-tier-manifest-coverage.ts",
+    "export:core": "tsx scripts/export-tier.ts core",
+    "export:pro": "tsx scripts/export-tier.ts pro",
+    "export:premium": "tsx scripts/export-tier.ts premium"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -63,13 +68,13 @@
     "cookies": "^0.9.1",
     "date-fns": "^4.1.0",
     "exceljs": "^4.4.0",
+    "ioredis": "^6.0.0",
     "jose": "^6.2.10",
     "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.562.0",
-    "mongodb": "^4.17.2",
     "next": "^16.0.0",
     "next-auth": "^5.0.0-beta.30",
     "next-themes": "^0.4.3",

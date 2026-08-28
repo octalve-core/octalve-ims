@@ -35,7 +35,7 @@ import {
 import { resolveDetailAuditUserHref } from "@/lib/navigation/audit-user-href";
 import { useBackWithRefresh } from "@/hooks/use-back-with-refresh";
 import { useAuth } from "@/contexts";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import {
   ClientDateTime,
   ClientRelativeTime,
@@ -103,7 +103,7 @@ export default function SupplierDetailPage({
   const supplierId = params?.id as string;
   const { user, isCheckingAuth } = useAuth();
 
-  const PageWrapper = embedInAdmin ? React.Fragment : Navbar;
+  const PageWrapper = embedInAdmin ? React.Fragment : AppShell;
 
   // Fetch supplier details
   const supplierQuery = useSupplier(supplierId, initialSupplier);

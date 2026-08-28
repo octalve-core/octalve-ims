@@ -6,7 +6,7 @@
 "use client";
 
 import React from "react";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import SupplierList from "@/components/supplier/SupplierList";
 import { PageContentWrapper } from "@/components/shared";
 import FloatingActionButtons from "@/components/shared/FloatingActionButtons";
@@ -27,7 +27,7 @@ export default function SuppliersPage({
   initialStats,
 }: SuppliersPageProps = {}) {
   return (
-    <Navbar>
+    <AppShell>
       <PageContentWrapper>
         <SupplierList
           initialSuppliers={initialSuppliers}
@@ -35,6 +35,6 @@ export default function SuppliersPage({
         />
         <FloatingActionButtons variant="suppliers" />
       </PageContentWrapper>
-    </Navbar>
+    </AppShell>
   );
 }

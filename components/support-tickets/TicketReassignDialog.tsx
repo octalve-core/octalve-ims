@@ -34,7 +34,7 @@ import {
   DialogSubmitButton,
   GLASS_GHOST_BUTTON,
 } from "@/components/shared";
-import { useUpdateSupportTicket } from "@/hooks/queries";
+import { useUpdateSupportTicket } from "@/hooks/queries/use-support-tickets";
 import { willClearProductOnReassign } from "@/lib/support-tickets/ticket-reassign-product";
 import { logger } from "@/lib/logger";
 import { cn } from "@/lib/utils";

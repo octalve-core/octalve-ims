@@ -5,7 +5,7 @@
  */
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { queryKeys } from "./config";
-import { deriveOrderPaymentStatus } from "@/lib/payments/order-payment-from-amounts";
+import { deriveOrderPaymentStatus } from "@/lib/invoices/order-payment-sync";
 import { computeCommittedQuantity } from "@/lib/products/enrich-product-committed-quantity";
 
 /** Minimal invoice shape for linked-order payment patch (REQ-0153). */

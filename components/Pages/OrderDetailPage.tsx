@@ -31,7 +31,7 @@ import {
   useSyncSsrQueryData,
 } from "@/lib/react-query";
 import { useAuth } from "@/contexts";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import {
   ClientDate,
   ClientDateTime,
@@ -172,7 +172,7 @@ export default function OrderDetailPage({
 
   if (isError) {
     return (
-      <Navbar>
+      <AppShell>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-2">
           <GlassCard variant="rose" className="max-w-md text-center">
             <h2 className="text-sm sm:text-base font-medium text-gray-700 dark:text-white mb-2">
@@ -192,13 +192,13 @@ export default function OrderDetailPage({
             </Button>
           </GlassCard>
         </div>
-      </Navbar>
+      </AppShell>
     );
   }
 
   if (!dataLoading && !order) {
     return (
-      <Navbar>
+      <AppShell>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-2">
           <GlassCard variant="rose" className="max-w-md text-center">
             <h2 className="text-sm sm:text-base font-medium text-gray-700 dark:text-white mb-2">
@@ -216,7 +216,7 @@ export default function OrderDetailPage({
             </Button>
           </GlassCard>
         </div>
-      </Navbar>
+      </AppShell>
     );
   }
 
@@ -239,7 +239,7 @@ export default function OrderDetailPage({
     );
 
   return (
-    <Navbar>
+    <AppShell>
       <PageContentWrapper>
         <div className={APP_SHELL_DETAIL_CLASS}>
           <OrderDetailHeader
@@ -665,6 +665,6 @@ export default function OrderDetailPage({
           )}
         </div>
       </PageContentWrapper>
-    </Navbar>
+    </AppShell>
   );
 }

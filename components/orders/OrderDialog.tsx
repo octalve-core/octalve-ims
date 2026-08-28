@@ -36,12 +36,8 @@ import {
   useWatch,
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  useCreateOrder,
-  useUpdateOrder,
-  useProducts,
-  useClientBrowseProducts,
-} from "@/hooks/queries";
+import { useCreateOrder, useUpdateOrder, useProducts } from "@/hooks/queries";
+import { useClientBrowseProducts } from "@/hooks/queries/use-portal";
 import { useSyncDialogOpenState } from "@/hooks/use-sync-dialog-open-state";
 import {
   OrderDialogCreateLineItem,

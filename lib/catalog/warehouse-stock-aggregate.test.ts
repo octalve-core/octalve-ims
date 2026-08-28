@@ -3,7 +3,7 @@ import {
   aggregateWarehouseStockFromAllocations,
   aggregateWarehouseStockWithUnallocated,
   sumAllocatedQuantity,
-} from "@/lib/insights/warehouse-stock-aggregate";
+} from "@/lib/catalog/warehouse-stock-aggregate";
 import type { StockAllocation } from "@/types";
 
 const row = (

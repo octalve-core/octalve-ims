@@ -1,0 +1,35 @@
+// Auth session/verification records — ported from Proplity, see
+// docs/auth-system-port-plan.md. TIER: shared.
+
+model RefreshToken {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique // SHA-256 hex of the raw opaque token; raw value never stored
+  familyId   String // shared across every token descended from one login
+  revokedAt  DateTime? // null = active; set = rotated-away or force-revoked
+  replacedBy String? // tokenHash of the successor token (audit trail only, not used for lookups)
+  expiresAt  DateTime  @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  userId    String   @unique // a user has at most one live verification token
+  tokenHash String   @unique
+  expiresAt DateTime @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LoginAttempt {
+  id         String   @id @default(cuid())
+  identifier String // e.g. "register:<ip>", "<ip>:<email>", "refresh:<ip>"
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([identifier, createdAt])
+}

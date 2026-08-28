@@ -29,7 +29,7 @@ import {
   GLASS_BUTTON_ICON_HOVER,
   GLASS_BUTTON_SHELL_RESET,
 } from "@/lib/ui/glass-button-styles";
-import { useClientPortal } from "@/hooks/queries";
+import { useClientPortal } from "@/hooks/queries/use-client-portal";
 import {
   isDataSlotUnsettled,
   queryKeys,
@@ -45,7 +45,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ProductThumb } from "@/components/products/ProductOptionRow";
+import { ProductThumb } from "@/components/shared/ProductThumb";
 import type { ClientPortalClient, ClientPortalStats } from "@/types";
 import {
   AdminEmbedDataTable,

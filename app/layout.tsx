@@ -13,6 +13,7 @@ import { ShellSsrProvider } from "@/contexts/shell-ssr-context";
 import { getSession } from "@/lib/auth-server";
 import { mapSessionToAppUser } from "@/lib/auth/map-session-user";
 import { getShellNotificationsForUser } from "@/lib/server/notifications-data";
+import { getThemePrimaryColor } from "@/lib/server/system-config-data";
 import { QueryProvider } from "@/lib/react-query";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
@@ -120,13 +121,27 @@ export default async function RootLayout({
   const shellNotifications = session
     ? await getShellNotificationsForUser(session.id)
     : null;
+  const themePrimaryColor = await getThemePrimaryColor();
 
   return (
     <html
       lang="en"
       {...(disableBrowserTranslate ? { translate: "no" as const } : {})}
       suppressHydrationWarning
-      style={{ overscrollBehavior: "none" }}
+      style={
+        {
+          overscrollBehavior: "none",
+          // Overrides --primary/--ring from globals.css (admin-editable, see
+          // Appearance settings + lib/server/system-config-data.ts) — both
+          // tokens share the brand hue there in light and dark, so they're
+          // kept in sync here too (focus rings would otherwise stay the
+          // default red after changing the brand color). Set on <html>
+          // rather than body so it's visible to the whole subtree, including
+          // anything portalled to document.body (dialogs, toasts).
+          "--primary": themePrimaryColor,
+          "--ring": themePrimaryColor,
+        } as React.CSSProperties
+      }
       data-scroll-behavior="smooth"
     >
       <body

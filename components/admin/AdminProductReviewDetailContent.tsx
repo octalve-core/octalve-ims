@@ -39,7 +39,7 @@ import {
   CircleDollarSign,
   MessageSquare,
 } from "lucide-react";
-import { useProductReview, useDeleteProductReview } from "@/hooks/queries";
+import { useProductReview, useDeleteProductReview } from "@/hooks/queries/use-product-reviews";
 import {
   PageContentWrapper,
   DataSlotPulse,
@@ -56,7 +56,7 @@ import {
   PersonNameEmailCell,
   TABLE_CATALOG_LINK_CLASS,
 } from "@/components/shared";
-import { ProductThumb } from "@/components/products/ProductOptionRow";
+import { ProductThumb } from "@/components/shared/ProductThumb";
 import WriteEditReviewDialog from "@/components/product-reviews/WriteEditReviewDialog";
 import {
   DETAIL_DATA_VALUE_CLASS,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { enrichProductInsightsWithWarehouseStock } from "@/lib/insights/product-insights-enrich";
+import { enrichProductInsightsWithWarehouseStock } from "@/lib/catalog/product-insights-enrich";
 import type { CatalogEntityInsights } from "@/types/catalog-insights";
 
 const baseInsights: CatalogEntityInsights = {

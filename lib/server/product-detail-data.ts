@@ -10,7 +10,7 @@ import { prisma } from "@/prisma/client";
 import { mergeProductListWhere } from "@/lib/products/product-query";
 import { enrichProductDetailWithCommittedQuantity } from "@/lib/products/enrich-product-committed-quantity";
 import { logger } from "@/lib/logger";
-import { computeProportionalLineAmount } from "@/lib/orders/proportional-line-amount";
+import { computeProportionalLineAmount } from "@/lib/proportional-line-amount";
 import { isOrderRecordCountedAsSold } from "@/lib/orders/order-sales-eligibility";
 import type { SessionForDetail } from "@/lib/server/order-detail-data";
 import { computeProductInsights } from "@/lib/server/product-insights";
@@ -109,7 +109,6 @@ function transformProductDetail(
   const productInsights = computeProductInsights(
     Number(product.quantity),
     insightOrderItems,
-    null,
     Number(product.reservedQuantity ?? 0),
   );
 
@@ -411,7 +410,6 @@ export async function getProductDetailForPage(
           }
         : null,
     })),
-    null,
     enrichedProduct.committedQuantity,
   );
 

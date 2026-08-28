@@ -1,0 +1,16 @@
+// CRM — vendors & customers. TIER: core.
+
+model Supplier {
+  id          String            @id @default(cuid())
+  name        String
+  userId      String // actor — created by
+  businessId  String?
+  status      Boolean           @default(true)
+  description String?
+  notes       String?
+  createdAt   DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime?         @db.Timestamptz(3)
+  createdBy   String
+  updatedBy   String?
+  products    ProductSupplier[]
+}

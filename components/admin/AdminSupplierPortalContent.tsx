@@ -30,7 +30,7 @@ import {
   GLASS_BUTTON_SHELL_RESET,
 } from "@/lib/ui/glass-button-styles";
 import { getDisplayCommittedQuantity } from "@/lib/products/enrich-product-committed-quantity";
-import { useSupplierPortal } from "@/hooks/queries";
+import { useSupplierPortal } from "@/hooks/queries/use-supplier-portal";
 import {
   isDataSlotUnsettled,
   queryKeys,
@@ -47,7 +47,7 @@ import {
   Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ProductThumb } from "@/components/products/ProductOptionRow";
+import { ProductThumb } from "@/components/shared/ProductThumb";
 import type { SupplierPortalStats, SupplierPortalSupplier } from "@/types";
 import {
   AdminEmbedDataTable,

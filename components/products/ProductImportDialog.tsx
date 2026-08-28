@@ -99,7 +99,7 @@ export function ProductImportDialog({
       formData.append("file", file);
 
       // Call import API
-      const response = await fetch("/api/products/import", {
+      const response = await fetch("/api/products-import", {
         method: "POST",
         body: formData,
         credentials: "include", // Include cookies for authentication

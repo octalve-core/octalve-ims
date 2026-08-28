@@ -35,7 +35,8 @@ import {
 } from "@/components/products/ProductOptionRow";
 import { getRatingDisplay } from "@/lib/ui/review-rating-display";
 import { cn } from "@/lib/utils";
-import { useCreateProductReview, useProducts } from "@/hooks/queries";
+import { useProducts } from "@/hooks/queries";
+import { useCreateProductReview } from "@/hooks/queries/use-product-reviews";
 
 const RATINGS = [1, 2, 3, 4, 5] as const;
 

@@ -6,11 +6,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import {
-  useSupportTickets,
-  useDashboard,
-  type SupportTicketViewFilter,
-} from "@/hooks/queries";
+import { useDashboard } from "@/hooks/queries";
+import { useSupportTickets, type SupportTicketViewFilter } from "@/hooks/queries/use-support-tickets";
 import {
   isDataSlotLoading,
   isDataSlotUnsettled,

@@ -26,7 +26,7 @@ import {
   PersonNameEmailCell,
   TABLE_CATALOG_LINK_CLASS,
 } from "@/components/shared";
-import { ProductThumb } from "@/components/products/ProductOptionRow";
+import { ProductThumb } from "@/components/shared/ProductThumb";
 import ProductReviewActions from "@/components/admin/ProductReviewActions";
 import { getRatingDisplay } from "@/lib/ui/review-rating-display";
 import type { ProductReview } from "@/types";

@@ -10,7 +10,7 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import {
   PageContentWrapper,
   ClientDateTime,
@@ -33,11 +33,7 @@ import {
 } from "@/lib/ui/shell-layout-styles";
 import { DETAIL_DATA_VALUE_CLASS } from "@/lib/ui/typography-scale";
 import { useBackWithRefresh } from "@/hooks/use-back-with-refresh";
-import {
-  useSupportTicket,
-  useSupportTicketReplies,
-  useDeleteSupportTicket,
-} from "@/hooks/queries";
+import { useSupportTicket, useSupportTicketReplies, useDeleteSupportTicket } from "@/hooks/queries/use-support-tickets";
 import {
   isDataSlotLoading,
   queryKeys,
@@ -158,7 +154,7 @@ export default function SupportTicketDetailContent({
   const actionsDisabled = dataLoading || isDeleting;
 
   return (
-    <Navbar>
+    <AppShell>
       <PageContentWrapper>
         <div className={APP_SHELL_DETAIL_CLASS}>
           <PageSectionHeader
@@ -570,6 +566,6 @@ export default function SupportTicketDetailContent({
           ) : null}
         </div>
       </PageContentWrapper>
-    </Navbar>
+    </AppShell>
   );
 }

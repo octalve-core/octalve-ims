@@ -6,14 +6,8 @@ import { usePathname } from "next/navigation";
 import { PaginationType } from "@/components/shared/PaginationSelector";
 import { createProductColumns } from "./ProductTableColumns";
 import { useAuth } from "@/contexts";
-import {
-  useProducts,
-  useCategories,
-  useSuppliers,
-  useOrders,
-  useDashboard,
-  useSupplierPortalDashboard,
-} from "@/hooks/queries";
+import { useProducts, useCategories, useSuppliers, useOrders, useDashboard } from "@/hooks/queries";
+import { useSupplierPortalDashboard } from "@/hooks/queries/use-portal";
 import { isDataSlotLoading, isDataSlotUnsettled, queryKeys, useSyncSsrQueryData } from "@/lib/react-query";
 import ProductFilters from "./ProductFilters";
 import { StatisticsCard } from "@/components/home/StatisticsCard";

@@ -23,10 +23,12 @@ const SCOPED_INVALIDATION_FILES = new Set(["use-notifications.ts"]);
 const COMPONENT_FETCH_CRUD_ALLOWLIST = new Set([
   "components/products/form-fields/ImageField.tsx",
   "components/products/ProductImportDialog.tsx",
-  "components/layouts/Navbar.tsx",
-  "components/layouts/AdminSidebar.tsx",
+  "components/layouts/AppShell.tsx",
+  "components/layouts/AppSidebar.tsx",
   "components/Pages/BusinessInsightPage.tsx",
   "components/admin/AdminAnalyticsContent.tsx",
+  "components/admin/AdminAnalyticsContent.core.tsx",
+  "components/admin/AdminAnalyticsContent.pro.tsx",
   "components/Pages/ApiStatusPage.tsx",
   "components/Pages/ApiDocsPage.tsx",
 ]);
@@ -48,7 +50,7 @@ const DOMAIN_KEYS_REQUIRE_ALL = [
  */
 const API_WRITE_ROUTE_INVALIDATION_SPEC: Record<string, readonly string[]> = {
   "app/api/products/route.ts": ["invalidateOnProductChange", "scheduleAfterResponse"],
-  "app/api/products/import/route.ts": ["scheduleInvalidateImportCaches"],
+  "app/api/products-import/route.ts": ["scheduleInvalidateImportCaches"],
   "app/api/products/image/route.ts": ["scheduleInvalidateProductCaches"],
   "app/api/products/qr-code/route.ts": ["scheduleInvalidateProductCaches"],
   "app/api/categories/route.ts": ["scheduleInvalidateCategoryCaches"],

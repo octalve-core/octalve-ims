@@ -1,0 +1,75 @@
+// Catalog & taxonomy. TIER: core (variants/custom parameters are a Pro+ UI
+// layer over the same Product row, per the PRD's tier table — no separate
+// models needed for that yet).
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  userId      String // actor — created by
+  businessId  String?
+  status      Boolean   @default(true)
+  description String?
+  notes       String?
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime? @db.Timestamptz(3)
+  createdBy   String
+  updatedBy   String?
+  products    Product[]
+}
+
+model Product {
+  id               String            @id @default(cuid())
+  categoryId       String
+  businessId       String?
+  createdAt        DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime?         @db.Timestamptz(3)
+  name             String
+  price            Float
+  quantity         BigInt
+  reservedQuantity BigInt            @default(0)
+  sku              String            @unique
+  status           String
+  supplierId       String // primary/default supplier — kept as a plain scalar for backward
+  // compatibility with existing single-supplier code paths; ProductSupplier
+  // below is an additive many-to-many for Pro+ features that need it, not a
+  // replacement (see docs/auth-system-port-plan.md-adjacent Milestone 0 notes)
+  userId           String // actor — created by
+  createdBy        String
+  updatedBy        String?
+  qrCodeUrl        String?
+  qrCodeFileId     String?
+  imageUrl         String?
+  imageFileId      String?
+  expirationDate   DateTime?
+  deletedAt        DateTime? // soft-delete: set when product has order history and is "deleted"
+  deletedBy        String?
+  category         Category          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  orderItems       OrderItem[]
+  suppliers        ProductSupplier[]
+  // Pro-tier relations (StockAllocation/StockTransfer, see warehousing.prisma)
+  // — kept here deliberately, see schema.prisma's TIER LABELING note: Core
+  // order fulfillment (lib/products/decrement-stock-allocations.ts) reads/
+  // writes StockAllocation for every order regardless of tier.
+  stockAllocations StockAllocation[]
+  stockTransfers   StockTransfer[]
+
+  @@index([deletedAt])
+}
+
+/// Product <-> Supplier many-to-many, own SKU/price/lead-time per pairing.
+/// Pattern adopted from inventory-management-ui-main (see PRD data-model
+/// section) — replaces the old single Product.supplierId FK.
+model ProductSupplier {
+  id            String   @id @default(cuid())
+  productId     String
+  supplierId    String
+  supplierSku   String?
+  supplierPrice Float?
+  leadTimeDays  Int?
+  notes         String?
+  createdAt     DateTime @default(now()) @db.Timestamptz(3)
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplier      Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, supplierId])
+}

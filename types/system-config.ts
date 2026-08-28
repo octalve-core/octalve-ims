@@ -2,7 +2,7 @@
  * System Configuration types
  */
 
-export type ConfigValueType = "string" | "number" | "boolean" | "json";
+export type ConfigValueType = "string" | "number" | "boolean" | "json" | "color";
 
 export type ConfigCategory =
   | "general"
@@ -10,7 +10,8 @@ export type ConfigCategory =
   | "shipping"
   | "payment"
   | "notifications"
-  | "inventory";
+  | "inventory"
+  | "appearance";
 
 export interface SystemConfig {
   id: string;
@@ -53,7 +54,7 @@ export const DEFAULT_CONFIGS: Omit<
   },
   {
     key: "company_email",
-    value: "support@stockinventory.com",
+    value: "support@octalve-ims.com",
     type: "string",
     label: "Company Email",
     description: "Primary contact email",
@@ -132,6 +133,16 @@ export const DEFAULT_CONFIGS: Omit<
     category: "shipping",
     isPublic: false,
   },
+  {
+    key: "theme_primary_color",
+    value: "0 72.2% 50.6%",
+    type: "color",
+    label: "Primary Brand Color",
+    description:
+      "Drives buttons, links, and active states across the app. Stored as an HSL triplet (matches --primary in globals.css) so it plugs directly into the existing design tokens.",
+    category: "appearance",
+    isPublic: true, // read by every visitor's browser to render the theme, not just admins
+  },
 ];
 
 // Category labels for display
@@ -142,4 +153,5 @@ export const CATEGORY_LABELS: Record<ConfigCategory, string> = {
   payment: "Payment Settings",
   notifications: "Notification Settings",
   inventory: "Inventory Settings",
+  appearance: "Appearance",
 };

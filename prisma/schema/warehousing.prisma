@@ -1,0 +1,65 @@
+// Stock & warehousing. TIER: mixed — Warehouse itself is core (single
+// location works with just this model); StockAllocation/StockTransfer are
+// Pro-tier UI/API surface (multi-warehouse allocation + transfers) but see
+// schema.prisma's TIER LABELING note — Core order fulfillment depends on
+// StockAllocation existing regardless of which tier's UI is shipped.
+
+model Warehouse {
+  id               String            @id @default(cuid())
+  name             String
+  address          String?
+  type             String?
+  status           Boolean           @default(true)
+  userId           String // actor — created by
+  businessId       String?
+  createdAt        DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime?         @db.Timestamptz(3)
+  createdBy        String
+  updatedBy        String?
+  orderItems       OrderItem[]
+  stockAllocations StockAllocation[]
+  transfersFrom    StockTransfer[]   @relation("StockTransferFrom")
+  transfersTo      StockTransfer[]   @relation("StockTransferTo")
+
+  @@index([userId])
+}
+
+model StockAllocation {
+  id               String    @id @default(cuid())
+  productId        String
+  warehouseId      String
+  businessId       String?
+  quantity         BigInt    @default(0)
+  reservedQuantity BigInt    @default(0)
+  userId           String // actor — created by
+  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime? @db.Timestamptz(3)
+  product          Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouse        Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, warehouseId])
+  @@index([productId])
+  @@index([warehouseId])
+}
+
+model StockTransfer {
+  id              String    @id @default(cuid())
+  productId       String
+  fromWarehouseId String
+  toWarehouseId   String
+  businessId      String?
+  quantity        BigInt
+  status          String    @default("pending") // pending, completed, cancelled
+  notes           String?
+  userId          String // actor — initiated by
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  completedAt     DateTime? @db.Timestamptz(3)
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  fromWarehouse   Warehouse @relation("StockTransferFrom", fields: [fromWarehouseId], references: [id], onDelete: Restrict)
+  toWarehouse     Warehouse @relation("StockTransferTo", fields: [toWarehouseId], references: [id], onDelete: Restrict)
+
+  @@index([productId])
+  @@index([fromWarehouseId])
+  @@index([toWarehouseId])
+  @@index([status])
+}

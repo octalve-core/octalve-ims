@@ -9,7 +9,7 @@
 import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/prisma/client";
 import { applyStripeChargeToOrderInvoice } from "@/prisma/invoice";
-import { applyIncrementalInvoicePayment } from "@/lib/payments/order-payment-from-amounts";
+import { applyIncrementalInvoicePayment } from "@/lib/invoices/order-payment-sync";
 import { healInvoiceStatusAfterMoney } from "@/lib/invoices/heal-invoice-status-after-money";
 import { invalidateOnOrderChange } from "@/lib/cache";
 import { logger } from "@/lib/logger";

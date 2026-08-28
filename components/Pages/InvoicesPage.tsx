@@ -6,7 +6,7 @@
 "use client";
 
 import React from "react";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import InvoiceList from "@/components/invoices/InvoiceList";
 import { PageContentWrapper } from "@/components/shared";
 import FloatingActionButtons from "@/components/shared/FloatingActionButtons";
@@ -43,7 +43,7 @@ export default function InvoicesPage({
     userRole !== "client" && userRole !== "supplier";
 
   return (
-    <Navbar>
+    <AppShell>
       <PageContentWrapper>
         <InvoiceList
           initialInvoices={initialInvoices}
@@ -55,6 +55,6 @@ export default function InvoicesPage({
           <FloatingActionButtons variant="invoices" />
         ) : null}
       </PageContentWrapper>
-    </Navbar>
+    </AppShell>
   );
 }

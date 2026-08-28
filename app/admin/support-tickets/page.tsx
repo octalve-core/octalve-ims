@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth-server";
 import {
   getSupportTicketsForAdmin,
   getProductOwnersForSupport,
-} from "@/lib/server/support-tickets-data";
+} from "@/lib/support-tickets/support-tickets-data";
 import { prefetchListPageStats } from "@/lib/server/list-page-stats";
 import AdminSupportTicketsContent from "@/components/admin/AdminSupportTicketsContent";
 

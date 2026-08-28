@@ -39,7 +39,7 @@ import {
 } from "@/lib/react-query";
 import { useAuth } from "@/contexts";
 import { toDateOrNull } from "@/lib/format";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import {
   ClientDateTime,
   ClientRelativeTime,
@@ -79,7 +79,7 @@ import { PaymentDialog } from "@/components/payments";
 export type InvoiceDetailPageProps = {
   /** When set (e.g. "/admin/client-invoices"), Back button navigates here */
   backHref?: string;
-  /** When true, do not wrap in Navbar (e.g. when embedded in admin layout) */
+  /** When true, do not wrap in AppShell (e.g. when embedded in admin layout) */
   embedInAdmin?: boolean;
   initialInvoice?: Invoice;
   /** REQ-0163 — SSR reviews/eligibility for Order Items Write review (hydrate-safe) */
@@ -106,7 +106,7 @@ export default function InvoiceDetailPage({
   });
   const invoiceId = params?.id as string;
   const onBack = backHref ? () => navigateTo(backHref) : handleBack;
-  const Wrapper = embedInAdmin ? React.Fragment : Navbar;
+  const Wrapper = embedInAdmin ? React.Fragment : AppShell;
   /** REQ-0063 — admin invoice detail links to /admin/orders (matches InvoiceActions) */
   const linkedOrderHrefBase = embedInAdmin ? "/admin/orders" : "/orders";
 

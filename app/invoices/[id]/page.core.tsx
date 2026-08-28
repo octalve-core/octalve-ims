@@ -1,0 +1,50 @@
+import { notFound, redirect } from "next/navigation";
+import { getSession } from "@/lib/auth-server";
+import { getInvoiceDetailForPage } from "@/lib/server/invoice-detail-data";
+import { getOrderReviewContextForPage } from "@/lib/server/order-review-context-data";
+import InvoiceDetailPage from "@/components/Pages/InvoiceDetailPage";
+
+type Props = {
+  params: Promise<{ id: string }>;
+};
+
+/**
+ * REQ-0025 — blocking SSR detail prefetch (no Suspense shell flash).
+ * Core tier variant — no Stripe checkout-return reconciliation (Core
+ * invoices are manual PDF only; online payment is Pro+). Picked by
+ * scripts/export-tier.ts in place of the default file when exporting Core.
+ * (Discovered this pass: unlike its 3 siblings — app/admin/invoices/[id],
+ * app/admin/orders/[id], app/orders/[id] — this route never got a Core
+ * variant in the Phase 9 Stripe-reconciliation fix.)
+ */
+export const dynamic = "force-dynamic";
+
+export default async function InvoiceDetailRoute({ params }: Props) {
+  const user = await getSession();
+  if (!user) redirect("/login");
+  const { id } = await params;
+
+  const initialInvoice = await getInvoiceDetailForPage(
+    { id: user.id, role: user.role },
+    id,
+  );
+  if (!initialInvoice) notFound();
+
+  // REQ-0163 — SSR review context for Order Items Write review (hydrate-safe)
+  const productIds =
+    initialInvoice.linkedOrderItems
+      ?.map((item) => item.productId)
+      .filter((pid): pid is string => Boolean(pid)) ?? [];
+  const initialReviewContext = await getOrderReviewContextForPage(
+    user.id,
+    initialInvoice.orderId,
+    productIds,
+  );
+
+  return (
+    <InvoiceDetailPage
+      initialInvoice={initialInvoice}
+      initialReviewContext={initialReviewContext}
+    />
+  );
+}

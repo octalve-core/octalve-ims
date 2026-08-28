@@ -9,7 +9,7 @@ import { prisma } from "@/prisma/client";
 import {
   applyIncrementalInvoicePayment,
   syncOrderPaymentStatusFromInvoice,
-} from "@/lib/payments/order-payment-from-amounts";
+} from "@/lib/invoices/order-payment-sync";
 import { invalidateOnOrderChange } from "@/lib/cache";
 import { logger } from "@/lib/logger";
 

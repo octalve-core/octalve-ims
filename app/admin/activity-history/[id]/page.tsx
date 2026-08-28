@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth-server";
-import { getHistoryDetailForPage } from "@/lib/server/history-detail-data";
+import { getHistoryDetailForPage } from "@/lib/history/history-detail-data";
 import AdminHistoryDetailContent from "@/components/admin/AdminHistoryDetailContent";
 
 type Props = { params: Promise<{ id: string }> };

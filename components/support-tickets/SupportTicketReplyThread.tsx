@@ -25,7 +25,7 @@ import { SafeAvatarImage } from "@/components/ui/safe-avatar-image";
 import { resolveAvatarSourcesFromSeed } from "@/lib/ui/user-avatar-sources";
 import { AVATAR_RING_CLASS } from "@/lib/ui/avatar-ring-styles";
 import { GlassCard } from "@/components/orders/detail";
-import { useCreateSupportTicketReply } from "@/hooks/queries";
+import { useCreateSupportTicketReply } from "@/hooks/queries/use-support-tickets";
 import { resolveTicketReplyTarget } from "@/lib/support-tickets/ticket-reply-target";
 import {
   TICKET_CHAT_BUBBLE_LEFT,

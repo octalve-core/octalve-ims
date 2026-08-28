@@ -28,7 +28,7 @@ import {
   FiCpu,
   FiHardDrive,
 } from "react-icons/fi";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import {
   PageContentWrapper,
   PageSectionHeader,
@@ -286,7 +286,7 @@ export default function ApiStatusPage({ userRole }: ApiStatusPageProps) {
   };
 
   return (
-    <Navbar>
+    <AppShell>
       <PageContentWrapper>
         <div className="flex flex-col gap-6">
           {/* Header — PageSectionHeader parity (REQ-0075 AC3) */}
@@ -1044,6 +1044,6 @@ export default function ApiStatusPage({ userRole }: ApiStatusPageProps) {
           </GlassCard>
         </div>
       </PageContentWrapper>
-    </Navbar>
+    </AppShell>
   );
 }

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { PaginationType } from "@/components/shared/PaginationSelector";
 import { columns } from "./ProductTableColumns";
-import { useClientBrowseMeta, useClientBrowseProducts } from "@/hooks/queries";
+import { useClientBrowseMeta, useClientBrowseProducts } from "@/hooks/queries/use-portal";
 import { isDataSlotLoading, queryKeys, useSyncSsrQueryData } from "@/lib/react-query";
 import { PAGE_STATS_GRID_CLASS, APP_SHELL_WIDTH_CLASS, PAGE_SECTION_SPACING_CLASS } from "@/lib/ui/shell-layout-styles";
 import type {

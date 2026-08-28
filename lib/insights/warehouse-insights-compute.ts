@@ -3,8 +3,8 @@
  * Client-safe: imported by WarehouseDetailPage for live stock CRUD updates.
  */
 
-import { CATALOG_LOW_STOCK_THRESHOLD } from "@/lib/insights/constants";
-import { aggregateWarehouseStockFromAllocations } from "@/lib/insights/warehouse-stock-aggregate";
+import { CATALOG_LOW_STOCK_THRESHOLD } from "@/lib/server/catalog-insights";
+import { aggregateWarehouseStockFromAllocations } from "@/lib/catalog/warehouse-stock-aggregate";
 import type { WarehouseInsights, WarehouseStockSummary } from "@/types/warehouse-insights";
 import type { StockAllocation } from "@/types";
 

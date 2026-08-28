@@ -8,13 +8,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  useCreateProduct,
-  useDeleteProduct,
-  useReviewEligibility,
-  useReviewsByProduct,
-  useDeleteProductReview,
-} from "@/hooks/queries";
+import { useCreateProduct, useDeleteProduct } from "@/hooks/queries";
+import { useReviewEligibility, useReviewsByProduct, useDeleteProductReview } from "@/hooks/queries/use-product-reviews";
 import { useAuth } from "@/contexts";
 import { logger } from "@/lib/logger";
 import {

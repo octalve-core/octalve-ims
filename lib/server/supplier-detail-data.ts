@@ -11,10 +11,11 @@ import { getCache, setCache, cacheKeys } from "@/lib/cache";
 import { prisma } from "@/prisma/client";
 import { mergeProductListWhere } from "@/lib/products/product-query";
 import { logger } from "@/lib/logger";
-import { computeProportionalLineAmount } from "@/lib/orders/proportional-line-amount";
+import { computeProportionalLineAmount } from "@/lib/proportional-line-amount";
 import { isOrderRecordCountedAsSold } from "@/lib/orders/order-sales-eligibility";
 import type { SessionForDetail } from "@/lib/server/order-detail-data";
 import {
+  canViewCatalogEntities,
   catalogDetailCacheScope,
   resolveSupplierEntityForSession,
   supplierCanAccessSupplierRecord,
@@ -220,6 +221,8 @@ export async function getSupplierDetailForPage(
   const isAdmin = session.role === "admin";
   const isClient = session.role === "client";
   const isSupplier = session.role === "supplier";
+
+  if (!(await canViewCatalogEntities(session))) return null;
 
   const supplierEntity = isSupplier
     ? await resolveSupplierEntityForSession(userId)

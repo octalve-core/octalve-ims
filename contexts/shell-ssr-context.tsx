@@ -5,11 +5,13 @@
  * Passed as hook initialData so first paint shows badge/list without client fetch flash.
  */
 import React, { createContext, useContext } from "react";
-import type { Notification } from "@/types";
+import type { AdminCounts, Notification } from "@/types";
 
 export type ShellSsrData = {
   initialNotifications?: Notification[];
   initialUnreadCount?: number;
+  /** Admin sidebar badge counts, SSR-seeded from app/admin/layout.tsx (REQ-0025). */
+  initialAdminCounts?: AdminCounts;
 };
 
 const ShellSsrContext = createContext<ShellSsrData>({});

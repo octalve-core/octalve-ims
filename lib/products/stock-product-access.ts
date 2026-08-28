@@ -7,17 +7,19 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/prisma/client";
 import { mergeProductListWhere } from "@/lib/products/product-query";
 import { getSupplierByUserId } from "@/prisma/supplier";
+import { can } from "@/lib/auth/can";
 
 export type StockSession = {
   id: string;
   role: string | null;
+  roleId?: string | null;
 };
 
 export type StockProductAccessMode = "read" | "write";
 
-/** Clients may read catalog product stock; writes are owner/admin/supplier only. */
-export function clientMayWriteStock(role: string | null): boolean {
-  return role !== "client";
+/** Whether `session` may write stock (Stock/edit) — owner/admin/supplier under the Core fallback table, or a granted Pro+ custom role. */
+export async function clientMayWriteStock(session: StockSession): Promise<boolean> {
+  return can(session, "Stock", "edit");
 }
 
 /**
@@ -32,7 +34,7 @@ export async function buildStockProductWhere(
   const role = session.role ?? "client";
 
   if (role === "client") {
-    if (mode === "write" && !clientMayWriteStock(role)) return null;
+    if (mode === "write" && !(await clientMayWriteStock(session))) return null;
     return mergeProductListWhere({ id: productId });
   }
 
@@ -55,8 +57,7 @@ export async function findAccessibleProduct(
   productId: string,
   mode: StockProductAccessMode = "read",
 ): Promise<{ id: string; name: string; sku: string } | null> {
-  const role = session.role ?? "client";
-  if (mode === "write" && !clientMayWriteStock(role)) {
+  if (mode === "write" && !(await clientMayWriteStock(session))) {
     return null;
   }
 

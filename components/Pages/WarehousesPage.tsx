@@ -6,7 +6,7 @@
 "use client";
 
 import React from "react";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import WarehouseList from "@/components/warehouses/WarehouseList";
 import { PageContentWrapper } from "@/components/shared";
 import FloatingActionButtons from "@/components/shared/FloatingActionButtons";
@@ -29,7 +29,7 @@ export default function WarehousesPage({
   initialWarehouseSummary,
 }: WarehousesPageProps = {}) {
   return (
-    <Navbar>
+    <AppShell>
       <PageContentWrapper>
         <WarehouseList
           initialWarehouses={initialWarehouses}
@@ -38,6 +38,6 @@ export default function WarehousesPage({
         />
         <FloatingActionButtons variant="warehouses" />
       </PageContentWrapper>
-    </Navbar>
+    </AppShell>
   );
 }

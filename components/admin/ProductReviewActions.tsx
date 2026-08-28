@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AlertDialogWrapper } from "@/components/dialogs";
 import WriteEditReviewDialog from "@/components/product-reviews/WriteEditReviewDialog";
-import { useDeleteProductReview } from "@/hooks/queries";
+import { useDeleteProductReview } from "@/hooks/queries/use-product-reviews";
 import { truncateReviewComment } from "@/lib/ui/review-rating-display";
 import { logger } from "@/lib/logger";
 import { MoreVertical, Eye, Pencil, Trash2 } from "lucide-react";

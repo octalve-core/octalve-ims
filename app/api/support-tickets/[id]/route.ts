@@ -19,7 +19,7 @@ import { createSupportTicketRepliedNotification } from "@/lib/notifications/in-a
 import { createAuditLog } from "@/prisma/audit-log";
 import { prisma } from "@/prisma/client";
 import type { UpdateSupportTicketInput } from "@/types";
-import { getSupportTicketDetailForPage } from "@/lib/server/support-ticket-detail-data";
+import { getSupportTicketDetailForPage } from "@/lib/support-tickets/support-ticket-detail-data";
 import { transformSupportTicketDetail } from "@/lib/support-tickets/transform-support-ticket-detail";
 import { scheduleInvalidateSupportTicketCaches } from "@/lib/cache";
 import {
@@ -106,13 +106,13 @@ export async function PUT(
     const sessionRole = session.role ?? "";
     if (
       !sessionId ||
-      !canMutateSupportTicket(
+      !(await canMutateSupportTicket(
         { id: sessionId, role: sessionRole },
         {
           userId: existing.userId,
           assignedToId: existing.assignedToId ?? null,
         },
-      )
+      ))
     ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -136,7 +136,7 @@ export async function PUT(
     if (data.description != null) updatePayload.description = data.description;
     if (data.priority != null) updatePayload.priority = data.priority;
     // REQ-0195 — only admin may change workflow status; non-admin body.status ignored
-    const nextStatus = resolveStatusUpdate(
+    const nextStatus = await resolveStatusUpdate(
       { id: sessionId, role: sessionRole },
       data.status,
     );
@@ -144,7 +144,7 @@ export async function PUT(
       updatePayload.status = nextStatus;
     }
     // REQ-0190 — only admin may change Send-to; non-admin body field ignored
-    const nextAssignedTo = resolveAssignedToUpdate(
+    const nextAssignedTo = await resolveAssignedToUpdate(
       { id: sessionId, role: sessionRole },
       data.assignedToId,
     );
@@ -276,13 +276,13 @@ export async function DELETE(
     const sessionRole = session.role ?? "";
     if (
       !sessionId ||
-      !canMutateSupportTicket(
+      !(await canMutateSupportTicket(
         { id: sessionId, role: sessionRole },
         {
           userId: existing.userId,
           assignedToId: existing.assignedToId ?? null,
         },
-      )
+      ))
     ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }

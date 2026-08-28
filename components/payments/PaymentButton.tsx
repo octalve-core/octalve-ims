@@ -7,7 +7,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { useCreateCheckout } from "@/hooks/queries";
+import { useCreateCheckout } from "@/hooks/queries/use-payments";
 import { CreditCard, Loader2 } from "lucide-react";
 import type { CheckoutType } from "@/types";
 

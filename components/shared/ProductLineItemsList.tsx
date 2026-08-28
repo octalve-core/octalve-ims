@@ -10,14 +10,14 @@
 import React from "react";
 import Link from "next/link";
 import { FileText, Hash, Package, Tag, Truck, Warehouse } from "lucide-react";
-import { ProductThumb } from "@/components/products/ProductOptionRow";
+import { ProductThumb } from "@/components/shared/ProductThumb";
 import { AvatarInlineLink } from "@/components/shared/AvatarInlineLink";
 import { CopyableText } from "@/components/shared/CopyableText";
 import { ProportionalPriceDisplay } from "@/components/shared/ProportionalPriceDisplay";
 import ProductReviewsSection from "@/components/product-reviews/ProductReviewsSection";
 import type { Order, OrderItem } from "@/types";
 import type { OrderReviewContext } from "@/lib/server/order-review-context-data";
-import { orderHasFeeAdjustments } from "@/lib/orders/proportional-line-amount";
+import { orderHasFeeAdjustments } from "@/lib/proportional-line-amount";
 import { DETAIL_DATA_VALUE_CLASS } from "@/lib/ui/typography-scale";
 import { cn } from "@/lib/utils";
 

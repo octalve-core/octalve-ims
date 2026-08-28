@@ -19,7 +19,7 @@ import {
 import { AlertDialogWrapper } from "@/components/dialogs";
 import SupportTicketDialog from "@/components/support-tickets/SupportTicketDialog";
 import TicketReassignDialog from "@/components/support-tickets/TicketReassignDialog";
-import { useDeleteSupportTicket } from "@/hooks/queries";
+import { useDeleteSupportTicket } from "@/hooks/queries/use-support-tickets";
 import { useAuth } from "@/contexts";
 import { logger } from "@/lib/logger";
 import {

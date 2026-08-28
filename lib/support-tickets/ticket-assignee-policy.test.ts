@@ -8,82 +8,88 @@ import {
 const ticket = { userId: "creator-1", assignedToId: "assignee-1" as string | null };
 
 describe("canMutateSupportTicket", () => {
-  it("allows creator", () => {
+  it("allows creator", async () => {
     expect(
-      canMutateSupportTicket({ id: "creator-1", role: "client" }, ticket),
+      await canMutateSupportTicket({ id: "creator-1", role: "client" }, ticket),
     ).toBe(true);
   });
 
-  it("allows assignee", () => {
+  it("allows assignee", async () => {
     expect(
-      canMutateSupportTicket({ id: "assignee-1", role: "admin" }, ticket),
+      await canMutateSupportTicket({ id: "assignee-1", role: "admin" }, ticket),
     ).toBe(true);
   });
 
-  it("allows admin who is neither", () => {
+  it("allows admin who is neither", async () => {
     expect(
-      canMutateSupportTicket({ id: "other-admin", role: "admin" }, ticket),
+      await canMutateSupportTicket({ id: "other-admin", role: "admin" }, ticket),
     ).toBe(true);
   });
 
-  it("denies unrelated client", () => {
+  it("denies unrelated client", async () => {
     expect(
-      canMutateSupportTicket({ id: "stranger", role: "client" }, ticket),
+      await canMutateSupportTicket({ id: "stranger", role: "client" }, ticket),
     ).toBe(false);
   });
 });
 
 describe("resolveAssignedToUpdate", () => {
-  it("admin may set or clear assignee", () => {
+  it("admin may set or clear assignee", async () => {
     expect(
-      resolveAssignedToUpdate({ id: "a", role: "admin" }, "owner-2"),
+      await resolveAssignedToUpdate({ id: "a", role: "admin" }, "owner-2"),
     ).toBe("owner-2");
-    expect(resolveAssignedToUpdate({ id: "a", role: "admin" }, null)).toBe(
-      null,
-    );
+    expect(
+      await resolveAssignedToUpdate({ id: "a", role: "admin" }, null),
+    ).toBe(null);
   });
 
-  it("non-admin assignee changes are ignored", () => {
+  it("non-admin assignee changes are ignored", async () => {
     expect(
-      resolveAssignedToUpdate({ id: "creator-1", role: "client" }, "owner-2"),
+      await resolveAssignedToUpdate(
+        { id: "creator-1", role: "client" },
+        "owner-2",
+      ),
     ).toBeUndefined();
     expect(
-      resolveAssignedToUpdate({ id: "assignee-1", role: "supplier" }, null),
+      await resolveAssignedToUpdate(
+        { id: "assignee-1", role: "supplier" },
+        null,
+      ),
     ).toBeUndefined();
   });
 
-  it("undefined body field stays undefined for all roles", () => {
+  it("undefined body field stays undefined for all roles", async () => {
     expect(
-      resolveAssignedToUpdate({ id: "a", role: "admin" }, undefined),
+      await resolveAssignedToUpdate({ id: "a", role: "admin" }, undefined),
     ).toBeUndefined();
     expect(
-      resolveAssignedToUpdate({ id: "c", role: "client" }, undefined),
+      await resolveAssignedToUpdate({ id: "c", role: "client" }, undefined),
     ).toBeUndefined();
   });
 });
 
 describe("resolveStatusUpdate", () => {
-  it("admin may set status", () => {
+  it("admin may set status", async () => {
     expect(
-      resolveStatusUpdate({ id: "a", role: "admin" }, "resolved"),
+      await resolveStatusUpdate({ id: "a", role: "admin" }, "resolved"),
     ).toBe("resolved");
   });
 
-  it("non-admin status changes are ignored", () => {
+  it("non-admin status changes are ignored", async () => {
     expect(
-      resolveStatusUpdate({ id: "creator-1", role: "client" }, "closed"),
+      await resolveStatusUpdate({ id: "creator-1", role: "client" }, "closed"),
     ).toBeUndefined();
     expect(
-      resolveStatusUpdate({ id: "s1", role: "supplier" }, "in_progress"),
+      await resolveStatusUpdate({ id: "s1", role: "supplier" }, "in_progress"),
     ).toBeUndefined();
   });
 
-  it("undefined body status stays undefined for all roles", () => {
+  it("undefined body status stays undefined for all roles", async () => {
     expect(
-      resolveStatusUpdate({ id: "a", role: "admin" }, undefined),
+      await resolveStatusUpdate({ id: "a", role: "admin" }, undefined),
     ).toBeUndefined();
     expect(
-      resolveStatusUpdate({ id: "c", role: "client" }, undefined),
+      await resolveStatusUpdate({ id: "c", role: "client" }, undefined),
     ).toBeUndefined();
   });
 });

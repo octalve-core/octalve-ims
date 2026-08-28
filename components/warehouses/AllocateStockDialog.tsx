@@ -52,7 +52,8 @@ import {
   productSupplierImage,
   productSupplierLabel,
 } from "@/components/products/ProductOptionRow";
-import { useCreateStockAllocation, useProducts, useStockByProduct, useUpdateStockAllocation } from "@/hooks/queries";
+import { useProducts } from "@/hooks/queries";
+import { useCreateStockAllocation, useStockByProduct, useUpdateStockAllocation } from "@/hooks/queries/use-stock-allocation";
 import { getAllocationQtyBounds } from "@/lib/stock-allocation/validate-allocation-quantity";
 import type { Product, StockAllocation } from "@/types";
 import { cn } from "@/lib/utils";

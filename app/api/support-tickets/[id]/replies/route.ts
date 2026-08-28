@@ -68,13 +68,13 @@ export async function GET(
     const sessionRole = session.role ?? "";
     if (
       !sessionId ||
-      !canMutateSupportTicket(
+      !(await canMutateSupportTicket(
         { id: sessionId, role: sessionRole },
         {
           userId: ticket.userId,
           assignedToId: ticket.assignedToId ?? null,
         },
-      )
+      ))
     ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -136,13 +136,13 @@ export async function POST(
     const sessionRole = session.role ?? "";
     if (
       !sessionId ||
-      !canMutateSupportTicket(
+      !(await canMutateSupportTicket(
         { id: sessionId, role: sessionRole },
         {
           userId: ticket.userId,
           assignedToId: ticket.assignedToId ?? null,
         },
-      )
+      ))
     ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }

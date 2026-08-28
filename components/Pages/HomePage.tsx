@@ -12,10 +12,11 @@ import ProductList from "@/components/products/ProductList";
 import SupplierList from "@/components/supplier/SupplierList";
 import CategoryList from "@/components/category/CategoryList";
 import { StatisticsSection } from "@/components/home/StatisticsSection";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import { PageContentWrapper } from "@/components/shared";
 import FloatingActionButtons from "@/components/shared/FloatingActionButtons";
 import { PageSectionHeader } from "@/components/shared";
+import { QuickAccessGrid } from "@/components/dashboard/QuickAccessGrid";
 import { useProducts } from "@/hooks/queries";
 import { queryKeys, useSyncSsrQueryData } from "@/lib/react-query";
 import type {
@@ -116,7 +117,7 @@ export default function HomePage({
   ]);
 
   return (
-    <Navbar>
+    <AppShell>
       <PageContentWrapper>
         <PageSectionHeader
           as="h2"
@@ -140,6 +141,8 @@ export default function HomePage({
           }
         />
 
+        <QuickAccessGrid role={user?.role} />
+
         <div id="statistics" className="pb-6 scroll-mt-20">
           <StatisticsSection initialStats={initialStats} />
         </div>
@@ -161,6 +164,6 @@ export default function HomePage({
           userId={user?.id || ""}
         />
       </PageContentWrapper>
-    </Navbar>
+    </AppShell>
   );
 }

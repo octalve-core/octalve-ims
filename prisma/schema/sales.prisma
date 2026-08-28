@@ -1,0 +1,86 @@
+// Sales, order fulfillment & invoicing. TIER: core (return/transfer order
+// variants and Stripe/email-delivery fields are additive Pro-tier UI over
+// these same models — no separate models needed for that yet).
+
+model Order {
+  id                    String      @id @default(cuid())
+  orderNumber           String      @unique
+  userId                String // actor — created by
+  clientId              String? // which client this order is for (not promoted, see schema.prisma header)
+  businessId            String?
+  status                String      @default("pending") // pending, confirmed, processing, shipped, delivered, cancelled
+  paymentStatus         String      @default("unpaid") // unpaid, paid, refunded, partial
+  subtotal              Float       @default(0)
+  tax                   Float?
+  shipping              Float?
+  discount              Float?
+  total                 Float       @default(0)
+  shippingAddress       Json?
+  billingAddress        Json?
+  notes                 String?
+  trackingNumber        String?
+  trackingCarrier       String?
+  trackingUrl           String?
+  labelUrl              String?
+  estimatedDelivery     DateTime?
+  shippedAt             DateTime?
+  deliveredAt           DateTime?
+  cancelledAt           DateTime?
+  stripePaymentIntentId String?
+  createdAt             DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime?   @db.Timestamptz(3)
+  createdBy             String
+  updatedBy             String?
+  items                 OrderItem[]
+  invoice               Invoice?
+}
+
+model OrderItem {
+  id            String     @id @default(cuid())
+  orderId       String
+  productId     String
+  productName   String // snapshot at order time
+  sku           String?
+  quantity      Int
+  price         Float // unit price snapshot
+  subtotal      Float
+  warehouseId   String? // picked source warehouse when product has allocations
+  warehouseName String? // snapshot at order time
+  createdAt     DateTime   @default(now()) @db.Timestamptz(3)
+  order         Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product       Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
+  warehouse     Warehouse? @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+}
+
+model Invoice {
+  id                    String    @id @default(cuid())
+  invoiceNumber         String    @unique
+  orderId               String    @unique
+  userId                String // actor — created by
+  clientId              String? // not promoted, see schema.prisma header
+  businessId            String?
+  status                String    @default("draft") // draft, sent, paid, overdue, cancelled
+  subtotal              Float     @default(0)
+  tax                   Float?
+  shipping              Float?
+  discount              Float?
+  total                 Float     @default(0)
+  amountPaid            Float     @default(0)
+  amountDue             Float     @default(0)
+  dueDate               DateTime
+  issuedAt              DateTime  @default(now()) @db.Timestamptz(3)
+  sentAt                DateTime? @db.Timestamptz(3)
+  paidAt                DateTime? @db.Timestamptz(3)
+  cancelledAt           DateTime? @db.Timestamptz(3)
+  paymentLink           String?
+  stripePaymentIntentId String?
+  notes                 String?
+  billingAddress        Json?
+  createdAt             DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime? @db.Timestamptz(3)
+  createdBy             String
+  updatedBy             String?
+  order                 Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, dueDate])
+}

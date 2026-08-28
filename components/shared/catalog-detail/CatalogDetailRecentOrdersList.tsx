@@ -17,7 +17,7 @@ import {
   ProportionalPriceDisplay,
   RecentOrderStatusColumn,
 } from "@/components/shared";
-import { ProductThumb } from "@/components/products/ProductOptionRow";
+import { ProductThumb } from "@/components/shared/ProductThumb";
 import { CARD_EMPTY_MESSAGE_CLASS } from "@/lib/ui/card-empty-styles";
 import type { CatalogDetailRecentOrderItem } from "@/types/catalog-detail-lists";
 import { cn } from "@/lib/utils";

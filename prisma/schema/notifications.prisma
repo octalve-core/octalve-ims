@@ -1,0 +1,17 @@
+// User notifications. TIER: core.
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String // "low_stock", "stock_out", "order_confirmation", "order_status_update", etc.
+  title     String
+  message   String
+  link      String?
+  read      Boolean   @default(false)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  readAt    DateTime? @db.Timestamptz(3)
+  metadata  Json?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read, createdAt])
+}

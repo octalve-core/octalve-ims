@@ -44,10 +44,7 @@ import {
 import { getRatingDisplay } from "@/lib/ui/review-rating-display";
 import { ReviewStatusBadge } from "@/lib/ui/semantic-badges";
 import { cn } from "@/lib/utils";
-import {
-  useCreateProductReview,
-  useUpdateProductReview,
-} from "@/hooks/queries";
+import { useCreateProductReview, useUpdateProductReview } from "@/hooks/queries/use-product-reviews";
 import { useSyncDialogOpenState } from "@/hooks/use-sync-dialog-open-state";
 import type { ProductReview, ProductReviewStatus } from "@/types";
 

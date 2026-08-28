@@ -17,10 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableBodyPulseRows } from "@/components/ui/table-data-skeleton";
-import {
-  useClientPortalDashboard,
-  useClientCatalogOverview,
-} from "@/hooks/queries";
+import { useClientPortalDashboard, useClientCatalogOverview } from "@/hooks/queries/use-portal";
 import { useAuth } from "@/contexts";
 import {
   ShoppingCart,
@@ -47,7 +44,7 @@ import {
 } from "recharts";
 import { ResponsiveChartContainer } from "@/components/ui/responsive-chart-container";
 import { DeferredChartSection } from "@/components/ui/deferred-chart-section";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import {
   AvatarInlineLink,
   CopyableText,
@@ -63,7 +60,8 @@ import {
   SectionTitleRow,
   DenseCatalogProductCell,
 } from "@/components/shared";
-import { ProductThumb } from "@/components/products/ProductOptionRow";
+import { QuickAccessGrid } from "@/components/dashboard/QuickAccessGrid";
+import { ProductThumb } from "@/components/shared/ProductThumb";
 import {
   CARD_LIST_DIVIDE_CLASS,
   CARD_LIST_META_CLASS,
@@ -165,7 +163,7 @@ export default function ClientPortalPage({
 
   if (showError) {
     return (
-      <Navbar>
+      <AppShell>
         <PageContentWrapper>
           <div className="space-y-4">
             <h1 className="text-sm sm:text-lg font-medium text-primary">
@@ -187,12 +185,12 @@ export default function ClientPortalPage({
             </article>
           </div>
         </PageContentWrapper>
-      </Navbar>
+      </AppShell>
     );
   }
 
   return (
-    <Navbar>
+    <AppShell>
       <PageContentWrapper>
         <div className="flex flex-col">
           <PageSectionHeader
@@ -211,6 +209,8 @@ export default function ClientPortalPage({
               </>
             }
           />
+
+          <QuickAccessGrid role="client" />
 
           {/* Summary Cards — admin-aligned pb-6 rhythm (REQ-0074) */}
           <div
@@ -1039,6 +1039,6 @@ export default function ClientPortalPage({
           </div>
         </div>
       </PageContentWrapper>
-    </Navbar>
+    </AppShell>
   );
 }

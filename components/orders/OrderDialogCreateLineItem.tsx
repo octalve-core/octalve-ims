@@ -43,10 +43,8 @@ import {
   ProportionalPriceDisplay,
 } from "@/components/shared";
 import { cn } from "@/lib/utils";
-import {
-  prefetchStockByProduct,
-  useOrderLineStockValidation,
-} from "@/hooks/queries";
+import { useOrderLineStockValidation } from "@/hooks/queries";
+import { prefetchStockByProduct } from "@/hooks/queries/use-stock-allocation";
 import type { OrderLineStockProduct } from "@/lib/orders/order-line-stock-validation";
 import { formatOrderLineAutoAssignHint } from "@/lib/orders/order-line-stock-validation";
 import type { Product } from "@/types";

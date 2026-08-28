@@ -27,13 +27,13 @@ export async function getSupportTicketDetailForPage(
   const sessionRole = session.role ?? "";
   if (
     !sessionId ||
-    !canMutateSupportTicket(
+    !(await canMutateSupportTicket(
       { id: sessionId, role: sessionRole },
       {
         userId: record.userId,
         assignedToId: record.assignedToId ?? null,
       },
-    )
+    ))
   ) {
     return null;
   }

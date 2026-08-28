@@ -22,16 +22,11 @@ import {
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useProductStore } from "@/stores";
-import {
-  useCreateProduct,
-  useUpdateProduct,
-  useCategories,
-  useSuppliers,
-  useStockByProduct,
-} from "@/hooks/queries";
+import { useCreateProduct, useUpdateProduct, useCategories, useSuppliers } from "@/hooks/queries";
+import { useStockByProduct } from "@/hooks/queries/use-stock-allocation";
 import { useSyncDialogOpenState } from "@/hooks/use-sync-dialog-open-state";
 import { planCatalogQuantityReconcile } from "@/lib/stock-allocation/catalog-quantity-reconcile";
-import { formatCatalogAllocationSummary } from "@/lib/stock-allocation/catalog-allocation-copy";
+import { formatCatalogAllocationSummary } from "@/lib/catalog/catalog-allocation-copy";
 import { useCatalogQuantityReconcilePreview } from "@/hooks/use-catalog-quantity-reconcile-preview";
 import { AlertDialogWrapper } from "@/components/dialogs";
 import { SelectEmptyContent } from "@/components/shared/SelectEmptyContent";

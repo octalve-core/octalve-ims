@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth-server";
 import {
   getHistoryForUser,
   getActivityLogsForPage,
-} from "@/lib/server/history-data";
+} from "@/lib/history/history-data";
 import AdminHistoryContent from "@/components/admin/AdminHistoryContent";
 
 /** REQ-0025 — blocking SSR prefetch (no Suspense shell flash). */

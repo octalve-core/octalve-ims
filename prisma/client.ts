@@ -4,7 +4,7 @@ import { PrismaClient } from "@prisma/client";
  * Prisma Client Singleton
  * Prevents connection exhaustion by reusing the same instance
  * Connection pooling is configured in the connection string
- * Example: DATABASE_URL="mongodb://...?maxPoolSize=10"
+ * Example: DATABASE_URL="postgresql://user:pass@host:5432/db?connection_limit=10"
  */
 
 // PrismaClient is attached to the `global` object in development

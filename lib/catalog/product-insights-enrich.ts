@@ -4,7 +4,7 @@
  * Client: re-runs when useStockByProduct updates after stock CRUD (no page refresh).
  */
 
-import { aggregateWarehouseStockWithUnallocated } from "@/lib/insights/warehouse-stock-aggregate";
+import { aggregateWarehouseStockWithUnallocated } from "@/lib/catalog/warehouse-stock-aggregate";
 import type { CatalogEntityInsights } from "@/types/catalog-insights";
 import type { StockAllocation } from "@/types";
 

@@ -29,8 +29,8 @@ for (const bucket of BUCKETS) {
 // classified individually (loose-file dirs), vs. directories whose immediate
 // child *folders* are the classification unit and files inside don't need
 // individual listing (folder-level dirs).
-const FOLDER_LEVEL_DIRS = ["app/admin", "app/api", "lib", "components", "hooks/queries", "components/Pages"];
-const LOOSE_FILE_DIRS = ["hooks", "types", "contexts", "stores", "utils", "middleware"];
+const FOLDER_LEVEL_DIRS = ["app/admin", "app/api", "lib", "components", "hooks/queries", "components/Pages", "components/admin"];
+const LOOSE_FILE_DIRS = ["hooks", "types", "contexts", "stores", "utils", "middleware", "prisma"];
 // app/ itself: children are a MIX of folders (classified as whole units,
 // e.g. "app/orders") and two special single files (layout.tsx, page.tsx,
 // globals.css etc. at the app root) which aren't tier-relevant and are
@@ -39,11 +39,17 @@ const LOOSE_FILE_DIRS = ["hooks", "types", "contexts", "stores", "utils", "middl
 const missing: string[] = [];
 const duplicates: string[] = [];
 
+// A per-tier file-variant override (e.g. Foo.core.tsx alongside Foo.tsx,
+// picked by scripts/export-tier.ts) — an override of its base file, not an
+// independently classified unit; it inherits the base's bucket.
+const VARIANT_RE = /\.(core|pro|premium)(\.[jt]sx?)$/;
+
 function checkDir(dir: string, mode: "folder" | "loose") {
   const abs = path.join(ROOT, dir);
   if (!fs.existsSync(abs)) return;
   for (const child of fs.readdirSync(abs, { withFileTypes: true })) {
     if (child.name.startsWith(".")) continue;
+    if (VARIANT_RE.test(child.name)) continue;
     const rel = `${dir}/${child.name}`;
     // a subfolder that is itself independently walked (its own FOLDER_LEVEL_DIRS
     // entry) is expanded into per-file entries there — don't also require the

@@ -4,11 +4,11 @@
  * REQ-0140 — sold trend lines only for delivered/paid; stock buckets use qty − committed.
  */
 
-import { CATALOG_LOW_STOCK_THRESHOLD } from "@/lib/insights/constants";
 import { isOrderCountedAsSold } from "@/lib/orders/order-sales-eligibility";
 import type { CatalogEntityInsights, CatalogSalesTrendPoint } from "@/types/catalog-insights";
 
-export { CATALOG_LOW_STOCK_THRESHOLD };
+/** REQ-0085 — shared catalog/warehouse insight threshold (aligned with BusinessInsightPage's qty <= 20 rule). */
+export const CATALOG_LOW_STOCK_THRESHOLD = 20;
 
 /** @deprecated Use CATALOG_LOW_STOCK_THRESHOLD — kept for category-detail-data re-export. */
 export const CATEGORY_LOW_STOCK_THRESHOLD = CATALOG_LOW_STOCK_THRESHOLD;

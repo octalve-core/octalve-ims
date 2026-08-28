@@ -1,14 +1,15 @@
 /**
- * REQ-0084 — single-product insights from order items + optional warehouse allocations.
+ * REQ-0084 — single-product insights from order items.
  * REQ-0140 — sold stats only for delivered/paid; stock buckets use qty − committed.
+ * Does NOT compute warehouseStock (multi-warehouse allocation display data) — that's
+ * layered on top separately by enrichProductInsightsWithWarehouseStock
+ * (lib/catalog/product-insights-enrich.ts) when allocation rows are available. Keeping
+ * that out of this function keeps it a pure sales-stats calculation.
  */
 
-import { CATALOG_LOW_STOCK_THRESHOLD } from "@/lib/insights/constants";
-import { aggregateWarehouseStockWithUnallocated } from "@/lib/insights/warehouse-stock-aggregate";
 import { isOrderCountedAsSold } from "@/lib/orders/order-sales-eligibility";
-import { buildSalesTrend } from "@/lib/server/catalog-insights";
+import { buildSalesTrend, CATALOG_LOW_STOCK_THRESHOLD } from "@/lib/server/catalog-insights";
 import type { CatalogEntityInsights } from "@/types/catalog-insights";
-import type { StockAllocation } from "@/types";
 
 export type ProductInsightOrderItem = {
   quantity: number;
@@ -23,11 +24,10 @@ export type ProductInsightOrderItem = {
   } | null;
 };
 
-/** Derive product KPIs + sales trend; warehouse pie when allocations provided. */
+/** Derive product KPIs + sales trend (no warehouseStock — see file header). */
 export function computeProductInsights(
   quantity: number,
   orderItems: ProductInsightOrderItem[],
-  stockAllocations?: StockAllocation[] | null,
   /** REQ-0140 — catalog available = qty − committed (disjoint reserved sum). */
   committedQuantity = 0,
 ): CatalogEntityInsights {
@@ -94,11 +94,6 @@ export function computeProductInsights(
   );
   const demandVelocity = totalQuantitySold / daySpan;
 
-  const warehouseStock = aggregateWarehouseStockWithUnallocated(
-    stockAllocations ?? [],
-    qty,
-  );
-
   return {
     lowStockCount,
     outOfStockCount,
@@ -106,6 +101,5 @@ export function computeProductInsights(
     demandVelocity,
     salesTrend: buildSalesTrend(orderEntries),
     stockBreakdown: { available, low, out },
-    warehouseStock,
   };
 }

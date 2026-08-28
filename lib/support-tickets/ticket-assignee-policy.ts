@@ -5,10 +5,12 @@
  */
 
 import type { SupportTicketStatus } from "@/types";
+import { can } from "@/lib/auth/can";
 
 export type TicketAssigneeSession = {
   id: string;
   role: string;
+  roleId?: string | null;
 };
 
 export type TicketAssigneeRecord = {
@@ -17,26 +19,25 @@ export type TicketAssigneeRecord = {
 };
 
 /** Who may PUT ticket metadata (subject/priority/etc.). */
-export function canMutateSupportTicket(
+export async function canMutateSupportTicket(
   session: TicketAssigneeSession,
   ticket: TicketAssigneeRecord,
-): boolean {
-  if (session.role === "admin") return true;
+): Promise<boolean> {
   if (ticket.userId === session.id) return true;
   if (ticket.assignedToId === session.id) return true;
-  return false;
+  return can(session, "SupportTickets", "approve");
 }
 
 /**
  * Resolve whether assignedToId from the body should be applied.
  * Non-admin: always undefined (ignored). Admin: pass through (including null).
  */
-export function resolveAssignedToUpdate(
+export async function resolveAssignedToUpdate(
   session: TicketAssigneeSession,
   assignedToId: string | null | undefined,
-): string | null | undefined {
+): Promise<string | null | undefined> {
   if (assignedToId === undefined) return undefined;
-  if (session.role !== "admin") return undefined;
+  if (!(await can(session, "SupportTickets", "approve"))) return undefined;
   return assignedToId;
 }
 
@@ -45,11 +46,11 @@ export function resolveAssignedToUpdate(
  * Non-admin: undefined (ignored even if body includes status).
  * Admin: pass through when provided.
  */
-export function resolveStatusUpdate(
+export async function resolveStatusUpdate(
   session: TicketAssigneeSession,
   status: SupportTicketStatus | undefined,
-): SupportTicketStatus | undefined {
+): Promise<SupportTicketStatus | undefined> {
   if (status === undefined) return undefined;
-  if (session.role !== "admin") return undefined;
+  if (!(await can(session, "SupportTickets", "approve"))) return undefined;
   return status;
 }

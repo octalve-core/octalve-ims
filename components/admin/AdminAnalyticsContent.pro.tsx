@@ -1,0 +1,1742 @@
+/**
+ * Pro tier variant (identical to the Core variant) — no AI demand
+ * forecasting section (lib/forecasting is premium-only). Keep in sync
+ * with AdminAnalyticsContent.core.tsx — export-tier.ts does exact-tier
+ * matching only, no cross-tier fallback.
+ */
+"use client";
+
+import React, { useCallback, useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ChartCard } from "@/components/ui/chart-card";
+import { StatisticsCard } from "@/components/home/StatisticsCard";
+import { PageContentWrapper, PageSectionHeader } from "@/components/shared";
+import { DETAIL_PAGE_HEADER_SPACING_CLASS } from "@/lib/ui/shell-layout-styles";
+import { CARD_EMPTY_MESSAGE_CLASS } from "@/lib/ui/card-empty-styles";
+import { cn } from "@/lib/utils";
+import {
+  GLASS_ACTION_BUTTON,
+  GLASS_BUTTON_ICON_HOVER,
+  GLASS_BUTTON_SHELL_RESET,
+  GLASS_PRIMARY_BUTTON,
+} from "@/lib/ui/glass-button-styles";
+import { useDashboard } from "@/hooks/queries";
+import {
+  isDataSlotUnsettled,
+  queryKeys,
+  useSyncSsrQueryData,
+} from "@/lib/react-query";
+import { buildStoreOrderStatusBadges } from "@/lib/ui/store-order-status-badges";
+import { buildStoreInvoiceStatusBadges } from "@/lib/ui/store-invoice-status-badges";
+import { useAuth } from "@/contexts";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Package,
+  Users,
+  Truck,
+  FolderTree,
+  ShoppingCart,
+  FileText,
+  Warehouse,
+  MessageSquare,
+  Star,
+  DollarSign,
+  BarChart3,
+  TrendingUp,
+  Sparkles,
+  Loader2,
+  ArrowRight,
+  Tag,
+  Calendar,
+} from "lucide-react";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { ResponsiveChartContainer } from "@/components/ui/responsive-chart-container";
+import { DeferredChartSection } from "@/components/ui/deferred-chart-section";
+import {
+  AvatarInlineLink,
+  ClientCompactDateTime,
+  CopyableText,
+  DenseCatalogProductCell,
+  RecentOrderStatusColumn,
+} from "@/components/shared";
+import { ProductThumb } from "@/components/shared/ProductThumb";
+import { formatStableCurrency, formatClientCurrency } from "@/lib/format";
+import type { DashboardStats } from "@/types";
+import {
+  TicketStatusBadge,
+  ReviewStatusBadge,
+  ImportStatusBadge,
+} from "@/lib/ui/semantic-badges";
+import {
+  CARD_LIST_DIVIDE_CLASS,
+  CARD_LIST_ROW_CLASS,
+  CARD_LIST_META_CLASS,
+  CARD_LIST_META_ROW_CLASS,
+} from "@/lib/ui/card-list-styles";
+import {
+  CHART_LABEL_TOP_MARGIN,
+  createChartBarLabelRenderer,
+  createChartDotLabelRenderer,
+  formatChartCountLabel,
+} from "@/lib/ui/chart-point-label";
+
+/** Hydration-safe USD — en-US locale on server and client (REQ-0019). */
+function formatCurrency(value: number): string {
+  return formatStableCurrency(value);
+}
+
+export type AdminAnalyticsContentProps = {
+  initialStats?: DashboardStats | null;
+};
+
+export default function AdminAnalyticsContent({
+  initialStats,
+}: AdminAnalyticsContentProps = {}) {
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const dashboardQuery = useDashboard(initialStats ?? undefined);
+  const stats = dashboardQuery.data ?? initialStats ?? null;
+  const dataLoading = isDataSlotUnsettled(dashboardQuery, initialStats);
+
+  useSyncSsrQueryData(
+    queryKeys.dashboard.overview(user?.id ?? ""),
+    user?.id && initialStats != null ? initialStats : undefined,
+  );
+
+  const [aiText, setAiText] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiUnavailable, setAiUnavailable] = useState(false);
+
+  const buildAiSummary = useCallback(() => {
+    if (!stats) return "";
+    const c = stats.counts ?? {};
+    const r = stats.revenue ?? {};
+    const totalRev = (r.fromOrders ?? 0) + (r.fromInvoices ?? 0);
+    const parts = [
+      `Products: ${c.products ?? 0}. Users: ${c.users ?? 0}. Suppliers: ${c.suppliers ?? 0}. Categories: ${c.categories ?? 0}.`,
+      `Orders: ${c.orders ?? 0}. Invoices: ${c.invoices ?? 0}. Warehouses: ${c.warehouses ?? 0}.`,
+      `Support tickets: ${c.tickets ?? 0}. Product reviews: ${c.reviews ?? 0}.`,
+      `Total revenue (orders + invoices): ${formatStableCurrency(totalRev)}.`,
+    ];
+    const last = stats.trends?.[stats.trends.length - 1];
+    if (last) {
+      parts.push(
+        `Last month trend: ${last.orders} orders, ${formatStableCurrency(last.revenue)} revenue, ${last.products} new products, ${last.invoices} invoices.`,
+      );
+    }
+    return parts.join(" ");
+  }, [stats]);
+
+  const handleGenerateAiInsights = useCallback(async () => {
+    setAiLoading(true);
+    setAiUnavailable(false);
+    setAiText(null);
+    try {
+      const summary = buildAiSummary();
+      const res = await fetch("/api/ai/insights", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ summary }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 503) {
+          setAiUnavailable(true);
+          toast({
+            title: "AI insights not configured",
+            description:
+              "Set OPENROUTER_API_KEY and/or GROQ_API_KEY in .env to enable AI-powered insights.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Failed to generate insights",
+            description: (data?.error as string) ?? "Please try again.",
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+      const text = (data?.data as { text?: string })?.text;
+      if (text) {
+        setAiText(text);
+        toast({
+          title: "AI insights generated",
+          description: "Recommendations are ready.",
+        });
+      }
+    } catch {
+      toast({
+        title: "Failed to generate insights",
+        description: "Network error. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setAiLoading(false);
+    }
+  }, [buildAiSummary, toast]);
+
+  const revenueFromOrders =
+    stats?.orderAnalytics?.totalRevenueExcludingCancelled ??
+    stats?.revenue?.fromOrders ??
+    0;
+
+  return (
+    <PageContentWrapper>
+      <div className="flex flex-col gap-6">
+        <PageSectionHeader
+          as="h1"
+          icon={BarChart3}
+          tone="violet"
+          title="Store Analytics & Dashboard (self + client + supplier + other users)"
+          description="Overview, statistics, trends, and AI-powered insights across products, users, suppliers, categories, orders, invoices, warehouses, tickets, and reviews. Store-wide metrics."
+          className={DETAIL_PAGE_HEADER_SPACING_CLASS}
+        />
+
+        {/* Overview cards — REQ-0021 shell-first: titles/icons always visible */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 items-stretch">
+          <StatisticsCard
+            title="Total Products"
+            value={stats?.counts?.products ?? 0}
+            description="Products availability"
+            icon={Package}
+            variant="rose"
+            valueLoading={dataLoading}
+            badgeValuesLoading={dataLoading}
+            badges={[
+              {
+                label: "Available",
+                value: stats?.productStatusBreakdown?.available ?? 0,
+              },
+              {
+                label: "Stock low",
+                value: stats?.productStatusBreakdown?.stockLow ?? 0,
+              },
+              {
+                label: "Stock out",
+                value: stats?.productStatusBreakdown?.stockOut ?? 0,
+              },
+            ]}
+          />
+          <StatisticsCard
+            title="Total Value"
+            value={formatCurrency(stats?.totalInventoryValue ?? 0)}
+            description="Total inventory value"
+            icon={DollarSign}
+            variant="violet"
+            valueLoading={dataLoading}
+            badgeValuesLoading={dataLoading}
+            badges={[
+              {
+                label: "Orders",
+                value: formatCurrency(
+                  stats?.orderAnalytics?.totalRevenueExcludingCancelled ??
+                    stats?.revenue?.fromOrders ??
+                    0,
+                ),
+              },
+              {
+                label: "Invoices",
+                value: formatCurrency(stats?.revenue?.fromInvoices ?? 0),
+              },
+              {
+                label: "Due",
+                value: formatCurrency(
+                  stats?.invoiceAnalytics?.outstandingAmount ?? 0,
+                ),
+              },
+              {
+                label: "Cancelled",
+                value: formatCurrency(
+                  stats?.orderAnalytics?.cancelledOrderAmount ?? 0,
+                ),
+              },
+            ]}
+          />
+          <StatisticsCard
+            title="Total Revenue"
+            value={formatCurrency(revenueFromOrders)}
+            description="Profits (excl. cancelled)"
+            icon={DollarSign}
+            variant="emerald"
+            valueLoading={dataLoading}
+            badgeValuesLoading={dataLoading}
+            badges={[
+              {
+                label: "Paid",
+                value: formatCurrency(
+                  stats?.orderAnalytics?.paidOrderAmount ?? 0,
+                ),
+              },
+              {
+                label: "Partial",
+                value: formatCurrency(
+                  stats?.orderAnalytics?.partialOrderAmount ?? 0,
+                ),
+              },
+              {
+                label: "Due",
+                value: formatCurrency(
+                  stats?.invoiceAnalytics?.outstandingAmount ?? 0,
+                ),
+              },
+              {
+                label: "Refund",
+                value: formatCurrency(
+                  stats?.orderAnalytics?.refundedAmount ?? 0,
+                ),
+              },
+              {
+                label: "Pending",
+                value: formatCurrency(
+                  stats?.orderAnalytics?.pendingOrderAmount ?? 0,
+                ),
+              },
+            ]}
+          />
+          <StatisticsCard
+            title="Total Orders"
+            value={stats?.counts?.orders ?? 0}
+            description="Total orders placed (self + client)"
+            icon={ShoppingCart}
+            variant="blue"
+            valueLoading={dataLoading}
+            badgeValuesLoading={dataLoading}
+            badges={buildStoreOrderStatusBadges({
+              statusDistribution: stats?.orderAnalytics?.statusDistribution,
+              refundedCount: stats?.orderAnalytics?.refundedCount,
+            })}
+          />
+          <StatisticsCard
+            title="Total Users"
+            value={stats?.counts?.users ?? 0}
+            description="Registered users"
+            icon={Users}
+            variant="amber"
+            valueLoading={dataLoading}
+            badgeValuesLoading={dataLoading}
+            badges={[
+              {
+                label: "Admin",
+                value: stats?.userRoleBreakdown?.admin ?? 0,
+              },
+              {
+                label: "Client",
+                value: stats?.userRoleBreakdown?.client ?? 0,
+              },
+              {
+                label: "Supplier",
+                value: stats?.userRoleBreakdown?.supplier ?? 0,
+              },
+            ]}
+          />
+          <StatisticsCard
+            title="Total Suppliers"
+            value={stats?.counts?.suppliers ?? 0}
+            description="Suppliers"
+            icon={Truck}
+            variant="emerald"
+            valueLoading={dataLoading}
+            badgeValuesLoading={dataLoading}
+            badges={[
+              {
+                label: "Active",
+                value: stats?.supplierStatusBreakdown?.active ?? 0,
+              },
+              {
+                label: "Inactive",
+                value: stats?.supplierStatusBreakdown?.inactive ?? 0,
+              },
+            ]}
+          />
+          <StatisticsCard
+            title="Total Warehouses"
+            value={stats?.counts?.warehouses ?? 0}
+            description="Storage locations"
+            icon={Warehouse}
+            variant="teal"
+            valueLoading={dataLoading}
+            badgeValuesLoading={dataLoading}
+            badges={[
+              {
+                label: "Active",
+                value: stats?.warehouseAnalytics?.activeWarehouses ?? 0,
+              },
+              {
+                label: "Inactive",
+                value: stats?.warehouseAnalytics?.inactiveWarehouses ?? 0,
+              },
+            ]}
+          />
+          <StatisticsCard
+            title="Invoices"
+            value={stats?.counts?.invoices ?? 0}
+            description="Total invoices (store-wide)"
+            icon={FileText}
+            variant="sky"
+            valueLoading={dataLoading}
+            badgeValuesLoading={dataLoading}
+            badges={buildStoreInvoiceStatusBadges({
+              paidCount: stats?.invoiceAnalytics?.statusDistribution?.paid,
+              partialCount: stats?.invoiceAnalytics?.partialCount,
+              pendingCount:
+                stats?.invoiceAnalytics?.pendingCount ??
+                (stats?.invoiceAnalytics?.statusDistribution?.draft ?? 0) +
+                  (stats?.invoiceAnalytics?.statusDistribution?.sent ?? 0),
+              overdueCount:
+                stats?.invoiceAnalytics?.statusDistribution?.overdue,
+              cancelledCount:
+                stats?.invoiceAnalytics?.statusDistribution?.cancelled,
+              refundedCount: stats?.orderAnalytics?.refundedCount,
+            })}
+          />
+          <StatisticsCard
+            title="Categories"
+            value={stats?.counts?.categories ?? 0}
+            description="Product categories"
+            icon={FolderTree}
+            variant="amber"
+            valueLoading={dataLoading}
+            badgeValuesLoading={dataLoading}
+            badges={[
+              {
+                label: "Active",
+                value: stats?.categoryStatusBreakdown?.active ?? 0,
+              },
+              {
+                label: "Inactive",
+                value: stats?.categoryStatusBreakdown?.inactive ?? 0,
+              },
+            ]}
+          />
+          <StatisticsCard
+            title="Support Tickets"
+            value={stats?.counts?.tickets ?? 0}
+            description="Tickets"
+            icon={MessageSquare}
+            variant="rose"
+            valueLoading={dataLoading}
+            badgeValuesLoading={dataLoading}
+            badges={[
+              {
+                label: "Open",
+                value: stats?.ticketStatusBreakdown?.open ?? 0,
+              },
+              {
+                label: "In progress",
+                value: stats?.ticketStatusBreakdown?.in_progress ?? 0,
+              },
+              {
+                label: "Resolved",
+                value: stats?.ticketStatusBreakdown?.resolved ?? 0,
+              },
+              {
+                label: "Closed",
+                value: stats?.ticketStatusBreakdown?.closed ?? 0,
+              },
+            ]}
+          />
+          <StatisticsCard
+            title="Reviews"
+            value={stats?.counts?.reviews ?? 0}
+            description="Product reviews"
+            icon={Star}
+            variant="orange"
+            valueLoading={dataLoading}
+            badgeValuesLoading={dataLoading}
+            badges={[
+              {
+                label: "Pending",
+                value: stats?.reviewStatusBreakdown?.pending ?? 0,
+              },
+              {
+                label: "Approved",
+                value: stats?.reviewStatusBreakdown?.approved ?? 0,
+              },
+              {
+                label: "Rejected",
+                value: stats?.reviewStatusBreakdown?.rejected ?? 0,
+              },
+            ]}
+          />
+          <StatisticsCard
+            title="Average Order Value"
+            value={formatCurrency(
+              stats?.orderAnalytics?.averageOrderValue ?? 0,
+            )}
+            description="Per order (store-wide)"
+            icon={DollarSign}
+            variant="sky"
+            valueLoading={dataLoading}
+            badgeValuesLoading={dataLoading}
+            badges={[
+              {
+                label: "Paid revenue",
+                value: formatCurrency(
+                  stats?.invoiceAnalytics?.paidRevenue ?? 0,
+                ),
+              },
+              {
+                label: "Due",
+                value: formatCurrency(
+                  stats?.invoiceAnalytics?.outstandingAmount ?? 0,
+                ),
+              },
+            ]}
+          />
+        </div>
+
+        {/* Trending charts */}
+        {stats && stats.trends?.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+            <ChartCard
+              variant="sky"
+              title="Orders & revenue over time"
+              icon={BarChart3}
+              description="Last 12 months. Revenue = order totals (excl. cancelled)."
+            >
+              <DeferredChartSection
+                loading={dataLoading}
+                hasData={(stats.trends?.length ?? 0) > 0}
+              >
+                <ResponsiveChartContainer>
+                  <AreaChart
+                    data={stats.trends}
+                    margin={{
+                      top: CHART_LABEL_TOP_MARGIN,
+                      right: 8,
+                      left: 0,
+                      bottom: 0,
+                    }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="stroke-muted"
+                    />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 12 }}
+                      className="text-muted-foreground"
+                    />
+                    <YAxis
+                      yAxisId="left"
+                      tick={{ fontSize: 12 }}
+                      className="text-muted-foreground"
+                    />
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      tick={{ fontSize: 12 }}
+                      className="text-muted-foreground"
+                      tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                      }}
+                      formatter={(value, name) => [
+                        name === "revenue"
+                          ? formatClientCurrency(Number(value ?? 0))
+                          : (value ?? 0),
+                        name === "revenue"
+                          ? "Order revenue (excl. cancelled)"
+                          : "Orders",
+                      ]}
+                      labelFormatter={(label) => label}
+                    />
+                    <Area
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="orders"
+                      stroke="hsl(var(--chart-1))"
+                      fill="hsl(var(--chart-1) / 0.2)"
+                      name="orders"
+                      dot={{ r: 3 }}
+                      label={createChartDotLabelRenderer(
+                        stats.trends?.length ?? 0,
+                        formatChartCountLabel,
+                        false,
+                      )}
+                    />
+                    <Area
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="hsl(var(--chart-2))"
+                      fill="hsl(var(--chart-2) / 0.2)"
+                      name="revenue"
+                      dot={{ r: 3 }}
+                      label={createChartDotLabelRenderer(
+                        stats.trends?.length ?? 0,
+                        undefined,
+                        false,
+                      )}
+                    />
+                  </AreaChart>
+                </ResponsiveChartContainer>
+              </DeferredChartSection>
+            </ChartCard>
+            <ChartCard
+              variant="violet"
+              title="New products & invoices"
+              icon={TrendingUp}
+              description="Last 12 months"
+            >
+              <DeferredChartSection
+                loading={dataLoading}
+                hasData={(stats.trends?.length ?? 0) > 0}
+              >
+                <ResponsiveChartContainer>
+                  <BarChart
+                    data={stats.trends}
+                    margin={{
+                      top: CHART_LABEL_TOP_MARGIN,
+                      right: 8,
+                      left: 8,
+                      bottom: 8,
+                    }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="stroke-muted"
+                    />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 12 }}
+                      className="text-muted-foreground"
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12 }}
+                      className="text-muted-foreground"
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                      }}
+                    />
+                    <Bar
+                      dataKey="products"
+                      fill="hsl(var(--chart-1))"
+                      name="Products"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="invoices"
+                      fill="hsl(var(--chart-2))"
+                      name="Invoices"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveChartContainer>
+              </DeferredChartSection>
+            </ChartCard>
+          </div>
+        )}
+
+        {/* Order Analytics section */}
+        {stats && stats.orderAnalytics && (
+          <div className="flex flex-col gap-6">
+            <h2 className="text-sm sm:text-base font-medium text-gray-700 dark:text-white flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5 text-sky-600" />
+              Order Analytics
+            </h2>
+
+            {/* Summary cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <StatisticsCard
+                title="Average Order Value"
+                value={formatCurrency(stats.orderAnalytics.averageOrderValue)}
+                description="Per order (incl. cancelled)"
+                icon={DollarSign}
+                variant="emerald"
+                badges={[
+                  { label: "Orders", value: stats.counts?.orders },
+                  {
+                    label: "Excl. cancelled",
+                    value:
+                      stats.counts?.orders -
+                      (stats.orderAnalytics.statusDistribution.cancelled ?? 0),
+                  },
+                  {
+                    label: "Avg (excl.)",
+                    value:
+                      stats.counts?.orders -
+                        (stats.orderAnalytics.statusDistribution.cancelled ??
+                          0) >
+                      0
+                        ? formatCurrency(
+                            (stats.orderAnalytics
+                              .totalRevenueExcludingCancelled ?? 0) /
+                              (stats.counts?.orders -
+                                (stats.orderAnalytics.statusDistribution
+                                  .cancelled ?? 0)),
+                          )
+                        : formatCurrency(0),
+                  },
+                ]}
+              />
+              <StatisticsCard
+                title="Total Order Revenue"
+                value={formatCurrency(
+                  stats.orderAnalytics.totalRevenueExcludingCancelled ??
+                    stats.orderAnalytics.totalRevenue,
+                )}
+                description="Profits (excl. cancelled)"
+                icon={DollarSign}
+                variant="sky"
+                badges={[
+                  {
+                    label: "Paid",
+                    value: formatCurrency(
+                      stats.orderAnalytics.paidOrderAmount ?? 0,
+                    ),
+                  },
+                  {
+                    label: "Partial",
+                    value: formatCurrency(
+                      stats.orderAnalytics.partialOrderAmount ?? 0,
+                    ),
+                  },
+                  {
+                    label: "Due",
+                    value: formatCurrency(
+                      stats.invoiceAnalytics?.outstandingAmount ?? 0,
+                    ),
+                  },
+                  {
+                    label: "Refund",
+                    value: formatCurrency(
+                      stats.orderAnalytics.refundedAmount ?? 0,
+                    ),
+                  },
+                  {
+                    label: "Pending",
+                    value: formatCurrency(
+                      stats.orderAnalytics.pendingOrderAmount ?? 0,
+                    ),
+                  },
+                  {
+                    label: "Cancelled",
+                    value: formatCurrency(
+                      stats.orderAnalytics.cancelledOrderAmount ?? 0,
+                    ),
+                  },
+                ]}
+              />
+              <StatisticsCard
+                title="Completed Orders"
+                value={stats.orderAnalytics.statusDistribution.delivered}
+                description="Delivered"
+                icon={ShoppingCart}
+                variant="blue"
+                badges={[
+                  {
+                    label: "Pending",
+                    value: stats.orderAnalytics.statusDistribution.pending,
+                  },
+                  {
+                    label: "Confirmed",
+                    value: stats.orderAnalytics.statusDistribution.confirmed,
+                  },
+                  {
+                    label: "Shipping",
+                    value:
+                      (stats.orderAnalytics.statusDistribution.processing ??
+                        0) +
+                      (stats.orderAnalytics.statusDistribution.shipped ?? 0),
+                  },
+                  {
+                    label: "Delivered",
+                    value: stats.orderAnalytics.statusDistribution.delivered,
+                  },
+                  {
+                    label: "Refunded",
+                    value: stats.orderAnalytics.refundedCount ?? 0,
+                  },
+                  {
+                    label: "Cancelled",
+                    value: stats.orderAnalytics.statusDistribution.cancelled,
+                  },
+                ]}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+              {/* Order Status Distribution */}
+              <ChartCard
+                variant="sky"
+                title="Order Status Distribution"
+                icon={BarChart3}
+                description="Store-wide"
+              >
+                <DeferredChartSection loading={dataLoading} hasData={!!stats}>
+                  <ResponsiveChartContainer>
+                    <BarChart
+                      data={[
+                        {
+                          status: "Pending",
+                          count:
+                            stats.orderAnalytics.statusDistribution.pending,
+                          fill: "hsl(45, 93%, 47%)",
+                        },
+                        {
+                          status: "Confirmed",
+                          count:
+                            stats.orderAnalytics.statusDistribution.confirmed,
+                          fill: "hsl(142, 76%, 36%)",
+                        },
+                        {
+                          status: "Processing",
+                          count:
+                            stats.orderAnalytics.statusDistribution.processing,
+                          fill: "hsl(217, 91%, 60%)",
+                        },
+                        {
+                          status: "Shipped",
+                          count:
+                            stats.orderAnalytics.statusDistribution.shipped,
+                          fill: "hsl(199, 89%, 48%)",
+                        },
+                        {
+                          status: "Delivered",
+                          count:
+                            stats.orderAnalytics.statusDistribution.delivered,
+                          fill: "hsl(142, 71%, 45%)",
+                        },
+                        {
+                          status: "Cancelled",
+                          count:
+                            stats.orderAnalytics.statusDistribution.cancelled,
+                          fill: "hsl(0, 84%, 60%)",
+                        },
+                      ]}
+                      layout="vertical"
+                      margin={{
+                        top: CHART_LABEL_TOP_MARGIN,
+                        right: 8,
+                        left: 70,
+                        bottom: 8,
+                      }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        className="stroke-muted"
+                        horizontal={false}
+                      />
+                      <XAxis
+                        type="number"
+                        tick={{ fontSize: 12 }}
+                        className="text-muted-foreground"
+                      />
+                      <YAxis
+                        type="category"
+                        dataKey="status"
+                        tick={{ fontSize: 12 }}
+                        className="text-muted-foreground"
+                        width={65}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                        }}
+                        formatter={(value) => [value, "Orders"]}
+                      />
+                      <Bar
+                        dataKey="count"
+                        radius={[0, 4, 4, 0]}
+                        label={createChartBarLabelRenderer(
+                          formatChartCountLabel,
+                        )}
+                      />
+                    </BarChart>
+                  </ResponsiveChartContainer>
+                </DeferredChartSection>
+              </ChartCard>
+
+              {/* Top Products by Orders — Orders = order lines; Revenue = sum of line subtotals (qty × price) */}
+              <ChartCard
+                variant="teal"
+                title="Top 5 Products by Orders"
+                icon={Package}
+                description="Store-wide. Revenue = sum of order line subtotals."
+              >
+                {stats.orderAnalytics.topProducts.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    No order data yet
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-left">
+                          <th className="py-2 pr-4 text-gray-700 dark:text-white font-medium">
+                            Product
+                          </th>
+                          <th
+                            className="py-2 pr-4 text-right text-gray-700 dark:text-white font-medium"
+                            title="Number of order lines"
+                          >
+                            Lines
+                          </th>
+                          <th className="py-2 pr-4 text-right text-gray-700 dark:text-white font-medium">
+                            Qty
+                          </th>
+                          <th className="py-2 text-right text-gray-700 dark:text-white font-medium">
+                            Revenue
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {stats.orderAnalytics.topProducts
+                          .slice(0, 5)
+                          .map((p, i) => (
+                            // Index suffix guards stale Redis rows that still split by name/sku
+                            <tr key={`${p.productId}:${i}`}>
+                              <td className="py-2 pr-4 font-normal min-w-0 max-w-[280px]">
+                                <DenseCatalogProductCell
+                                  productId={p.productId}
+                                  productName={p.productName}
+                                  sku={p.sku ?? ""}
+                                  imageUrl={p.imageUrl}
+                                  categoryId={p.categoryId}
+                                  categoryName={p.categoryName}
+                                  supplierId={p.supplierId}
+                                  supplierName={p.supplierName}
+                                  supplierImage={p.supplierImage}
+                                />
+                              </td>
+                              <td className="py-2 pr-4 text-right text-gray-700 dark:text-white">
+                                {p.orderCount}
+                              </td>
+                              <td className="py-2 pr-4 text-right text-gray-700 dark:text-white">
+                                {p.totalQuantity}
+                              </td>
+                              <td className="py-2 text-right text-gray-700 dark:text-white">
+                                {formatStableCurrency(p.totalRevenue)}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </ChartCard>
+            </div>
+          </div>
+        )}
+
+        {/* Invoice Analytics section */}
+        {stats && stats.invoiceAnalytics && (
+          <div className="flex flex-col gap-6">
+            <h2 className="text-sm sm:text-base font-medium text-gray-700 dark:text-white flex items-center gap-2">
+              <FileText className="h-5 w-5 text-amber-600" />
+              Invoice Analytics
+            </h2>
+
+            {/* Summary cards — 4 cards: 2 per row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2 items-stretch">
+              <StatisticsCard
+                title="Avg Invoice Value"
+                value={formatCurrency(
+                  stats.invoiceAnalytics
+                    .averageInvoiceValueExcludingCancelled ??
+                    stats.invoiceAnalytics.averageInvoiceValue,
+                )}
+                description="Per invoice (excl. cancelled)"
+                icon={DollarSign}
+                variant="amber"
+                badges={[
+                  { label: "Invoices", value: stats.counts?.invoices },
+                  {
+                    label: "Excl. cancelled",
+                    value:
+                      stats.counts?.invoices -
+                      (stats.invoiceAnalytics.statusDistribution.cancelled ??
+                        0),
+                  },
+                  {
+                    label: "Cancelled",
+                    value:
+                      stats.invoiceAnalytics.statusDistribution.cancelled ?? 0,
+                  },
+                  {
+                    label: "Total (excl.)",
+                    value: formatCurrency(
+                      stats.invoiceAnalytics.totalExcludingCancelled ?? 0,
+                    ),
+                  },
+                ]}
+              />
+              <StatisticsCard
+                title="Paid Revenue"
+                value={formatCurrency(stats.invoiceAnalytics.paidRevenue)}
+                description="Collected"
+                icon={DollarSign}
+                variant="emerald"
+                badges={[
+                  {
+                    label: "Paid",
+                    value: stats.invoiceAnalytics.statusDistribution.paid ?? 0,
+                  },
+                  {
+                    label: "Partial",
+                    value: stats.invoiceAnalytics.partialCount ?? 0,
+                  },
+                  {
+                    label: "Pending",
+                    value:
+                      stats.invoiceAnalytics.pendingCount ??
+                      (stats.invoiceAnalytics.statusDistribution.draft ?? 0) +
+                        (stats.invoiceAnalytics.statusDistribution.sent ?? 0),
+                  },
+                  {
+                    label: "Cancelled",
+                    value:
+                      stats.invoiceAnalytics.statusDistribution.cancelled ?? 0,
+                  },
+                ]}
+              />
+              <StatisticsCard
+                title="Due"
+                value={formatCurrency(stats.invoiceAnalytics.outstandingAmount)}
+                description="Awaiting payment"
+                icon={FileText}
+                variant="sky"
+                badges={[
+                  {
+                    label: "Draft",
+                    value: stats.invoiceAnalytics.statusDistribution.draft ?? 0,
+                  },
+                  {
+                    label: "Sent",
+                    value: stats.invoiceAnalytics.statusDistribution.sent ?? 0,
+                  },
+                  {
+                    label: "Overdue",
+                    value:
+                      stats.invoiceAnalytics.statusDistribution.overdue ?? 0,
+                  },
+                  {
+                    label: "Cancelled",
+                    value:
+                      stats.invoiceAnalytics.statusDistribution.cancelled ?? 0,
+                  },
+                ]}
+              />
+              <StatisticsCard
+                title="Overdue"
+                value={formatCurrency(stats.invoiceAnalytics.overdueAmount)}
+                description="Past due date"
+                icon={FileText}
+                variant="rose"
+                badges={[
+                  {
+                    label: "Overdue",
+                    value:
+                      stats.invoiceAnalytics.statusDistribution.overdue ?? 0,
+                  },
+                  {
+                    label: "Amount",
+                    value: formatCurrency(stats.invoiceAnalytics.overdueAmount),
+                  },
+                  {
+                    label: "Paid",
+                    value: stats.invoiceAnalytics.statusDistribution.paid ?? 0,
+                  },
+                  {
+                    label: "Cancelled",
+                    value:
+                      stats.invoiceAnalytics.statusDistribution.cancelled ?? 0,
+                  },
+                ]}
+              />
+            </div>
+
+            {/* Invoice Status Distribution */}
+            <ChartCard
+              variant="amber"
+              title="Invoice Status Distribution"
+              icon={FileText}
+              description="Store-wide"
+            >
+              <DeferredChartSection loading={dataLoading} hasData={!!stats}>
+                <ResponsiveChartContainer>
+                  <BarChart
+                    data={[
+                      {
+                        status: "Draft",
+                        count: stats.invoiceAnalytics.statusDistribution.draft,
+                        fill: "hsl(220, 9%, 46%)",
+                      },
+                      {
+                        status: "Sent",
+                        count: stats.invoiceAnalytics.statusDistribution.sent,
+                        fill: "hsl(217, 91%, 60%)",
+                      },
+                      {
+                        status: "Paid",
+                        count: stats.invoiceAnalytics.statusDistribution.paid,
+                        fill: "hsl(142, 71%, 45%)",
+                      },
+                      {
+                        status: "Overdue",
+                        count:
+                          stats.invoiceAnalytics.statusDistribution.overdue,
+                        fill: "hsl(0, 84%, 60%)",
+                      },
+                      {
+                        status: "Cancelled",
+                        count:
+                          stats.invoiceAnalytics.statusDistribution.cancelled,
+                        fill: "hsl(0, 0%, 45%)",
+                      },
+                    ]}
+                    layout="vertical"
+                    margin={{
+                      top: CHART_LABEL_TOP_MARGIN,
+                      right: 8,
+                      left: 70,
+                      bottom: 8,
+                    }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="stroke-muted"
+                      horizontal={false}
+                    />
+                    <XAxis
+                      type="number"
+                      tick={{ fontSize: 12 }}
+                      className="text-muted-foreground"
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="status"
+                      tick={{ fontSize: 12 }}
+                      className="text-muted-foreground"
+                      width={65}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                      }}
+                      formatter={(value) => [value, "Invoices"]}
+                    />
+                    <Bar
+                      dataKey="count"
+                      radius={[0, 4, 4, 0]}
+                      label={createChartBarLabelRenderer(formatChartCountLabel)}
+                    />
+                  </BarChart>
+                </ResponsiveChartContainer>
+              </DeferredChartSection>
+            </ChartCard>
+          </div>
+        )}
+
+        {/* Warehouse Analytics section */}
+        {stats &&
+          stats.warehouseAnalytics &&
+          (() => {
+            const typeMap = new Map(
+              (stats.warehouseAnalytics.typeDistribution ?? []).map((t) => [
+                (t.type ?? "").toLowerCase().trim(),
+                t.count,
+              ]),
+            );
+            const knownTypes = ["main", "secondary", "storage", "hub", "store"];
+            const othersCount = [...typeMap.entries()].reduce(
+              (sum, [k, v]) => (knownTypes.includes(k) ? sum : sum + v),
+              0,
+            );
+            const warehouseTypeBadges = [
+              { key: "main", label: "Main" },
+              { key: "secondary", label: "Secondary" },
+              { key: "storage", label: "Storage" },
+              { key: "hub", label: "Hub" },
+              { key: "store", label: "Store" },
+              { key: "others", label: "Others" },
+            ].map(({ key, label }) => ({
+              label,
+              value: key === "others" ? othersCount : (typeMap.get(key) ?? 0),
+            }));
+            return (
+              <div className="flex flex-col gap-6">
+                <h2 className="text-sm sm:text-base font-medium text-gray-700 dark:text-white flex items-center gap-2">
+                  <Warehouse className="h-5 w-5 text-amber-500" />
+                  Warehouse Analytics
+                </h2>
+
+                {/* Summary cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <StatisticsCard
+                    title="Total Warehouses"
+                    value={stats.warehouseAnalytics.totalWarehouses}
+                    description="All locations"
+                    icon={Warehouse}
+                    variant="teal"
+                    badges={[
+                      {
+                        label: "Active",
+                        value: stats.warehouseAnalytics.activeWarehouses,
+                      },
+                      {
+                        label: "Inactive",
+                        value: stats.warehouseAnalytics.inactiveWarehouses,
+                      },
+                    ]}
+                  />
+                  <StatisticsCard
+                    title="Active Warehouses"
+                    value={stats.warehouseAnalytics.activeWarehouses}
+                    description="Operational"
+                    icon={Warehouse}
+                    variant="emerald"
+                    badges={warehouseTypeBadges}
+                  />
+                  <StatisticsCard
+                    title="Inactive Warehouses"
+                    value={stats.warehouseAnalytics.inactiveWarehouses}
+                    description="Not in use"
+                    icon={Warehouse}
+                    variant="rose"
+                    badges={warehouseTypeBadges}
+                  />
+                </div>
+
+                {/* Warehouse Type Distribution */}
+                {stats.warehouseAnalytics.typeDistribution.length > 0 && (
+                  <ChartCard
+                    variant="teal"
+                    title="Warehouses by Type"
+                    icon={Warehouse}
+                    description="Store-wide"
+                  >
+                    <DeferredChartSection
+                      loading={dataLoading}
+                      hasData={
+                        stats.warehouseAnalytics.typeDistribution.length > 0
+                      }
+                    >
+                      <ResponsiveChartContainer>
+                        <BarChart
+                          data={stats.warehouseAnalytics.typeDistribution.map(
+                            (t, i) => ({
+                              type: t.type,
+                              count: t.count,
+                              fill: `hsl(${(i * 60 + 35) % 360}, 70%, 50%)`,
+                            }),
+                          )}
+                          layout="vertical"
+                          margin={{
+                            top: CHART_LABEL_TOP_MARGIN,
+                            right: 8,
+                            left: 90,
+                            bottom: 8,
+                          }}
+                        >
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            className="stroke-muted"
+                            horizontal={false}
+                          />
+                          <XAxis
+                            type="number"
+                            tick={{ fontSize: 12 }}
+                            className="text-muted-foreground"
+                          />
+                          <YAxis
+                            type="category"
+                            dataKey="type"
+                            tick={{ fontSize: 12 }}
+                            className="text-muted-foreground"
+                            width={85}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: "hsl(var(--card))",
+                              border: "1px solid hsl(var(--border))",
+                              borderRadius: "8px",
+                            }}
+                            formatter={(value) => [value, "Warehouses"]}
+                          />
+                          <Bar
+                            dataKey="count"
+                            radius={[0, 4, 4, 0]}
+                            label={createChartBarLabelRenderer(
+                              formatChartCountLabel,
+                            )}
+                          />
+                        </BarChart>
+                      </ResponsiveChartContainer>
+                    </DeferredChartSection>
+                  </ChartCard>
+                )}
+              </div>
+            );
+          })()}
+
+        {/* Log summary: recent activity — 4 cards: 2 per row */}
+        {stats && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2 items-stretch">
+            <ChartCard
+              variant="sky"
+              title="Recent Orders"
+              icon={ShoppingCart}
+              description="Latest 5"
+            >
+              <div className="flex flex-col flex-1 min-h-[140px] gap-2">
+                {stats.recent.orders.length === 0 ? (
+                  <p className={CARD_EMPTY_MESSAGE_CLASS}>No orders yet</p>
+                ) : (
+                  <ul className={CARD_LIST_DIVIDE_CLASS}>
+                    {stats.recent.orders.slice(0, 5).map((o) => {
+                      // REQ-0174 — order # / product·category·supplier / buyer·date
+                      const buyerLabel =
+                        o.placedByName?.trim() ||
+                        o.placedByEmail?.trim() ||
+                        null;
+                      const productLabel = o.productPreview?.trim() || null;
+                      return (
+                        <li key={o.id} className={CARD_LIST_ROW_CLASS}>
+                          {/* REQ-0176 — gap-1.5 between meta lines; date-first buyer row (ring vs thumb align) */}
+                          <div className="min-w-0 flex-1 flex flex-col gap-1.5 overflow-visible">
+                            <CopyableText
+                              value={o.orderNumber}
+                              className="max-w-full"
+                            >
+                              <Link
+                                href={`/admin/orders/${o.id}`}
+                                className="text-xs font-normal text-sky-600 dark:text-sky-400 hover:text-sky-500 dark:hover:text-sky-300 truncate block"
+                              >
+                                {o.orderNumber}
+                              </Link>
+                            </CopyableText>
+                            <div className={CARD_LIST_META_ROW_CLASS}>
+                              {o.productId && productLabel ? (
+                                <span className="inline-flex items-center gap-1 min-w-0">
+                                  <ProductThumb
+                                    name={productLabel}
+                                    imageUrl={o.productImageUrl}
+                                    size="sm"
+                                  />
+                                  <Link
+                                    href={`/admin/products/${o.productId}`}
+                                    className="text-xs font-normal text-sky-600 dark:text-sky-400 hover:text-sky-500 dark:hover:text-sky-300 truncate"
+                                  >
+                                    {productLabel}
+                                  </Link>
+                                </span>
+                              ) : productLabel ? (
+                                <span className="truncate">{productLabel}</span>
+                              ) : null}
+                              {o.categoryId && o.categoryName ? (
+                                <>
+                                  <span aria-hidden>·</span>
+                                  <Link
+                                    href={`/admin/categories/${o.categoryId}`}
+                                    className="inline-flex items-center gap-1 text-xs font-normal text-sky-600 dark:text-sky-400 hover:text-sky-500 dark:hover:text-sky-300 min-w-0"
+                                  >
+                                    <Tag
+                                      className="h-3 w-3 shrink-0"
+                                      aria-hidden
+                                    />
+                                    <span className="truncate">
+                                      {o.categoryName}
+                                    </span>
+                                  </Link>
+                                </>
+                              ) : null}
+                              {o.supplierId && o.supplierName ? (
+                                <>
+                                  <span aria-hidden>·</span>
+                                  <AvatarInlineLink
+                                    seed={o.supplierId}
+                                    image={o.supplierImage}
+                                    label={o.supplierName}
+                                    href={`/admin/suppliers/${o.supplierId}`}
+                                    size={20}
+                                    linkClassName="text-xs"
+                                    className="gap-1.5"
+                                  />
+                                </>
+                              ) : null}
+                            </div>
+                            <div className={CARD_LIST_META_ROW_CLASS}>
+                              <span className="inline-flex items-center gap-1 min-w-0">
+                                <Calendar
+                                  className="h-3 w-3 shrink-0 text-gray-500 dark:text-gray-400"
+                                  aria-hidden
+                                />
+                                <ClientCompactDateTime
+                                  date={o.createdAt}
+                                  semantic="created"
+                                />
+                              </span>
+                              {(buyerLabel || o.placedById) && (
+                                <span aria-hidden>·</span>
+                              )}
+                              {buyerLabel && o.placedById ? (
+                                <AvatarInlineLink
+                                  label={buyerLabel}
+                                  seed={o.placedById}
+                                  image={o.placedByImage}
+                                  href={`/admin/user-management/${o.placedById}`}
+                                  size={20}
+                                  linkClassName="text-xs"
+                                  className="gap-1.5"
+                                />
+                              ) : buyerLabel ? (
+                                <span className={CARD_LIST_META_CLASS}>
+                                  {buyerLabel}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                          <RecentOrderStatusColumn
+                            status={o.status}
+                            statusAt={o.statusAt}
+                            paymentStatus={o.paymentStatus}
+                            trailing={
+                              <span className="text-xs text-gray-700 dark:text-white">
+                                {formatStableCurrency(o.total)}
+                              </span>
+                            }
+                          />
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                <div className="mt-auto pt-2">
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "group w-full gap-2",
+                      GLASS_BUTTON_ICON_HOVER,
+                      GLASS_BUTTON_SHELL_RESET,
+                      GLASS_ACTION_BUTTON.sky,
+                    )}
+                  >
+                    <Link href="/admin/orders">
+                      <ArrowRight className="h-4 w-4 shrink-0" />
+                      View All Orders
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </ChartCard>
+            <ChartCard
+              variant="rose"
+              title="Recent Tickets"
+              icon={MessageSquare}
+              description="Latest 5"
+            >
+              <div className="flex flex-col flex-1 min-h-[140px] gap-2">
+                {stats.recent.tickets.length === 0 ? (
+                  <p className={CARD_EMPTY_MESSAGE_CLASS}>No tickets yet</p>
+                ) : (
+                  <ul className={CARD_LIST_DIVIDE_CLASS}>
+                    {stats.recent.tickets.slice(0, 5).map((t) => (
+                      <li key={t.id} className={CARD_LIST_ROW_CLASS}>
+                        <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+                          <Link
+                            href={`/admin/support-tickets/${t.id}`}
+                            className="text-xs font-normal text-sky-600 dark:text-sky-400 hover:text-sky-500 dark:hover:text-sky-300 truncate block"
+                          >
+                            {t.subject}
+                          </Link>
+                          {/* REQ-0170/0174 — creator avatar + date (clip-safe row) */}
+                          <div className={CARD_LIST_META_ROW_CLASS}>
+                            {t.userId && t.userName ? (
+                              <AvatarInlineLink
+                                label={t.userName}
+                                seed={t.userId}
+                                image={t.userImage}
+                                href={`/admin/user-management/${t.userId}`}
+                                size={20}
+                                linkClassName="text-xs"
+                              />
+                            ) : null}
+                            <span aria-hidden>·</span>
+                            <ClientCompactDateTime
+                              date={t.createdAt}
+                              semantic="created"
+                            />
+                          </div>
+                        </div>
+                        <TicketStatusBadge status={t.status} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="mt-auto pt-2">
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "group w-full gap-2",
+                      GLASS_BUTTON_ICON_HOVER,
+                      GLASS_BUTTON_SHELL_RESET,
+                      GLASS_ACTION_BUTTON.rose,
+                    )}
+                  >
+                    <Link href="/admin/support-tickets">
+                      <ArrowRight className="h-4 w-4 shrink-0" />
+                      View All Tickets
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </ChartCard>
+            <ChartCard
+              variant="orange"
+              title="Recent Reviews"
+              icon={Star}
+              description="Latest 5"
+            >
+              <div className="flex flex-col flex-1 min-h-[140px] gap-2">
+                {stats.recent.reviews.length === 0 ? (
+                  <p className={CARD_EMPTY_MESSAGE_CLASS}>No reviews yet</p>
+                ) : (
+                  <ul className={CARD_LIST_DIVIDE_CLASS}>
+                    {stats.recent.reviews.slice(0, 5).map((r) => (
+                      <li key={r.id} className={CARD_LIST_ROW_CLASS}>
+                        {/* REQ-0176 — gap-1.5; date-first then reviewer avatar */}
+                        <div className="min-w-0 flex-1 flex flex-col gap-1.5 overflow-visible">
+                          {/* REQ-0174 — thumb · name · ★ · Tag category */}
+                          <div className={CARD_LIST_META_ROW_CLASS}>
+                            {r.productId ? (
+                              <ProductThumb
+                                name={r.productName}
+                                imageUrl={r.productImageUrl}
+                                size="sm"
+                              />
+                            ) : null}
+                            <Link
+                              href={`/admin/product-reviews/${r.id}`}
+                              className="text-xs font-normal text-sky-600 dark:text-sky-400 hover:text-sky-500 dark:hover:text-sky-300 truncate"
+                            >
+                              {r.productName}
+                            </Link>
+                            <span aria-hidden>·</span>
+                            <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">
+                              {r.rating}★
+                            </span>
+                            {r.categoryId && r.categoryName ? (
+                              <>
+                                <span aria-hidden>·</span>
+                                <Link
+                                  href={`/admin/categories/${r.categoryId}`}
+                                  className="inline-flex items-center gap-1 text-xs font-normal text-sky-600 dark:text-sky-400 hover:text-sky-500 dark:hover:text-sky-300 min-w-0"
+                                >
+                                  <Tag
+                                    className="h-3 w-3 shrink-0"
+                                    aria-hidden
+                                  />
+                                  <span className="truncate">
+                                    {r.categoryName}
+                                  </span>
+                                </Link>
+                              </>
+                            ) : null}
+                          </div>
+                          <div className={CARD_LIST_META_ROW_CLASS}>
+                            <span className="inline-flex items-center gap-1 min-w-0">
+                              <Calendar
+                                className="h-3 w-3 shrink-0 text-gray-500 dark:text-gray-400"
+                                aria-hidden
+                              />
+                              <ClientCompactDateTime
+                                date={r.createdAt}
+                                semantic="created"
+                              />
+                            </span>
+                            {r.userId && r.userName ? (
+                              <>
+                                <span aria-hidden>·</span>
+                                <AvatarInlineLink
+                                  label={r.userName}
+                                  seed={r.userId}
+                                  image={r.userImage}
+                                  href={`/admin/user-management/${r.userId}`}
+                                  size={20}
+                                  linkClassName="text-xs"
+                                />
+                              </>
+                            ) : null}
+                          </div>
+                        </div>
+                        <ReviewStatusBadge status={r.status} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="mt-auto pt-2">
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "group w-full gap-2",
+                      GLASS_BUTTON_ICON_HOVER,
+                      GLASS_BUTTON_SHELL_RESET,
+                      GLASS_ACTION_BUTTON.amber,
+                    )}
+                  >
+                    <Link href="/admin/product-reviews">
+                      <ArrowRight className="h-4 w-4 shrink-0" />
+                      View All Reviews
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </ChartCard>
+            <ChartCard
+              variant="blue"
+              title="Recent Imports"
+              icon={BarChart3}
+              description="Latest 5"
+            >
+              <div className="flex flex-col flex-1 min-h-[140px] gap-2">
+                {stats.recent.imports.length === 0 ? (
+                  <p className={CARD_EMPTY_MESSAGE_CLASS}>No imports yet</p>
+                ) : (
+                  <ul className={CARD_LIST_DIVIDE_CLASS}>
+                    {stats.recent.imports.slice(0, 5).map((im) => (
+                      <li key={im.id} className={CARD_LIST_ROW_CLASS}>
+                        <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+                          <Link
+                            href={`/admin/activity-history/${im.id}`}
+                            className="text-xs font-normal text-sky-600 dark:text-sky-400 hover:text-sky-500 dark:hover:text-sky-300 truncate block"
+                          >
+                            {im.importType} · {im.fileName}
+                          </Link>
+                          <div className={CARD_LIST_META_ROW_CLASS}>
+                            {im.userId && im.userName ? (
+                              <AvatarInlineLink
+                                label={im.userName}
+                                seed={im.userId}
+                                image={im.userImage}
+                                href={`/admin/user-management/${im.userId}`}
+                                size={20}
+                                linkClassName="text-xs"
+                              />
+                            ) : null}
+                            <span aria-hidden>·</span>
+                            <ClientCompactDateTime
+                              date={im.createdAt}
+                              semantic="created"
+                            />
+                            <span aria-hidden>·</span>
+                            <span>
+                              {im.successRows} ok, {im.failedRows} failed
+                            </span>
+                          </div>
+                        </div>
+                        <ImportStatusBadge status={im.status} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="mt-auto pt-2">
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "group w-full gap-2",
+                      GLASS_BUTTON_ICON_HOVER,
+                      GLASS_BUTTON_SHELL_RESET,
+                      GLASS_ACTION_BUTTON.blue,
+                    )}
+                  >
+                    <Link href="/admin/activity-history">
+                      <ArrowRight className="h-4 w-4 shrink-0" />
+                      View All Imports
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </ChartCard>
+          </div>
+        )}
+
+        {/* AI insights */}
+        <ChartCard
+          variant="violet"
+          title="AI-powered insights"
+          icon={Sparkles}
+          description="Generate recommendations based on overview, growth, and activity."
+        >
+          <div className="flex flex-col gap-4">
+            <Button
+              onClick={handleGenerateAiInsights}
+              disabled={aiLoading || !stats}
+              className={cn(
+                "inline-flex h-11 w-auto min-w-0 shrink-0 gap-2 px-2 sm:px-4 self-start",
+                GLASS_BUTTON_ICON_HOVER,
+                GLASS_BUTTON_SHELL_RESET,
+                GLASS_PRIMARY_BUTTON.amber,
+              )}
+            >
+              {aiLoading ? (
+                <>
+                  <Loader2
+                    className="h-4 w-4 shrink-0 animate-spin"
+                    aria-hidden
+                  />
+                  Generating insights…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 shrink-0" aria-hidden />
+                  Generate insights
+                </>
+              )}
+            </Button>
+            {aiUnavailable && (
+              <p className="text-sm text-muted-foreground">
+                AI insights require OPENROUTER_API_KEY and/or GROQ_API_KEY. Set
+                in .env to enable.
+              </p>
+            )}
+            {aiText && (
+              <div className="rounded-lg border border-border/50 bg-muted/30 p-4 text-sm whitespace-pre-wrap text-foreground">
+                {aiText}
+              </div>
+            )}
+            {!aiUnavailable && !aiText && !aiLoading && (
+              <p className="text-sm text-muted-foreground">
+                Click &quot;Generate insights&quot; to get AI recommendations
+                from your dashboard data.
+              </p>
+            )}
+          </div>
+        </ChartCard>
+      </div>
+    </PageContentWrapper>
+  );
+}

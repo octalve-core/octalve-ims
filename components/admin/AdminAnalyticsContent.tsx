@@ -63,7 +63,7 @@ import {
   DenseCatalogProductCell,
   RecentOrderStatusColumn,
 } from "@/components/shared";
-import { ProductThumb } from "@/components/products/ProductOptionRow";
+import { ProductThumb } from "@/components/shared/ProductThumb";
 import { formatStableCurrency, formatClientCurrency } from "@/lib/format";
 import type { DashboardStats } from "@/types";
 import ForecastingSection from "@/components/admin/ForecastingSection";

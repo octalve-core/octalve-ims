@@ -17,13 +17,8 @@ import { PaginationType } from "@/components/shared/PaginationSelector";
 import { OrderTable } from "./OrderTable";
 import { createOrderColumns } from "./OrderTableColumns";
 import { useAuth } from "@/contexts";
-import {
-  useOrders,
-  useClientOrders,
-  useDashboard,
-  useClientPortalDashboard,
-  useSupplierPortalDashboard,
-} from "@/hooks/queries";
+import { useOrders, useClientOrders, useDashboard } from "@/hooks/queries";
+import { useClientPortalDashboard, useSupplierPortalDashboard } from "@/hooks/queries/use-portal";
 import {
   isDataSlotLoading,
   isDataSlotUnsettled,

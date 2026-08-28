@@ -26,10 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import {
-  useGenerateShippingLabel,
-  useAddTrackingNumber,
-} from "@/hooks/queries";
+import { useGenerateShippingLabel, useAddTrackingNumber } from "@/hooks/queries/use-shipping";
 import {
   DeferredSelectGate,
   DIALOG_FORM_FIELD_EMERALD,

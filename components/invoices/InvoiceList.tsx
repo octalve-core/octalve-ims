@@ -17,13 +17,8 @@ import { usePathname } from "next/navigation";
 import { PaginationType } from "@/components/shared/PaginationSelector";
 import { createInvoiceColumns } from "./InvoiceTableColumns";
 import { useAuth } from "@/contexts";
-import {
-  useInvoices,
-  useClientInvoices,
-  useDashboard,
-  useClientPortalDashboard,
-  useSupplierPortalDashboard,
-} from "@/hooks/queries";
+import { useInvoices, useClientInvoices, useDashboard } from "@/hooks/queries";
+import { useClientPortalDashboard, useSupplierPortalDashboard } from "@/hooks/queries/use-portal";
 import {
   isDataSlotLoading,
   isDataSlotUnsettled,

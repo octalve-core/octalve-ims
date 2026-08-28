@@ -13,7 +13,7 @@ import {
   XCircle,
   Layers,
 } from "lucide-react";
-import { useHistoryItem } from "@/hooks/queries";
+import { useHistoryItem } from "@/hooks/queries/use-history";
 import {
   PageContentWrapper,
   DataSlotPulse,

@@ -5,7 +5,7 @@ import {
   getReviewsForProductPage,
   getReviewEligibilityForProduct,
   type ReviewEligibilityResult,
-} from "@/lib/server/product-reviews-detail-data";
+} from "@/lib/product-reviews/product-reviews-detail-data";
 import type { ProductReview } from "@/types";
 
 export type OrderReviewContext = {

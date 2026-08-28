@@ -1,8 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth-server";
-import { getSupportTicketDetailForPage } from "@/lib/server/support-ticket-detail-data";
-import { getSupportTicketRepliesForPage } from "@/lib/server/support-ticket-replies-data";
-import { getProductOwnersForSupport } from "@/lib/server/support-tickets-data";
+import { getSupportTicketDetailForPage } from "@/lib/support-tickets/support-ticket-detail-data";
+import { getSupportTicketRepliesForPage } from "@/lib/support-tickets/support-ticket-replies-data";
+import { getProductOwnersForSupport } from "@/lib/support-tickets/support-tickets-data";
 import SupportTicketDetailContent from "@/components/support-tickets/SupportTicketDetailContent";
 
 type Props = { params: Promise<{ id: string }> };

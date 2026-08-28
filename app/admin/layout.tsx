@@ -1,9 +1,16 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth-server";
 import { getAdminCounts } from "@/lib/server/admin-counts";
-import AdminLayout from "@/components/layouts/AdminLayout";
+import { AdminShellSsrMerge } from "@/components/layouts/AdminShellSsrMerge";
+import AppShell from "@/components/layouts/AppShell";
 
-/** Admin layout — SSR sidebar counts so badges render without client fetch flash (REQ-0025). */
+/**
+ * Admin route layout — SSR sidebar counts so badges render without client
+ * fetch flash (REQ-0025). Renders AppShell here (not per-page) because every
+ * page under /admin/* passes `embedInAdmin` to its shared Page component,
+ * which then skips wrapping itself in AppShell — this is the one place that
+ * wrap needs to happen instead.
+ */
 export const dynamic = "force-dynamic";
 
 export default async function AdminRouteLayout({
@@ -15,6 +22,10 @@ export default async function AdminRouteLayout({
   if (!user) {
     redirect("/login");
   }
-  const initialCounts = await getAdminCounts(user.id);
-  return <AdminLayout initialCounts={initialCounts}>{children}</AdminLayout>;
+  const initialAdminCounts = await getAdminCounts(user.id);
+  return (
+    <AdminShellSsrMerge initialAdminCounts={initialAdminCounts}>
+      <AppShell>{children}</AppShell>
+    </AdminShellSsrMerge>
+  );
 }

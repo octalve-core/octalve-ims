@@ -49,12 +49,7 @@ import {
   Building2,
   MessagesSquare,
 } from "lucide-react";
-import {
-  useSupportTicket,
-  useUpdateSupportTicket,
-  useDeleteSupportTicket,
-  useSupportTicketReplies,
-} from "@/hooks/queries";
+import { useSupportTicket, useUpdateSupportTicket, useDeleteSupportTicket, useSupportTicketReplies } from "@/hooks/queries/use-support-tickets";
 import {
   PageContentWrapper,
   DataSlotPulse,

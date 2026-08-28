@@ -27,8 +27,9 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { DataSlotPulse } from "@/components/shared";
-import { useSystemConfigs, useUpdateSystemConfigs } from "@/hooks/queries";
+import { useSystemConfigs, useUpdateSystemConfigs } from "@/hooks/queries/use-system-config";
 import { isDataSlotLoading } from "@/lib/react-query";
+import { hslTripletToHex, hexToHslTriplet, isHslTriplet } from "@/lib/ui/color-convert";
 import type {
   SystemConfig,
   ConfigCategory,
@@ -44,6 +45,7 @@ const categoryIcons: Record<ConfigCategory, string> = {
   payment: "💳",
   notifications: "🔔",
   inventory: "📦",
+  appearance: "🎨",
 };
 
 const ALL_CATEGORIES = Object.keys(CATEGORY_LABELS) as ConfigCategory[];
@@ -263,6 +265,43 @@ function ConfigField({
   isChanged,
   disabled,
 }: ConfigFieldProps) {
+  if (config.type === "color") {
+    const hex = isHslTriplet(value) ? hslTripletToHex(value) : "#000000";
+    return (
+      <div className="space-y-2">
+        <Label
+          htmlFor={config.key}
+          className={cn("font-medium", isChanged && "text-sky-600")}
+        >
+          {config.label}
+          {isChanged && <span className="ml-2 text-xs">(changed)</span>}
+        </Label>
+        {config.description && (
+          <p className="text-sm text-muted-foreground">{config.description}</p>
+        )}
+        <div className="flex items-center gap-3">
+          <input
+            id={config.key}
+            type="color"
+            value={hex}
+            onChange={(e) => onChange(hexToHslTriplet(e.target.value))}
+            disabled={disabled}
+            className="h-11 w-14 cursor-pointer rounded-md border border-input bg-transparent p-1 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label={`${config.label} color picker`}
+          />
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={disabled}
+            className="max-w-[180px] font-mono text-sm"
+            placeholder="H S% L%"
+            aria-label={`${config.label} HSL value`}
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (config.type === "boolean") {
     return (
       <div className="flex items-center justify-between">

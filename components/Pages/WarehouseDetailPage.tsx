@@ -29,17 +29,12 @@ import {
   ActiveInactiveBadge,
   WarehouseTypeBadge,
 } from "@/lib/ui/semantic-badges";
-import {
-  useWarehouse,
-  useDeleteWarehouse,
-  useStockByWarehouse,
-  useForecastingSummary,
-  useDeleteStockAllocation,
-} from "@/hooks/queries";
+import { useWarehouse, useDeleteWarehouse, useForecastingSummary } from "@/hooks/queries";
+import { useStockByWarehouse, useDeleteStockAllocation } from "@/hooks/queries/use-stock-allocation";
 import { useBackWithRefresh } from "@/hooks/use-back-with-refresh";
 import { resolveDetailAuditUserHref } from "@/lib/navigation/audit-user-href";
 import { useAuth } from "@/contexts";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import {
   ClientDateTime,
   ClientRelativeTime,
@@ -113,7 +108,7 @@ export default function WarehouseDetailPage({
   const warehouseId = params?.id as string;
   const { user, isCheckingAuth } = useAuth();
 
-  const PageWrapper = embedInAdmin ? React.Fragment : Navbar;
+  const PageWrapper = embedInAdmin ? React.Fragment : AppShell;
 
   const warehousesListHref = embedInAdmin ? "/admin/warehouses" : "/warehouses";
 

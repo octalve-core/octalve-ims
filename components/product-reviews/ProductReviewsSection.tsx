@@ -16,11 +16,7 @@ import {
 } from "@/lib/ui/review-rating-display";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts";
-import {
-  useReviewsByProduct,
-  useReviewEligibility,
-  useDeleteProductReview,
-} from "@/hooks/queries";
+import { useReviewsByProduct, useReviewEligibility, useDeleteProductReview } from "@/hooks/queries/use-product-reviews";
 import {
   ClientCompactDateTime,
   GLASS_BUTTON_SHELL_RESET,

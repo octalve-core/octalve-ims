@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
-import { getHistoryDetailForPage } from "@/lib/server/history-detail-data";
+import { getHistoryDetailForPage } from "@/lib/history/history-detail-data";
 
 /**
  * GET /api/import-history/:id

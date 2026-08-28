@@ -4,7 +4,7 @@ import {
   resolveInvoiceStatusAfterMoney,
   deriveOrderPaymentStatus,
   shouldConfirmAndFulfillOnPaymentSync,
-} from "./order-payment-from-amounts";
+} from "./order-payment-sync";
 
 describe("deriveOrderPaymentStatus", () => {
   it("returns unpaid when paid is 0", () => {

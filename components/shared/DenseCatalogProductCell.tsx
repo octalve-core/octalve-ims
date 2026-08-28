@@ -12,7 +12,7 @@ import Link from "next/link";
 import { Tag } from "lucide-react";
 import { AvatarInlineLink } from "@/components/shared/AvatarInlineLink";
 import { CopyableText } from "@/components/shared/CopyableText";
-import { ProductThumb } from "@/components/products/ProductOptionRow";
+import { ProductThumb } from "@/components/shared/ProductThumb";
 import { cn } from "@/lib/utils";
 
 export type DenseCatalogProductCellProps = {

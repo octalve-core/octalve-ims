@@ -76,7 +76,7 @@ import {
   PaymentStatusBadge,
   InvoiceStatusBadge,
 } from "@/lib/ui/semantic-badges";
-import { ProductThumb } from "@/components/products/ProductOptionRow";
+import { ProductThumb } from "@/components/shared/ProductThumb";
 import { getOrderItemUnitCounts } from "@/lib/orders/order-list-meta";
 import { cn } from "@/lib/utils";
 import { OrderPickerCommand } from "./OrderPickerCommand";

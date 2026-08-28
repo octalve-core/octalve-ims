@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { useCreateCheckout } from "@/hooks/queries";
+import { useCreateCheckout } from "@/hooks/queries/use-payments";
 import {
   CreditCard,
   X,
@@ -41,7 +41,7 @@ import {
   GLASS_GHOST_BUTTON,
 } from "@/components/shared";
 import { DIALOG_FORM_FIELD_SKY } from "@/components/shared/dialog-form-field";
-import { ProductThumb } from "@/components/products/ProductOptionRow";
+import { ProductThumb } from "@/components/shared/ProductThumb";
 import { InvoiceSummaryRow } from "@/components/invoices/detail/InvoiceSummaryCard";
 import { validateCheckoutChargeAmount } from "@/lib/validations/payment";
 import { buildStripeCheckoutReturnUrls } from "@/lib/payments/stripe-checkout-return-urls";

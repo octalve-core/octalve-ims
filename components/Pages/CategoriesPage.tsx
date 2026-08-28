@@ -6,7 +6,7 @@
 "use client";
 
 import React from "react";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import CategoryList from "@/components/category/CategoryList";
 import FloatingActionButtons from "@/components/shared/FloatingActionButtons";
 import { PageContentWrapper } from "@/components/shared";
@@ -27,7 +27,7 @@ export default function CategoriesPage({
   initialStats,
 }: CategoriesPageProps = {}) {
   return (
-    <Navbar>
+    <AppShell>
       <PageContentWrapper>
         <CategoryList
           initialCategories={initialCategories}
@@ -35,6 +35,6 @@ export default function CategoriesPage({
         />
         <FloatingActionButtons variant="categories" />
       </PageContentWrapper>
-    </Navbar>
+    </AppShell>
   );
 }

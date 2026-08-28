@@ -6,7 +6,7 @@
 "use client";
 
 import React from "react";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import OrderList from "@/components/orders/OrderList";
 import { PageContentWrapper } from "@/components/shared";
 import FloatingActionButtons from "@/components/shared/FloatingActionButtons";
@@ -40,7 +40,7 @@ export default function OrdersPage({
   initialSupplierPortal,
 }: OrdersPageProps = {}) {
   return (
-    <Navbar>
+    <AppShell>
       <PageContentWrapper>
         <OrderList
           initialOrders={initialOrders}
@@ -52,6 +52,6 @@ export default function OrdersPage({
           <FloatingActionButtons variant="orders" />
         )}
       </PageContentWrapper>
-    </Navbar>
+    </AppShell>
   );
 }

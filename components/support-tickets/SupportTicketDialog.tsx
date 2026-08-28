@@ -80,11 +80,7 @@ import {
   FILTER_COMMAND_INPUT_WRAPPER_CLASS,
   filterCommandPopoverClass,
 } from "@/lib/ui/popover-readability-styles";
-import {
-  useCreateSupportTicket,
-  useSupportTicketOwnerProducts,
-  useUpdateSupportTicket,
-} from "@/hooks/queries";
+import { useCreateSupportTicket, useSupportTicketOwnerProducts, useUpdateSupportTicket } from "@/hooks/queries/use-support-tickets";
 import { useSyncDialogOpenState } from "@/hooks/use-sync-dialog-open-state";
 import { useAuth } from "@/contexts";
 import { cn } from "@/lib/utils";

@@ -180,14 +180,14 @@ export async function deleteCacheByPattern(pattern: string): Promise<number> {
     // Note: Upstash Redis doesn't support KEYS command directly
     // We'll use SCAN pattern matching instead
     const keys: string[] = [];
-    let cursor: number = 0;
+    let cursor: number | string = 0;
 
     do {
       const result = await redis.scan(cursor, { match: cachePattern });
-      cursor = typeof result[0] === "number" ? result[0] : 0;
+      cursor = result[0];
       const resultKeys = Array.isArray(result[1]) ? result[1] : [];
       keys.push(...resultKeys);
-    } while (cursor !== 0);
+    } while (cursor !== 0 && cursor !== "0");
 
     if (keys.length === 0) {
       return 0;

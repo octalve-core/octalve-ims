@@ -1,0 +1,54 @@
+// Prisma schema for octalve-ims (Postgres), split across prisma/schema/*.prisma
+// (Prisma's multi-file "schema folder" mode, stable since Prisma 6.7 — no
+// previewFeatures flag needed on the installed 6.19.3). This file holds only
+// the datasource/generator; every model lives in a domain-named sibling file.
+// Prisma merges all *.prisma files in this folder as if concatenated — models
+// in different files can reference each other freely (see e.g. Product in
+// catalog.prisma referencing StockAllocation in warehousing.prisma).
+//
+// Ported from the original MongoDB schema; see docs/auth-system-port-plan.md
+// for the auth-model provenance (RefreshToken/VerificationToken/LoginAttempt
+// ported from Proplity) and /home/rojitech/.claude/plans/clever-moseying-haven.md
+// for the Milestone 0 migration plan (tenancy/RBAC models, id-strategy,
+// relation-promotion scope).
+//
+// Relation-promotion scope (Milestone 0): entity-to-entity business
+// relationships that were load-bearing for existing features (catalog,
+// stock, orders/invoices) are promoted to real typed relations. "Actor"
+// fields — who created/updated/deleted a row, or who a row is informally
+// linked to for display purposes (userId, createdBy, updatedBy, deletedBy,
+// assignedToId, and optional cross-links like SupportTicket's
+// productId/orderId/supplierId or ProductReview's productId/orderId) — are
+// deliberately LEFT as plain unconstrained String columns rather than typed
+// relations. Promoting them now would require resolving an onDelete policy
+// and a User back-relation shape for each one speculatively; that's real
+// design work better driven by the feature that actually needs the join
+// (e.g. the client-portal feature is what should decide whether
+// Order.clientId becomes a real relation), not done blind in Milestone 0.
+//
+// TIER LABELING — each sibling file's header notes which tier(s) in
+// tier-manifest.json primarily use that model's app-facing UI/API. This is
+// DOCUMENTATION ONLY, not an export boundary: octalve-ims runs one shared
+// Postgres database across every tier's codebase (see tier-manifest.json's
+// header and Milestone 0 Step 7) — a Core export's generated Prisma Client
+// still includes every model, because Core-tier code has real, working
+// dependencies on some Pro-tier tables today (e.g. lib/products/
+// decrement-stock-allocations.ts — core-tier order fulfillment — reads and
+// writes StockAllocation, a pro-tier model, to keep warehouse-level stock in
+// sync when any order is placed, Core included). Do not "fix" this by
+// stripping prisma/schema/ per tier in scripts/export-tier.ts; it is bucketed
+// "shared" in tier-manifest.json deliberately and must stay that way unless
+// the underlying code coupling is removed first.
+//
+// Run: npx prisma generate (after schema changes); use prisma/client for DB
+// access. RLS policies are NOT managed here — see prisma/rls/.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

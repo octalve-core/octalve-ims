@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth-server";
 import {
   getSupportTicketsForUser,
   getProductOwnersForSupport,
-} from "@/lib/server/support-tickets-data";
+} from "@/lib/support-tickets/support-tickets-data";
 import SupportTicketsPageContent from "@/components/support-tickets/SupportTicketsPageContent";
 
 /** REQ-0094 — explicit force-dynamic for shell-first parity. */

@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth-server";
 import { getOrderDetailForPage } from "@/lib/server/order-detail-data";
 import { getOrderReviewContextForPage } from "@/lib/server/order-review-context-data";
 import { reconcileStripeReturnBeforeDetail } from "@/lib/payments/reconcile-stripe-return";
-import AdminOrderDetailContent from "@/components/admin/AdminOrderDetailContent";
+import AdminOrderDetailContent from "@/components/orders/AdminOrderDetailContent";
 
 type Props = {
   params: Promise<{ id: string }>;

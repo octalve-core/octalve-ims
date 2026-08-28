@@ -10,12 +10,12 @@ import Link from "next/link";
 import { Pencil, Tag, Trash2, Truck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ProductThumb } from "@/components/products/ProductOptionRow";
+import { ProductThumb } from "@/components/shared/ProductThumb";
 import { AvatarInlineLink } from "@/components/shared/AvatarInlineLink";
 import { CopyableText } from "@/components/shared/CopyableText";
 import { TABLE_CATALOG_LINK_CLASS } from "@/components/shared/dialog-edge-scroll";
 import type { StockAllocation } from "@/types";
-import { formatCatalogCommitWarehouseHint } from "@/lib/stock-allocation/catalog-allocation-copy";
+import { formatCatalogCommitWarehouseHint } from "@/lib/catalog/catalog-allocation-copy";
 import { cn } from "@/lib/utils";
 
 const META_ROW_CLASS = "text-xs text-gray-600 dark:text-gray-300";

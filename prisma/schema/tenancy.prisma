@@ -1,0 +1,60 @@
+// Tenancy & RBAC + core identity. TIER: shared — every tier reads Business/
+// Role/Permission/User; Core uses only the 2 fixed system roles (Role rows
+// with businessId=null, isSystem=true), Pro+ adds tenant-owned custom roles.
+
+model Business {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  users User[]
+  roles Role[]
+}
+
+model Role {
+  id          String       @id @default(cuid())
+  businessId  String? // null = Core's 2 fixed system roles (Admin/Staff), not tenant-owned
+  name        String
+  isSystem    Boolean      @default(false) // Core's Admin/Staff — not editable via UI
+  warehouseId String? // Pro+: scope a role to one warehouse
+  business    Business?    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  permissions Permission[]
+  users       User[]
+
+  @@unique([businessId, name])
+}
+
+model Permission {
+  id       String @id @default(cuid())
+  roleId   String
+  resource String // Products | Stock | Orders | Purchasing | Invoicing | Users | Reports
+  action   String // view | create | edit | delete | approve
+  role     Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, resource, action])
+}
+
+model User {
+  id                String             @id @default(cuid())
+  createdAt         DateTime           @default(now()) @db.Timestamptz(3)
+  email             String             @unique
+  name              String
+  password          String
+  updatedAt         DateTime?          @db.Timestamptz(3)
+  username          String?            @unique
+  googleId          String?
+  image             String?
+  /// Legacy free-text fast-path role, mirrored into the JWT `role` claim
+  /// (see docs/auth-system-port-plan.md). Core's 2 fixed roles read this;
+  /// Pro+ custom-role permission checks use roleRelation/roleId instead.
+  role              String? // user | admin | supplier | client | retailer
+  roleId            String?
+  businessId        String?
+  emailPreferences  Json?
+  roleRelation      Role?              @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  notifications     Notification[]
+  refreshTokens     RefreshToken[]
+  verificationToken VerificationToken?
+  loginAttempts     LoginAttempt[]
+  business          Business?          @relation(fields: [businessId], references: [id])
+}

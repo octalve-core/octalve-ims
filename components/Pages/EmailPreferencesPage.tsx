@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import {
   PageContentWrapper,
   DataSlotPulse,
@@ -20,10 +20,7 @@ import { DETAIL_PAGE_HEADER_SPACING_CLASS } from "@/lib/ui/shell-layout-styles";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  useEmailPreferences,
-  useUpdateEmailPreferences,
-} from "@/hooks/queries";
+import { useEmailPreferences, useUpdateEmailPreferences } from "@/hooks/queries/use-email-preferences";
 import { isDataSlotLoading } from "@/lib/react-query";
 import type { EmailPreferences } from "@/types";
 import {
@@ -41,7 +38,7 @@ import {
 } from "lucide-react";
 
 export type EmailPreferencesPageProps = {
-  /** When true, render only content (no Navbar) for use inside admin layout */
+  /** When true, render only content (no AppShell) for use inside admin layout */
   embedded?: boolean;
   /** SSR-passed preferences for first-render hydration (REQ-0021) */
   initialPreferences?: EmailPreferences;
@@ -296,5 +293,5 @@ export default function EmailPreferencesPage({
   );
 
   if (embedded) return content;
-  return <Navbar>{content}</Navbar>;
+  return <AppShell>{content}</AppShell>;
 }

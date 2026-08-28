@@ -38,19 +38,13 @@ import {
   productStockAvailableTextClass,
 } from "@/lib/ui/semantic-badges";
 import { Separator } from "@/components/ui/separator";
-import {
-  useProduct,
-  useCreateProduct,
-  useDeleteProduct,
-  useProducts,
-  useStockByProduct,
-  useForecastingSummary,
-} from "@/hooks/queries";
+import { useProduct, useCreateProduct, useDeleteProduct, useProducts, useForecastingSummary } from "@/hooks/queries";
+import { useStockByProduct } from "@/hooks/queries/use-stock-allocation";
 import { useBackWithRefresh } from "@/hooks/use-back-with-refresh";
 import { resolveDetailAuditUserHref } from "@/lib/navigation/audit-user-href";
 import { useAuth } from "@/contexts";
 import { useProductStore } from "@/stores";
-import Navbar from "@/components/layouts/Navbar";
+import AppShell from "@/components/layouts/AppShell";
 import {
   ClientDate,
   ClientDateTime,
@@ -77,9 +71,9 @@ import {
 import { CatalogDetailRecentOrdersList } from "@/components/shared/catalog-detail/CatalogDetailRecentOrdersList";
 import type { CatalogDetailRecentOrderItem } from "@/types/catalog-detail-lists";
 import { findProductForecast } from "@/lib/forecasting/entity-forecast";
-import { enrichProductInsightsWithWarehouseStock } from "@/lib/insights/product-insights-enrich";
-import { sumAllocatedQuantity } from "@/lib/insights/warehouse-stock-aggregate";
-import { formatCatalogCommitWarehouseHint } from "@/lib/stock-allocation/catalog-allocation-copy";
+import { enrichProductInsightsWithWarehouseStock } from "@/lib/catalog/product-insights-enrich";
+import { sumAllocatedQuantity } from "@/lib/catalog/warehouse-stock-aggregate";
+import { formatCatalogCommitWarehouseHint } from "@/lib/catalog/catalog-allocation-copy";
 import { toDateOrNull } from "@/lib/format";
 import {
   computeCommittedQuantity,
@@ -105,7 +99,7 @@ import type {
   StockAllocation,
   ForecastingSummary,
 } from "@/types";
-import type { ReviewEligibilityResult } from "@/lib/server/product-reviews-detail-data";
+import type { ReviewEligibilityResult } from "@/lib/product-reviews/product-reviews-detail-data";
 import { cn } from "@/lib/utils";
 import {
   TYPO_BODY_MUTED,
@@ -149,7 +143,7 @@ export default function ProductDetailPage({
   const productId = params?.id as string;
   const { user, isCheckingAuth } = useAuth();
 
-  const PageWrapper = embedInAdmin ? React.Fragment : Navbar;
+  const PageWrapper = embedInAdmin ? React.Fragment : AppShell;
 
   // Fetch product details
   const productQuery = useProduct(productId, initialProduct);
