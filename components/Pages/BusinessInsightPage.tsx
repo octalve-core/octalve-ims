@@ -1681,15 +1681,7 @@ export default function BusinessInsightPage({
           {/* Additional Insights */}
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-2">
             {/* Quick Insights Card */}
-            <article className="rounded-[20px] border border-sky-400/20 bg-gradient-to-br from-sky-500/15 via-sky-500/5 to-transparent p-2 sm:p-4 backdrop-blur-md shadow-[0_15px_40px_rgba(2,132,199,0.15)] dark:shadow-[0_15px_40px_rgba(2,132,199,0.1)] transition hover:border-sky-300/40">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-sky-300/30 bg-sky-100/50 dark:border-white/15 dark:bg-white/10">
-                  <Eye className="h-4 w-4 text-gray-700 dark:text-white" />
-                </div>
-                <h3 className="text-sm sm:text-base font-medium text-gray-700 dark:text-white">
-                  Quick Insights
-                </h3>
-              </div>
+            <ChartCard title="Quick Insights" icon={Eye} variant="sky">
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600 dark:text-white/80">
@@ -1728,18 +1720,10 @@ export default function BusinessInsightPage({
                   </span>
                 </div>
               </div>
-            </article>
+            </ChartCard>
 
             {/* Performance Card */}
-            <article className="rounded-[20px] border border-emerald-400/20 bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent p-2 sm:p-4 backdrop-blur-md shadow-[0_15px_40px_rgba(16,185,129,0.15)] dark:shadow-[0_15px_40px_rgba(16,185,129,0.1)] transition hover:border-emerald-300/40">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-300/30 bg-emerald-100/50 dark:border-white/15 dark:bg-white/10">
-                  <Users className="h-4 w-4 text-gray-700 dark:text-white" />
-                </div>
-                <h3 className="text-sm sm:text-base font-medium text-gray-700 dark:text-white">
-                  Performance
-                </h3>
-              </div>
+            <ChartCard title="Performance" icon={Users} variant="emerald">
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600 dark:text-white/80">
@@ -1778,36 +1762,20 @@ export default function BusinessInsightPage({
                   </span>
                 </div>
               </div>
-            </article>
+            </ChartCard>
 
             {/* QR Code Card */}
-            <article className="rounded-[20px] border border-violet-400/20 bg-gradient-to-br from-violet-500/15 via-violet-500/5 to-transparent p-2 sm:p-4 backdrop-blur-md shadow-[0_15px_40px_rgba(139,92,246,0.15)] dark:shadow-[0_15px_40px_rgba(139,92,246,0.1)] transition hover:border-violet-300/40">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-violet-300/30 bg-violet-100/50 dark:border-white/15 dark:bg-white/10">
-                  <QrCode className="h-4 w-4 text-gray-700 dark:text-white" />
-                </div>
-                <h3 className="text-sm sm:text-base font-medium text-gray-700 dark:text-white">
-                  Quick QR Code
-                </h3>
-              </div>
+            <ChartCard title="Quick QR Code" icon={QrCode} variant="violet">
               <QRCodeComponent
                 data={qrUrl || "https://localhost:3000/business-insights"}
                 title="Dashboard QR"
                 size={120}
                 showDownload={false}
               />
-            </article>
+            </ChartCard>
 
             {/* AI Insights Card */}
-            <article className="rounded-[20px] border border-amber-400/20 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-transparent p-2 sm:p-4 backdrop-blur-md shadow-[0_15px_40px_rgba(245,158,11,0.12)] dark:shadow-[0_15px_40px_rgba(245,158,11,0.08)] transition hover:border-amber-300/40">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-amber-300/30 bg-amber-100/50 dark:border-white/15 dark:bg-white/10">
-                  <Sparkles className="h-4 w-4 text-gray-700 dark:text-white" />
-                </div>
-                <h3 className="text-sm sm:text-base font-medium text-gray-700 dark:text-white">
-                  AI Insights
-                </h3>
-              </div>
+            <ChartCard title="AI Insights" icon={Sparkles} variant="amber">
               {aiInsightsUnavailable ? (
                 <p className="text-sm text-gray-600 dark:text-white/80">
                   Configure OPENROUTER_API_KEY and/or GROQ_API_KEY in .env to
@@ -1878,7 +1846,7 @@ export default function BusinessInsightPage({
                   </Button>
                 </div>
               )}
-            </article>
+            </ChartCard>
           </div>
 
           {/* Forecasting Section */}

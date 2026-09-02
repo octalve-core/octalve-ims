@@ -2,6 +2,10 @@
  * REQ-0096 — shared glassmorphic card shell + body padding token.
  * shell: article border/gradient/shadow only (detail pages wrap children in GlassCardBody).
  * body: article includes p-2 sm:p-4 (order detail cards without inner wrapper).
+ *
+ * REQ-0230 — flat neutral surface (theme card/border tokens); each variant
+ * keeps only a faint tinted border + a tinted icon chip (`iconBg`) as its
+ * per-entity identity signal, replacing the earlier per-card gradient/glow.
  */
 
 import React from "react";
@@ -32,84 +36,67 @@ export const GLASS_CARD_VARIANT_CONFIG: Record<
   }
 > = {
   sky: {
-    border: "border-sky-400/20",
-    gradient: "bg-gradient-to-br from-sky-500/15 via-sky-500/5 to-transparent",
-    shadow:
-      "shadow-[0_15px_40px_rgba(2,132,199,0.15)] dark:shadow-[0_15px_40px_rgba(2,132,199,0.1)]",
-    hoverBorder: "hover:border-sky-300/40",
-    iconBg: "border-sky-300/30 bg-sky-100/50",
+    border: "border-sky-200 dark:border-sky-800/40",
+    gradient: "bg-card",
+    shadow: "shadow-sm",
+    hoverBorder: "hover:border-sky-300 dark:hover:border-sky-700/60",
+    iconBg: "border-sky-300/30 bg-sky-50 dark:bg-sky-500/10",
   },
   emerald: {
-    border: "border-emerald-400/20",
-    gradient:
-      "bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent",
-    shadow:
-      "shadow-[0_15px_40px_rgba(16,185,129,0.15)] dark:shadow-[0_15px_40px_rgba(16,185,129,0.1)]",
-    hoverBorder: "hover:border-emerald-300/40",
-    iconBg: "border-emerald-300/30 bg-emerald-100/50",
+    border: "border-emerald-200 dark:border-emerald-800/40",
+    gradient: "bg-card",
+    shadow: "shadow-sm",
+    hoverBorder: "hover:border-emerald-300 dark:hover:border-emerald-700/60",
+    iconBg: "border-emerald-300/30 bg-emerald-50 dark:bg-emerald-500/10",
   },
   amber: {
-    border: "border-amber-400/20",
-    gradient:
-      "bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-transparent",
-    shadow:
-      "shadow-[0_15px_40px_rgba(245,158,11,0.12)] dark:shadow-[0_15px_40px_rgba(245,158,11,0.08)]",
-    hoverBorder: "hover:border-amber-300/40",
-    iconBg: "border-amber-300/30 bg-amber-100/50",
+    border: "border-amber-200 dark:border-amber-800/40",
+    gradient: "bg-card",
+    shadow: "shadow-sm",
+    hoverBorder: "hover:border-amber-300 dark:hover:border-amber-700/60",
+    iconBg: "border-amber-300/30 bg-amber-50 dark:bg-amber-500/10",
   },
   violet: {
-    border: "border-violet-400/20",
-    gradient:
-      "bg-gradient-to-br from-violet-500/15 via-violet-500/5 to-transparent",
-    shadow:
-      "shadow-[0_15px_40px_rgba(139,92,246,0.15)] dark:shadow-[0_15px_40px_rgba(139,92,246,0.1)]",
-    hoverBorder: "hover:border-violet-300/40",
-    iconBg: "border-violet-300/30 bg-violet-100/50",
+    border: "border-violet-200 dark:border-violet-800/40",
+    gradient: "bg-card",
+    shadow: "shadow-sm",
+    hoverBorder: "hover:border-violet-300 dark:hover:border-violet-700/60",
+    iconBg: "border-violet-300/30 bg-violet-50 dark:bg-violet-500/10",
   },
   blue: {
-    border: "border-blue-400/20",
-    gradient:
-      "bg-gradient-to-br from-blue-500/15 via-blue-500/5 to-transparent",
-    shadow:
-      "shadow-[0_15px_40px_rgba(59,130,246,0.15)] dark:shadow-[0_15px_40px_rgba(59,130,246,0.1)]",
-    hoverBorder: "hover:border-blue-300/40",
-    iconBg: "border-blue-300/30 bg-blue-100/50",
+    border: "border-blue-200 dark:border-blue-800/40",
+    gradient: "bg-card",
+    shadow: "shadow-sm",
+    hoverBorder: "hover:border-blue-300 dark:hover:border-blue-700/60",
+    iconBg: "border-blue-300/30 bg-blue-50 dark:bg-blue-500/10",
   },
   orange: {
-    border: "border-orange-400/20",
-    gradient:
-      "bg-gradient-to-br from-orange-500/15 via-orange-500/5 to-transparent",
-    shadow:
-      "shadow-[0_15px_40px_rgba(249,115,22,0.15)] dark:shadow-[0_15px_40px_rgba(249,115,22,0.1)]",
-    hoverBorder: "hover:border-orange-300/40",
-    iconBg: "border-orange-300/30 bg-orange-100/50",
+    border: "border-orange-200 dark:border-orange-800/40",
+    gradient: "bg-card",
+    shadow: "shadow-sm",
+    hoverBorder: "hover:border-orange-300 dark:hover:border-orange-700/60",
+    iconBg: "border-orange-300/30 bg-orange-50 dark:bg-orange-500/10",
   },
   teal: {
-    border: "border-teal-400/20",
-    gradient:
-      "bg-gradient-to-br from-teal-500/15 via-teal-500/5 to-transparent",
-    shadow:
-      "shadow-[0_15px_40px_rgba(20,184,166,0.15)] dark:shadow-[0_15px_40px_rgba(20,184,166,0.1)]",
-    hoverBorder: "hover:border-teal-300/40",
-    iconBg: "border-teal-300/30 bg-teal-100/50",
+    border: "border-teal-200 dark:border-teal-800/40",
+    gradient: "bg-card",
+    shadow: "shadow-sm",
+    hoverBorder: "hover:border-teal-300 dark:hover:border-teal-700/60",
+    iconBg: "border-teal-300/30 bg-teal-50 dark:bg-teal-500/10",
   },
   rose: {
-    border: "border-rose-400/20",
-    gradient:
-      "bg-gradient-to-br from-rose-500/15 via-rose-500/5 to-transparent",
-    shadow:
-      "shadow-[0_15px_40px_rgba(225,29,72,0.15)] dark:shadow-[0_15px_40px_rgba(225,29,72,0.1)]",
-    hoverBorder: "hover:border-rose-300/40",
-    iconBg: "border-rose-300/30 bg-rose-100/50",
+    border: "border-rose-200 dark:border-rose-800/40",
+    gradient: "bg-card",
+    shadow: "shadow-sm",
+    hoverBorder: "hover:border-rose-300 dark:hover:border-rose-700/60",
+    iconBg: "border-rose-300/30 bg-rose-50 dark:bg-rose-500/10",
   },
   cyan: {
-    border: "border-cyan-400/20",
-    gradient:
-      "bg-gradient-to-br from-cyan-500/15 via-cyan-500/5 to-transparent",
-    shadow:
-      "shadow-[0_15px_40px_rgba(6,182,212,0.15)] dark:shadow-[0_15px_40px_rgba(6,182,212,0.1)]",
-    hoverBorder: "hover:border-cyan-300/40",
-    iconBg: "border-cyan-300/30 bg-cyan-100/50",
+    border: "border-cyan-200 dark:border-cyan-800/40",
+    gradient: "bg-card",
+    shadow: "shadow-sm",
+    hoverBorder: "hover:border-cyan-300 dark:hover:border-cyan-700/60",
+    iconBg: "border-cyan-300/30 bg-cyan-50 dark:bg-cyan-500/10",
   },
 };
 
@@ -134,8 +121,8 @@ export function GlassCard({
   return (
     <article
       className={cn(
-        "group rounded-[20px] border backdrop-blur-md transition-all duration-300 overflow-hidden",
-        padding === "body" && "p-2 sm:p-4 bg-white/60 dark:bg-white/5",
+        "group rounded-2xl border transition-shadow duration-300 overflow-hidden",
+        padding === "body" && "p-2 sm:p-4",
         config.border,
         config.gradient,
         config.shadow,

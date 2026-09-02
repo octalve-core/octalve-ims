@@ -1,7 +1,8 @@
 /**
  * Statistics Card Component
- * Glassmorphism card component for displaying warehouse statistics
- * Supports light/dark mode with colored variants (sky, emerald, amber, rose)
+ * Clean, flat KPI card — neutral surface (theme's card/border tokens), a
+ * small color-tinted icon chip is the only per-card accent. Replaces the
+ * earlier per-card rainbow glassmorphism treatment (REQ-0230).
  */
 
 import React from "react";
@@ -10,19 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { DataSlotPulse } from "@/components/shared/DataSlotPulse";
 import { TYPO_STAT_VALUE, TYPO_SUBTITLE } from "@/lib/ui/typography-scale";
+import { STAT_CARD_ICON_TINT, type StatCardTone } from "@/lib/ui/stat-card-tone";
 
 /**
- * Color variant types for statistics cards
+ * Color variant types for statistics cards. Kept for prop-compat with all
+ * existing callers — now only tints the icon chip, not the whole card.
  */
-type CardVariant =
-  | "sky"
-  | "emerald"
-  | "amber"
-  | "rose"
-  | "violet"
-  | "blue"
-  | "orange"
-  | "teal";
+type CardVariant = StatCardTone;
 
 /**
  * Badge data structure
@@ -80,85 +75,8 @@ interface StatisticsCardProps {
 }
 
 /**
- * Color configuration for each variant
- */
-const variantConfig: Record<
-  CardVariant,
-  {
-    border: string;
-    gradient: string;
-    shadow: string;
-    hoverBorder: string;
-  }
-> = {
-  sky: {
-    border: "border-sky-400/30",
-    gradient: "bg-gradient-to-br from-sky-500/25 via-sky-500/10 to-sky-500/5",
-    shadow:
-      "shadow-[0_30px_80px_rgba(2,132,199,0.35)] dark:shadow-[0_30px_80px_rgba(2,132,199,0.25)]",
-    hoverBorder: "hover:border-sky-300/50",
-  },
-  emerald: {
-    border: "border-emerald-400/30",
-    gradient:
-      "bg-gradient-to-br from-emerald-500/25 via-emerald-500/10 to-emerald-500/5",
-    shadow:
-      "shadow-[0_30px_80px_rgba(16,185,129,0.35)] dark:shadow-[0_30px_80px_rgba(16,185,129,0.25)]",
-    hoverBorder: "hover:border-emerald-300/50",
-  },
-  amber: {
-    border: "border-amber-400/30",
-    gradient:
-      "bg-gradient-to-br from-amber-500/30 via-amber-500/15 to-amber-500/5",
-    shadow:
-      "shadow-[0_30px_80px_rgba(245,158,11,0.25)] dark:shadow-[0_30px_80px_rgba(245,158,11,0.2)]",
-    hoverBorder: "hover:border-amber-300/60",
-  },
-  rose: {
-    border: "border-rose-400/30",
-    gradient:
-      "bg-gradient-to-br from-rose-500/25 via-rose-500/10 to-rose-500/5",
-    shadow:
-      "shadow-[0_30px_80px_rgba(225,29,72,0.35)] dark:shadow-[0_30px_80px_rgba(225,29,72,0.25)]",
-    hoverBorder: "hover:border-rose-300/50",
-  },
-  violet: {
-    border: "border-violet-400/30",
-    gradient:
-      "bg-gradient-to-br from-violet-500/25 via-violet-500/10 to-violet-500/5",
-    shadow:
-      "shadow-[0_30px_80px_rgba(139,92,246,0.35)] dark:shadow-[0_30px_80px_rgba(139,92,246,0.25)]",
-    hoverBorder: "hover:border-violet-300/50",
-  },
-  blue: {
-    border: "border-blue-400/30",
-    gradient:
-      "bg-gradient-to-br from-blue-500/25 via-blue-500/10 to-blue-500/5",
-    shadow:
-      "shadow-[0_30px_80px_rgba(59,130,246,0.35)] dark:shadow-[0_30px_80px_rgba(59,130,246,0.25)]",
-    hoverBorder: "hover:border-blue-300/50",
-  },
-  orange: {
-    border: "border-orange-400/30",
-    gradient:
-      "bg-gradient-to-br from-orange-500/25 via-orange-500/10 to-orange-500/5",
-    shadow:
-      "shadow-[0_30px_80px_rgba(249,115,22,0.35)] dark:shadow-[0_30px_80px_rgba(249,115,22,0.25)]",
-    hoverBorder: "hover:border-orange-300/50",
-  },
-  teal: {
-    border: "border-teal-400/30",
-    gradient:
-      "bg-gradient-to-br from-teal-500/25 via-teal-500/10 to-teal-500/5",
-    shadow:
-      "shadow-[0_30px_80px_rgba(20,184,166,0.35)] dark:shadow-[0_30px_80px_rgba(20,184,166,0.25)]",
-    hoverBorder: "hover:border-teal-300/50",
-  },
-};
-
-/**
  * StatisticsCard component
- * Displays a glassmorphism card with statistics, icon, and badges
+ * Flat card, neutral surface, tinted icon chip carries the only per-card color.
  */
 export function StatisticsCard({
   title,
@@ -172,7 +90,7 @@ export function StatisticsCard({
   badgeValuesLoading = false,
   compact = false,
 }: StatisticsCardProps) {
-  const config = variantConfig[variant];
+  const tint = STAT_CARD_ICON_TINT[variant];
   const displayValue = valueLoading ? (
     <DataSlotPulse variant="metric" />
   ) : (
@@ -182,48 +100,43 @@ export function StatisticsCard({
   return (
     <article
       className={cn(
-        "group rounded-[28px] border h-full flex flex-col p-2 sm:p-4 backdrop-blur-md transition min-w-0 overflow-visible",
-        // REQ-0171 — compact omits tall min-height (forecast KPIs)
+        "group rounded-2xl border border-border bg-card h-full flex flex-col p-4 sm:p-5 shadow-sm transition-shadow hover:shadow-md min-w-0",
         !compact && "min-h-[210px]",
-        config.border,
-        config.gradient,
-        config.shadow,
-        config.hoverBorder,
         className,
       )}
     >
-      <div className="flex flex-1 flex-col min-h-0 min-w-0 w-full overflow-visible">
+      <div className="flex flex-1 flex-col min-h-0 min-w-0 w-full">
         {/* Title and icon inline so badges get full width below */}
         <div className="flex items-center justify-between gap-2 shrink-0">
-          <p className="text-xs uppercase tracking-[0.45em] text-gray-700 dark:text-white/80 min-w-0">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium min-w-0">
             {title}
           </p>
           <div
             className={cn(
-              "flex shrink-0 items-center justify-center rounded-xl border border-gray-300/30 bg-gray-100/50 shadow-inner shadow-primary/30 backdrop-blur dark:border-white/15 dark:bg-white/10",
+              "flex shrink-0 items-center justify-center rounded-xl",
+              tint.bg,
               compact ? "h-8 w-8" : "h-10 w-10",
             )}
           >
             <Icon
-              className={cn(
-                "text-gray-700 dark:text-white",
-                compact ? "h-4 w-4" : "h-5 w-5",
-              )}
+              className={cn(tint.icon, compact ? "h-4 w-4" : "h-5 w-5")}
             />
           </div>
         </div>
-        <p className={TYPO_STAT_VALUE}>{displayValue}</p>
+        <p className={cn(TYPO_STAT_VALUE, "mt-1 text-xl sm:text-2xl font-semibold")}>
+          {displayValue}
+        </p>
         {description && (
-          <p className={cn("mt-2", TYPO_SUBTITLE)}>{description}</p>
+          <p className={cn("mt-1", TYPO_SUBTITLE)}>{description}</p>
         )}
         {badges.length > 0 && (
-          <div className="mt-3 flex w-full min-w-0 flex-wrap gap-2 overflow-visible">
+          <div className="mt-3 flex w-full min-w-0 flex-wrap gap-1.5">
             {/* REQ-0080 — neutral sub-badges; glass counters are section-title only (SectionCountBadge) */}
             {badges.map((badge, index) => (
               <Badge
                 key={index}
                 variant={badge.variant || "outline"}
-                className="text-xs border-gray-300/50 bg-gray-100/80 text-gray-700 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.1)] dark:border-white/10 dark:bg-white/5 dark:text-white/80"
+                className="text-xs border-transparent bg-muted text-muted-foreground font-normal"
               >
                 <span className="font-normal">{badge.label}:</span>{" "}
                 <span className="ml-1">

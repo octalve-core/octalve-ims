@@ -25,7 +25,7 @@ const PRIMARY_LAYOUT =
   "h-11 inline-flex items-center justify-center rounded-xl backdrop-blur-md transition duration-200 !text-white font-normal";
 
 const ACTION_LAYOUT =
-  "inline-flex items-center justify-center rounded-xl backdrop-blur-md transition duration-200 font-normal text-gray-700 dark:text-white bg-white/80 dark:bg-transparent";
+  "inline-flex items-center justify-center rounded-xl transition-colors duration-200 font-normal text-gray-700 dark:text-white";
 
 /** Cancel / reset — gray glass (dialog footers). */
 export const GLASS_GHOST_BUTTON = `${FOCUS_NO_LAYOUT_SHIFT_CLASS} focus-visible:ring-2 focus-visible:ring-ring/50 dark:focus-visible:ring-white/35 h-11 inline-flex items-center justify-center rounded-xl border border-white/10 bg-gradient-to-r from-gray-400/40 via-gray-300/30 to-gray-400/40 dark:bg-background/50 backdrop-blur-md shadow-[0_15px_35px_rgba(0,0,0,0.3)] dark:shadow-[0_15px_35px_rgba(255,255,255,0.25)] transition duration-200 hover:bg-gradient-to-r hover:from-gray-400/60 hover:via-gray-300/50 hover:to-gray-400/60 dark:hover:bg-accent/50 hover:border-white/20 dark:hover:border-white/20 hover:shadow-[0_20px_45px_rgba(0,0,0,0.5)] dark:hover:shadow-[0_20px_45px_rgba(255,255,255,0.4)] text-gray-700 dark:text-white`;
@@ -54,23 +54,23 @@ const PRIMARY_CYAN = `${PRIMARY_LAYOUT} border border-cyan-400/30 dark:border-cy
 
 const PRIMARY_BLUE = `${PRIMARY_LAYOUT} border border-blue-400/30 dark:border-blue-400/30 bg-gradient-to-r from-blue-500/70 via-blue-500/50 to-blue-500/30 dark:from-blue-500/70 dark:via-blue-500/50 dark:to-blue-500/30 shadow-[0_15px_35px_rgba(59,130,246,0.45)] dark:shadow-[0_15px_35px_rgba(59,130,246,0.25)] hover:border-blue-300/40 hover:from-blue-500/80 hover:via-blue-500/60 hover:to-blue-500/40 dark:hover:border-blue-300/40 dark:hover:from-blue-500/80 dark:hover:via-blue-500/60 dark:hover:to-blue-500/40 hover:shadow-[0_20px_45px_rgba(59,130,246,0.6)] dark:hover:shadow-[0_20px_45px_rgba(59,130,246,0.35)]`;
 
-const ACTION_SKY = `${ACTION_LAYOUT} border border-sky-400/30 dark:border-sky-400/30 bg-gradient-to-r from-sky-500/20 via-sky-500/10 to-transparent dark:from-sky-500/20 dark:via-sky-500/10 hover:from-sky-500/30 dark:hover:from-sky-500/30 hover:border-sky-300/40 shadow-[0_10px_30px_rgba(2,132,199,0.2)] dark:shadow-[0_10px_30px_rgba(2,132,199,0.15)]`;
+const ACTION_SKY = `${ACTION_LAYOUT} border border-sky-200 dark:border-sky-800/40 bg-sky-50 dark:bg-sky-500/10 hover:bg-sky-100 dark:hover:bg-sky-500/20`;
 
-const ACTION_ROSE = `${ACTION_LAYOUT} border border-rose-400/30 dark:border-rose-400/30 bg-gradient-to-r from-rose-500/20 via-rose-500/10 to-transparent dark:from-rose-500/20 dark:via-rose-500/10 hover:from-rose-500/30 dark:hover:from-rose-500/30 hover:border-rose-300/40 shadow-[0_10px_30px_rgba(225,29,72,0.2)] dark:shadow-[0_10px_30px_rgba(225,29,72,0.15)]`;
+const ACTION_ROSE = `${ACTION_LAYOUT} border border-rose-200 dark:border-rose-800/40 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20`;
 
-const ACTION_EMERALD = `${ACTION_LAYOUT} border border-emerald-400/30 dark:border-emerald-400/30 bg-gradient-to-r from-emerald-500/20 via-emerald-500/10 to-transparent dark:from-emerald-500/20 dark:via-emerald-500/10 hover:from-emerald-500/30 dark:hover:from-emerald-500/30 hover:border-emerald-300/40 shadow-[0_10px_30px_rgba(16,185,129,0.2)] dark:shadow-[0_10px_30px_rgba(16,185,129,0.15)]`;
+const ACTION_EMERALD = `${ACTION_LAYOUT} border border-emerald-200 dark:border-emerald-800/40 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20`;
 
-const ACTION_VIOLET = `${ACTION_LAYOUT} border border-violet-400/30 dark:border-violet-400/30 bg-gradient-to-r from-violet-500/20 via-violet-500/10 to-transparent dark:from-violet-500/20 dark:via-violet-500/10 hover:from-violet-500/30 dark:hover:from-violet-500/30 hover:border-violet-300/40 shadow-[0_10px_30px_rgba(139,92,246,0.2)] dark:shadow-[0_10px_30px_rgba(139,92,246,0.15)]`;
+const ACTION_VIOLET = `${ACTION_LAYOUT} border border-violet-200 dark:border-violet-800/40 bg-violet-50 dark:bg-violet-500/10 hover:bg-violet-100 dark:hover:bg-violet-500/20`;
 
-const ACTION_INDIGO = `${ACTION_LAYOUT} border border-indigo-400/30 dark:border-indigo-400/30 bg-gradient-to-r from-indigo-500/20 via-indigo-500/10 to-transparent dark:from-indigo-500/20 dark:via-indigo-500/10 hover:from-indigo-500/30 dark:hover:from-indigo-500/30 hover:border-indigo-300/40 shadow-[0_10px_30px_rgba(99,102,241,0.2)] dark:shadow-[0_10px_30px_rgba(99,102,241,0.15)]`;
+const ACTION_INDIGO = `${ACTION_LAYOUT} border border-indigo-200 dark:border-indigo-800/40 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20`;
 
-const ACTION_AMBER = `${ACTION_LAYOUT} border border-amber-400/30 dark:border-amber-400/30 bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent dark:from-amber-500/20 dark:via-amber-500/10 hover:from-amber-500/30 dark:hover:from-amber-500/30 hover:border-amber-300/40 shadow-[0_10px_30px_rgba(245,158,11,0.2)] dark:shadow-[0_10px_30px_rgba(245,158,11,0.15)]`;
+const ACTION_AMBER = `${ACTION_LAYOUT} border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20`;
 
-const ACTION_TEAL = `${ACTION_LAYOUT} border border-teal-400/30 dark:border-teal-400/30 bg-gradient-to-r from-teal-500/20 via-teal-500/10 to-transparent dark:from-teal-500/20 dark:via-teal-500/10 hover:from-teal-500/30 dark:hover:from-teal-500/30 hover:border-teal-300/40 shadow-[0_10px_30px_rgba(20,184,166,0.2)] dark:shadow-[0_10px_30px_rgba(20,184,166,0.15)]`;
+const ACTION_TEAL = `${ACTION_LAYOUT} border border-teal-200 dark:border-teal-800/40 bg-teal-50 dark:bg-teal-500/10 hover:bg-teal-100 dark:hover:bg-teal-500/20`;
 
-const ACTION_CYAN = `${ACTION_LAYOUT} border border-cyan-400/30 dark:border-cyan-400/30 bg-gradient-to-r from-cyan-500/20 via-cyan-500/10 to-transparent dark:from-cyan-500/20 dark:via-cyan-500/10 hover:from-cyan-500/30 dark:hover:from-cyan-500/30 hover:border-cyan-300/40 shadow-[0_10px_30px_rgba(6,182,212,0.2)] dark:shadow-[0_10px_30px_rgba(6,182,212,0.15)]`;
+const ACTION_CYAN = `${ACTION_LAYOUT} border border-cyan-200 dark:border-cyan-800/40 bg-cyan-50 dark:bg-cyan-500/10 hover:bg-cyan-100 dark:hover:bg-cyan-500/20`;
 
-const ACTION_BLUE = `${ACTION_LAYOUT} border border-blue-400/30 dark:border-blue-400/30 bg-gradient-to-r from-blue-500/20 via-blue-500/10 to-transparent dark:from-blue-500/20 dark:via-blue-500/10 hover:from-blue-500/30 dark:hover:from-blue-500/30 hover:border-blue-300/40 shadow-[0_10px_30px_rgba(59,130,246,0.2)] dark:shadow-[0_10px_30px_rgba(59,130,246,0.15)]`;
+const ACTION_BLUE = `${ACTION_LAYOUT} border border-blue-200 dark:border-blue-800/40 bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20`;
 
 function withFocusRing(shell: string, hue: GlassFocusHue): string {
   return `${FOCUS_NO_LAYOUT_SHIFT_CLASS} ${GLASS_FOCUS_RING[hue]} ${shell}`;
