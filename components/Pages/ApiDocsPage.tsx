@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import { getApiUrl } from "@/lib/env";
 import { Badge } from "@/components/ui/badge";
 import {
   FileJson,
@@ -45,15 +46,11 @@ function getTabValue(name: string): string {
 
 export default function ApiDocsPage() {
   // SSR-safe default; client upgrades to window.origin without mount skeleton (REQ-0094).
-  const envBase =
-    process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-    "http://localhost:3000";
-  const [baseUrl, setBaseUrl] = useState(envBase);
+  const [baseUrl, setBaseUrl] = useState(() => getApiUrl());
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      queueMicrotask(() => setBaseUrl(window.location.origin));
-    }
+    // Re-resolve on mount in case window.location is now available
+    setBaseUrl(getApiUrl());
   }, []);
 
   const endpoints = [

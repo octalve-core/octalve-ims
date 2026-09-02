@@ -1,0 +1,178 @@
+/**
+ * Product row actions dropdown — Pro tier variant (identical to Core).
+ * Product reviews (lib/product-reviews, hooks/queries/use-product-reviews.ts,
+ * components/product-reviews/WriteEditReviewDialog.tsx) are premium-exclusive,
+ * so this tier's dropdown keeps only the product CRUD actions (view/copy/
+ * edit/delete) and drops the Write/Edit/Delete Review items entirely — no
+ * upsell placeholder, since a disabled "Write Review" item would be more
+ * confusing than no item at all. Picked by scripts/export-tier.ts in place
+ * of the default file when exporting Pro (see ProductActions.core.tsx for
+ * the identical Core variant).
+ */
+import { Product } from "@/types";
+import { useProductStore } from "@/stores";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useCreateProduct, useDeleteProduct } from "@/hooks/queries";
+import { useAuth } from "@/contexts";
+import { logger } from "@/lib/logger";
+import { MoreVertical, Eye, Edit, Trash2, Copy } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+import { AlertDialogWrapper } from "@/components/dialogs";
+
+interface ProductsDropDownProps {
+  row: {
+    original: Product;
+  };
+  /** Base path for detail link (e.g. "/admin" when on admin products page). */
+  detailBase?: string;
+}
+
+export default function ProductsDropDown({
+  row,
+  detailBase = "",
+}: ProductsDropDownProps) {
+  // Keep UI state in Zustand (setSelectedProduct, setOpenProductDialog)
+  const { setSelectedProduct, setOpenProductDialog } = useProductStore();
+  const { user } = useAuth();
+
+  // Use TanStack Query mutations
+  const createProductMutation = useCreateProduct();
+  const deleteProductMutation = useDeleteProduct();
+
+  // Alert dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  // Determine loading states from mutations
+  const isCopying = createProductMutation.isPending;
+  const isDeleting = deleteProductMutation.isPending;
+  const isSupplierRole = user?.role === "supplier";
+  const isClientRole = user?.role === "client";
+  const readOnlyCatalog = isSupplierRole || isClientRole;
+
+  // Handle Copy Product
+  const handleCopyProduct = async () => {
+    try {
+      const uniqueSku = `${row.original.sku}-${Date.now()}`;
+
+      // Create product copy using TanStack Query mutation
+      await createProductMutation.mutateAsync({
+        name: `${row.original.name} (copy)`,
+        sku: uniqueSku,
+        price: row.original.price,
+        quantity: row.original.quantity,
+        status: row.original.status || "Available",
+        categoryId: row.original.categoryId,
+        supplierId: row.original.supplierId,
+        userId: row.original.userId,
+      });
+    } catch (error) {
+      // Error toast is handled by the mutation hook
+      logger.error("Error copying product:", error);
+    }
+  };
+
+  // Handle Edit Product
+  const handleEditProduct = () => {
+    try {
+      setSelectedProduct(row.original);
+      setOpenProductDialog(true);
+    } catch (error) {
+      logger.error("Error opening edit dialog:", error);
+    }
+  };
+
+  // Handle Delete Product Confirmation — use mutate() with callbacks so no unhandled
+  // promise rejection occurs when delete fails (e.g. 409 active orders). The dialog
+  // does not await onAction, so mutateAsync would leave a rejected promise and
+  // trigger the Next.js "1 Issue" overlay. Callbacks keep handling silent/graceful.
+  const handleConfirmDeleteProduct = () => {
+    // useDeleteProduct.onSuccess already calls cancelOrRemoveDetailQuery + invalidateAllRelatedQueries
+    deleteProductMutation.mutate(row.original.id, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+      },
+      onError: () => {
+        // Toast already shown by useDeleteProduct onError; close dialog gracefully
+        setDeleteDialogOpen(false);
+      },
+    });
+  };
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Open menu</span>
+            <MoreVertical className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          className="border border-white/10 bg-gradient-to-br from-white/5 via-white/5 to-white/5 backdrop-blur-md shadow-lg"
+        >
+          <DropdownMenuItem asChild>
+            <Link
+              href={
+                detailBase
+                  ? `${detailBase}/products/${row.original.id}`
+                  : `/products/${row.original.id}`
+              }
+              className="flex items-center gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              View Details
+            </Link>
+          </DropdownMenuItem>
+          {!readOnlyCatalog && (
+            <>
+              <DropdownMenuItem
+                onClick={handleCopyProduct}
+                disabled={isCopying}
+                className="flex items-center gap-2"
+              >
+                <Copy className="h-4 w-4" />
+                {isCopying ? "Duplicating..." : "Create Duplicate"}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handleEditProduct}
+                className="flex items-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Edit Product
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setDeleteDialogOpen(true)}
+                disabled={isDeleting}
+                className="flex items-center gap-2 text-red-600 dark:text-red-400"
+              >
+                <Trash2 className="h-4 w-4" />
+                {isDeleting ? "Deleting..." : "Delete Product"}
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialogWrapper
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Product"
+        description={`Are you sure you want to delete "${row.original.name}"? This action cannot be undone.`}
+        actionLabel="Delete"
+        actionLoadingLabel="Deleting..."
+        isLoading={isDeleting}
+        onAction={handleConfirmDeleteProduct}
+        onCancel={() => setDeleteDialogOpen(false)}
+      />
+    </>
+  );
+}

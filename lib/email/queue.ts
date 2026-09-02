@@ -5,6 +5,7 @@
  */
 
 import { getQStash, isQStashConfigured } from "@/lib/queue/qstash";
+import { getApiUrl } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { isBrevoConfigured, getAdminEmail, sendEmailViaBrevo } from "./brevo";
 import {
@@ -79,7 +80,7 @@ export async function queueEmailNotification(
     }
 
     // Get base URL for webhook endpoint
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    const baseUrl = getApiUrl();
     const webhookUrl = `${baseUrl}/api/email/queue/process`;
 
     // Queue the email job via QStash

@@ -13,7 +13,11 @@
  * ProductLineItemsList.tsx) is untouched — the tier swap happens
  * transparently at this file's identity, not at any caller.
  */
-import type { ProductReview } from "@/types";
+/** Locally-defined — the real ProductReview shape (types/product-review.ts) is
+ * premium-only; every product is reported with an empty reviews array in this
+ * tier (see below), so only the array shape needs to type-check downstream,
+ * not the full record. */
+type ProductReview = Record<string, unknown>;
 
 /** Locally-defined — mirrors lib/product-reviews/product-reviews-detail-data.ts's
  * shape without importing premium code into a Core-bucketed file. */

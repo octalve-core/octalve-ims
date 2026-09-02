@@ -29,7 +29,7 @@ for (const bucket of BUCKETS) {
 // classified individually (loose-file dirs), vs. directories whose immediate
 // child *folders* are the classification unit and files inside don't need
 // individual listing (folder-level dirs).
-const FOLDER_LEVEL_DIRS = ["app/admin", "app/api", "app/api/admin", "lib", "components", "hooks/queries", "components/Pages", "components/admin"];
+const FOLDER_LEVEL_DIRS = ["app/admin", "app/api", "app/api/admin", "lib", "lib/server", "lib/insights", "lib/payments", "components", "hooks/queries", "components/Pages", "components/admin"];
 const LOOSE_FILE_DIRS = ["hooks", "types", "contexts", "stores", "utils", "middleware", "prisma"];
 // app/ itself: children are a MIX of folders (classified as whole units,
 // e.g. "app/orders") and two special single files (layout.tsx, page.tsx,

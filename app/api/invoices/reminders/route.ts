@@ -11,6 +11,7 @@ import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/prisma/client";
 import { sendInvoiceEmail } from "@/lib/email/notifications";
+import { getApiUrl } from "@/lib/env";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 import { scheduleInvalidateInvoiceCaches } from "@/lib/cache";
 import type { InvoiceEmailData, BillingAddress } from "@/types";
@@ -150,9 +151,7 @@ export async function POST(request: NextRequest) {
           amountPaid: invoice.amountPaid,
           amountDue: invoice.amountDue,
           paymentLink: invoice.paymentLink || undefined,
-          invoiceUrl: `${
-            process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
-          }/invoices/${invoice.id}`,
+          invoiceUrl: `${getApiUrl(request)}/invoices/${invoice.id}`,
           status: isOverdue
             ? "overdue"
             : ("sent" as InvoiceEmailData["status"]),

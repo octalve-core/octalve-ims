@@ -1,6 +1,10 @@
 /**
  * Send Invoice Email API Route
  * Handles sending invoice via email
+ *
+ * Core variant: skips Stripe payment-link generation (@/lib/stripe is a
+ * Pro-tier feature) — sends with whatever paymentLink the invoice already
+ * has, same as the default file when Stripe isn't configured.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -10,8 +14,6 @@ import { getInvoiceById, markInvoiceAsSent } from "@/prisma/invoice";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 import { sendInvoiceEmail } from "@/lib/email/notifications";
 import { getOrderById } from "@/prisma/order";
-import { getStripe, isStripeConfigured } from "@/lib/stripe";
-import { getApiUrl } from "@/lib/env";
 import { createInvoiceSentNotification } from "@/lib/notifications/in-app";
 import { scheduleInvalidateInvoiceCaches } from "@/lib/cache";
 import { prisma } from "@/prisma/client";
@@ -94,59 +96,9 @@ export async function POST(
       );
     }
 
-    // Generate Stripe payment link if not already set and there's an amount due
-    let paymentLink = invoice.paymentLink;
-    if (!paymentLink && invoice.amountDue > 0 && isStripeConfigured()) {
-      try {
-        const stripe = getStripe();
-        const baseUrl = getApiUrl(request);
-
-        const checkoutSession = await stripe.checkout.sessions.create({
-          payment_method_types: ["card"],
-          line_items: [
-            {
-              price_data: {
-                currency: "usd",
-                unit_amount: Math.round(invoice.amountDue * 100), // Stripe uses cents
-                product_data: {
-                  name: `Invoice ${invoice.invoiceNumber}`,
-                  description: `Payment for order ${order.orderNumber}`,
-                },
-              },
-              quantity: 1,
-            },
-          ],
-          mode: "payment",
-          success_url: `${baseUrl}/invoices/${invoice.id}?payment=success`,
-          cancel_url: `${baseUrl}/invoices/${invoice.id}?payment=cancelled`,
-          metadata: {
-            type: "invoice",
-            invoiceId: invoice.id,
-            invoiceNumber: invoice.invoiceNumber,
-            orderId: invoice.orderId,
-            orderNumber: order.orderNumber,
-          },
-        });
-
-        paymentLink = checkoutSession.url;
-
-        // Update invoice with payment link
-        if (paymentLink) {
-          await prisma.invoice.update({
-            where: { id: invoice.id },
-            data: { paymentLink },
-          });
-        }
-
-        logger.info("Stripe payment link generated for invoice", {
-          invoiceId: invoice.id,
-          sessionId: checkoutSession.id,
-        });
-      } catch (error) {
-        logger.warn("Failed to generate Stripe payment link:", error);
-        // Continue without payment link - not a critical error
-      }
-    }
+    // Core: no Stripe payment-link generation — send with whatever
+    // paymentLink the invoice already has (none, in practice).
+    const paymentLink = invoice.paymentLink;
 
     // Prepare invoice email data
     // Extract dates safely - toISOString().split("T")[0] always returns a string, but TypeScript needs explicit type

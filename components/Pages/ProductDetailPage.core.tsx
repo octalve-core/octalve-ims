@@ -104,13 +104,16 @@ import {
 import type {
   Product,
   ProductStatus,
-  ProductReview,
   StockAllocation,
   ForecastingSummary,
 } from "@/types";
 /** Locally-defined — mirrors lib/product-reviews/product-reviews-detail-data.ts's
  * shape without importing premium code into a Core-bucketed file. */
 type ReviewEligibilityResult = { eligible: boolean; slots: unknown[] };
+/** Locally-defined — the real ProductReview shape (types/product-review.ts) is
+ * premium-only; initialReviews is never read in this tier (see prop below),
+ * so only the array shape needs to type-check, not the full record. */
+type ProductReview = Record<string, unknown>;
 import { cn } from "@/lib/utils";
 import {
   TYPO_BODY_MUTED,

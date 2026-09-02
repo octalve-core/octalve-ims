@@ -98,6 +98,59 @@ export function validateEnv(): void {
 }
 
 /**
+ * Resolve the public base URL of the application.
+ *
+ * Resolution order (first truthy value wins):
+ *  1. `NEXT_PUBLIC_API_URL` environment variable
+ *  2. Origin derived from the incoming `Request` or Next.js `headers()` (server-side)
+ *  3. `window.location.origin` (client-side / browser)
+ *  4. `http://localhost:3000` (last resort)
+ *
+ * @param req - Optional: the current `Request` object when called inside a
+ *              Route Handler. Passing it gives the most accurate origin on the
+ *              server without relying on the `next/headers` import.
+ */
+export function getApiUrl(req?: Request): string {
+  // 1. Explicit env var — highest priority
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (envUrl) return envUrl.replace(/\/$/, "");
+
+  // 2a. Infer from the incoming request (Route Handlers)
+  if (req) {
+    try {
+      const { protocol, host } = new URL(req.url);
+      return `${protocol}//${host}`;
+    } catch {
+      // malformed URL — fall through
+    }
+  }
+
+  // 2b. Infer from Next.js server headers (Server Components / Actions)
+  if (typeof window === "undefined") {
+    try {
+      // Dynamic import keeps this tree-shakeable on the client bundle
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { headers } = require("next/headers") as {
+        headers: () => { get: (key: string) => string | null };
+      };
+      const host = headers().get("host");
+      const proto = headers().get("x-forwarded-proto") ?? "http";
+      if (host) return `${proto}://${host}`;
+    } catch {
+      // next/headers unavailable outside the Next.js request context
+    }
+  }
+
+  // 3. Browser origin (client components after hydration)
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin;
+  }
+
+  // 4. Last resort
+  return "http://localhost:3000";
+}
+
+/**
  * Get all environment variables with their status
  * Useful for debugging configuration issues
  */

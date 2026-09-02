@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { getApiUrl } from "@/lib/env";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import {
@@ -311,9 +312,7 @@ export async function PUT(
             clientEmail: shippingAddr.email,
             previousStatus: existingOrder.status,
             newStatus: updateData.status ?? order.status,
-            orderUrl: `${
-              process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
-            }/orders/${order.id}`,
+            orderUrl: `${getApiUrl(request)}/orders/${order.id}`,
             estimatedDelivery: order.estimatedDelivery?.toISOString(),
           },
           shippingAddr.email,
