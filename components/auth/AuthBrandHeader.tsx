@@ -17,7 +17,7 @@ export function AuthBrandHeader() {
       <Link
         href="/"
         className="group inline-flex items-center gap-3 rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-[#0064E0]/50"
-        aria-label="Octalve IMS — Inventory Management"
+        aria-label="Octalve IMS: Inventory Management System"
       >
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#0064E0] text-white shadow-[0_10px_24px_rgba(0,100,224,0.28)]">
           <Boxes className="h-[22px] w-[22px]" strokeWidth={2.1} />

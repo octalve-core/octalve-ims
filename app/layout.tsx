@@ -52,8 +52,8 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: {
-    default: "Octalve IMS — Inventory & Warehouse Management System",
-    template: "%s | Octalve IMS — Inventory & Warehouse Management System",
+    default: "Octalve IMS: Inventory & Warehouse Management System",
+    template: "%s | Octalve IMS: Inventory & Warehouse Management System",
   },
   description:
     "Octalve IMS is a full-stack inventory and warehouse management system built with Next.js. Manage products, categories, suppliers, orders, invoices, and warehouses. Role-based access for admin, client, and supplier. Analytics dashboard, QR codes, export, and secure JWT authentication.",

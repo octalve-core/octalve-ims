@@ -335,10 +335,10 @@ export default function AppSidebar({
         aria-label="Primary navigation"
       >
         <div className={cn("flex h-11 items-center gap-2.5 pb-6", collapsed ? "justify-center" : "px-1")}>
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#0064E0] text-base font-bold text-white">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#0064E0] text-lg font-bold text-white">
             O
           </div>
-          {!collapsed && <span className="text-[17px] font-bold tracking-tight text-white">Octalve IMS</span>}
+          {!collapsed && <span className="text-xl font-bold tracking-tight text-white">Octalve IMS</span>}
         </div>
         {body}
         {footer}
