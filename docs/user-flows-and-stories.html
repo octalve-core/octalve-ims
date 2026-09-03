@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Octalve IMS — User Flows &amp; User Stories</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f2f5fa;
+    --surface: #ffffff;
+    --surface-soft: #f8fafc;
+    --ink: #0f172a;
+    --ink-soft: #475569;
+    --muted: #64748b;
+    --line: #e5eaf2;
+    --primary: #0064E0;
+    --primary-dark: #0052b8;
+    --primary-soft: #eaf3ff;
+    --navy: #000A16;
+    --success: #10b981;
+    --success-soft: #ecfdf5;
+    --warning: #f59e0b;
+    --warning-soft: #fff7e6;
+    --danger: #ef4444;
+    --danger-soft: #fff1f2;
+    --radius-lg: 22px;
+    --radius-md: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 10px 30px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.05);
+    --sidebar-w: 268px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { color: var(--primary-dark); }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: rgba(100,116,139,0.35); border-radius: 999px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  /* ---------- layout ---------- */
+  .shell {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    background: var(--navy);
+    color: #fff;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 28px 20px 32px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+    padding: 0 4px;
+  }
+  .brand .mark {
+    width: 38px; height: 38px; border-radius: 12px;
+    background: var(--primary);
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 16px; color: #fff;
+    box-shadow: 0 8px 20px rgba(0,100,224,0.35);
+    flex-shrink: 0;
+  }
+  .brand .name { font-size: 16px; font-weight: 700; line-height: 1.2; }
+  .brand .sub { font-size: 12px; color: rgba(255,255,255,0.55); font-weight: 500; }
+
+  .toc-label {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: rgba(255,255,255,0.35);
+    padding: 18px 10px 8px;
+  }
+  .toc-label:first-of-type { padding-top: 4px; }
+
+  .sidebar nav a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px; border-radius: 12px;
+    font-size: 13.5px; font-weight: 600;
+    color: rgba(255,255,255,0.78);
+    transition: background 0.15s, color 0.15s;
+  }
+  .sidebar nav a:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .sidebar nav a.active { background: rgba(20,120,255,0.28); color: #fff; }
+  .sidebar nav a .dot {
+    width: 6px; height: 6px; border-radius: 999px;
+    background: currentColor; opacity: 0.5; flex-shrink: 0;
+  }
+
+  main {
+    padding: 48px 56px 96px;
+    max-width: 980px;
+  }
+
+  header.hero {
+    margin-bottom: 40px;
+  }
+  header.hero .eyebrow {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--primary); margin-bottom: 10px;
+  }
+  header.hero h1 {
+    font-size: 40px; font-weight: 800; letter-spacing: -0.03em;
+    line-height: 1.08; margin: 0 0 14px;
+  }
+  header.hero p.lead {
+    font-size: 16px; color: var(--ink-soft); max-width: 62ch;
+    line-height: 1.6; margin: 0;
+  }
+  header.hero .refs {
+    margin-top: 16px; font-size: 13.5px; color: var(--muted);
+  }
+
+  section.block { margin-bottom: 56px; scroll-margin-top: 24px; }
+  section.block h2 {
+    font-size: 24px; font-weight: 800; letter-spacing: -0.02em;
+    margin: 0 0 6px;
+  }
+  section.block > .kicker {
+    font-size: 13px; color: var(--muted); margin-bottom: 22px;
+    max-width: 68ch; line-height: 1.55;
+  }
+  section.block h3 {
+    font-size: 16px; font-weight: 700; margin: 28px 0 10px;
+    color: var(--ink);
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    padding: 24px 26px;
+  }
+
+  .persona-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 14px;
+  }
+  .persona-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 18px 18px 16px;
+    box-shadow: var(--shadow);
+  }
+  .persona-card .tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+    padding: 3px 9px; border-radius: 999px; margin-bottom: 10px;
+  }
+  .tag.admin { background: var(--primary-soft); color: var(--primary-dark); }
+  .tag.client { background: var(--success-soft); color: #047857; }
+  .tag.supplier { background: var(--warning-soft); color: #b45309; }
+  .tag.retailer { background: #f1f0ff; color: #6d28d9; }
+  .persona-card h4 { margin: 0 0 4px; font-size: 15.5px; font-weight: 700; }
+  .persona-card p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .persona-card code {
+    font-size: 12px; background: var(--surface-soft); padding: 1px 6px;
+    border-radius: 6px; color: var(--ink-soft);
+  }
+
+  ol.steps, ul.steps {
+    margin: 0; padding: 0; list-style: none;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  ol.steps { counter-reset: step; }
+  ol.steps li {
+    counter-increment: step;
+    position: relative;
+    padding: 12px 16px 12px 44px;
+    background: var(--surface-soft);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    font-size: 14px; line-height: 1.55; color: var(--ink);
+  }
+  ol.steps li::before {
+    content: counter(step);
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    width: 22px; height: 22px; border-radius: 999px;
+    background: var(--primary); color: #fff;
+    font-size: 11.5px; font-weight: 700;
+    display: grid; place-items: center;
+  }
+  ul.steps li {
+    padding: 12px 16px;
+    background: var(--surface-soft);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    font-size: 14px; line-height: 1.55;
+  }
+  .steps strong { color: var(--ink); }
+  .steps code {
+    font-size: 12.5px; background: #fff; border: 1px solid var(--line);
+    padding: 1px 6px; border-radius: 6px; color: var(--primary-dark);
+  }
+
+  .diagram-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    padding: 22px 22px 10px;
+    margin-top: 16px;
+    overflow-x: auto;
+  }
+  .diagram-card .mermaid { display: flex; justify-content: center; }
+  .diagram-caption {
+    font-size: 12.5px; color: var(--muted); text-align: center;
+    padding: 10px 4px 16px;
+  }
+
+  table.stories {
+    width: 100%; border-collapse: collapse;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius-md); overflow: hidden;
+    box-shadow: var(--shadow);
+    margin-bottom: 22px;
+    font-size: 13.5px;
+  }
+  table.stories th {
+    text-align: left; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--muted); background: var(--surface-soft);
+    padding: 10px 14px; border-bottom: 1px solid var(--line);
+  }
+  table.stories td {
+    padding: 12px 14px; border-bottom: 1px solid var(--line);
+    vertical-align: top; line-height: 1.5;
+  }
+  table.stories tr:last-child td { border-bottom: none; }
+  table.stories td.id { font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .prio {
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px;
+    white-space: nowrap;
+  }
+  .prio.p0 { background: var(--danger-soft); color: #b91c1c; }
+  .prio.p1 { background: var(--warning-soft); color: #b45309; }
+  .prio.p2 { background: var(--surface-soft); color: var(--muted); border: 1px solid var(--line); }
+
+  .persona-inline {
+    font-weight: 700; color: var(--primary-dark);
+  }
+
+  .lifecycle-pill-row {
+    display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 4px;
+  }
+  .pill {
+    font-size: 12.5px; font-weight: 600; padding: 5px 12px;
+    border-radius: 999px; background: var(--surface-soft);
+    border: 1px solid var(--line); color: var(--ink-soft);
+  }
+  .pill.arrow::after { content: "→"; margin-left: 8px; color: var(--muted); }
+  .pill.arrow:last-child::after { content: ""; }
+  .pill.terminal-ok { background: var(--success-soft); color: #047857; border-color: transparent; }
+  .pill.terminal-bad { background: var(--danger-soft); color: #b91c1c; border-color: transparent; }
+
+  footer.doc-footer {
+    margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--line);
+    font-size: 12.5px; color: var(--muted);
+  }
+
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar { position: relative; height: auto; }
+    main { padding: 32px 20px 72px; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mark">O</div>
+      <div>
+        <div class="name">Octalve IMS</div>
+        <div class="sub">User Flows &amp; Stories</div>
+      </div>
+    </div>
+    <p class="toc-label">Contents</p>
+    <nav id="toc">
+      <a href="#personas"><span class="dot"></span>Personas</a>
+      <a href="#auth"><span class="dot"></span>Authentication Flow</a>
+      <a href="#admin"><span class="dot"></span>Admin / Store Owner</a>
+      <a href="#client"><span class="dot"></span>Client Flows</a>
+      <a href="#supplier"><span class="dot"></span>Supplier Flows</a>
+      <a href="#cross-cutting"><span class="dot"></span>Cross-Cutting Flows</a>
+      <a href="#nav-map"><span class="dot"></span>Role &amp; Navigation Map</a>
+      <a href="#stories"><span class="dot"></span>User Stories</a>
+    </nav>
+  </aside>
+
+  <main>
+    <header class="hero">
+      <p class="eyebrow">Product Documentation</p>
+      <h1>User Flows &amp; User Stories</h1>
+      <p class="lead">
+        Who uses Octalve IMS, what they do in it, and how those journeys
+        connect end to end — grounded in the actual route config, order/
+        invoice/ticket status fields, and demo accounts already in this repo.
+      </p>
+      <p class="refs">
+        Engineering docs: <a href="./PROJECT_WALKTHROUGH.md">PROJECT_WALKTHROUGH.md</a> ·
+        <a href="./auth-system-port-plan.md">auth-system-port-plan.md</a> ·
+        Markdown twin of this page: <a href="./user-flows-and-stories.md">user-flows-and-stories.md</a>
+      </p>
+    </header>
+
+    <section class="block" id="personas">
+      <h2>1 · Personas</h2>
+      <p class="kicker">Every persona starts at the same front door — Authentication — then branches by role.</p>
+      <div class="persona-grid">
+        <div class="persona-card">
+          <span class="tag admin">STORE OWNER</span>
+          <h4>Admin</h4>
+          <p>Runs the whole store: catalog, orders, invoices, warehouses, people, moderation. Home: <code>/</code></p>
+        </div>
+        <div class="persona-card">
+          <span class="tag client">CLIENT</span>
+          <h4>Client</h4>
+          <p>Buys from the store: browses, orders, pays invoices, reviews, raises tickets. Home: <code>/client</code></p>
+        </div>
+        <div class="persona-card">
+          <span class="tag supplier">SUPPLIER</span>
+          <h4>Supplier</h4>
+          <p>Fulfills from their own catalog: manages products, tracks orders/revenue scoped to themselves. Home: <code>/supplier</code></p>
+        </div>
+        <div class="persona-card">
+          <span class="tag retailer">RETAILER</span>
+          <h4>Retailer</h4>
+          <p>Exists in the RBAC table and login demo-select for QA; no dedicated portal yet — shares the general dashboard. Home: <code>/</code></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="auth">
+      <h2>2 · Authentication Flow</h2>
+      <p class="kicker">Get a visitor into the workspace that matches their role — low friction for demo/QA, real security (bcrypt, CSRF, rate limiting, rotating refresh tokens) for production.</p>
+      <ol class="steps">
+        <li>Visitor lands on <code>/login</code>.</li>
+        <li>Optionally picks a <strong>demo role</strong> from "Test Accounts To Login With" — pre-fills one of the 4 canonical demo accounts.</li>
+        <li>Enters email + password, <strong>or</strong> clicks <strong>Continue with Google</strong>.</li>
+        <li>Optionally checks <strong>"Keep me signed in"</strong> — 1-day refresh token unchecked, 30-day checked.</li>
+        <li>Server validates, rate-limits by <code>ip:email</code>, issues access + rotating refresh token cookies (httpOnly).</li>
+        <li>Redirected by role — <code>client → /client</code>, <code>supplier → /supplier</code>, everyone else → <code>/</code>.</li>
+        <li>Session silently refreshes every ~13 minutes while active; a hard 401 anywhere bounces back to <code>/login</code>.</li>
+        <li><strong>Logout</strong> (any role, sidebar footer): confirmation dialog → cookies cleared server-side → redirect with goodbye toast.</li>
+      </ol>
+
+      <div class="diagram-card">
+        <div class="mermaid">
+flowchart TD
+    A[Visitor lands on /login] --> B{Has an account?}
+    B -- No --> C["/register — name, email, password"]
+    C --> D[Account created] --> E[Redirect to /login]
+    B -- Yes, wants a demo account --> F[Pick role in Test Accounts select]
+    F --> G[Email + password auto-filled]
+    B -- Yes, own credentials --> H[Enter email + password]
+    G --> I{Keep me signed in?}
+    H --> I
+    I -- checked --> J[30-day refresh token]
+    I -- unchecked --> K[1-day refresh token]
+    B -- Has Google account --> L[Continue with Google] --> M[OAuth redirect + callback]
+    J --> N{Role?}
+    K --> N
+    M --> N
+    N -- admin/user/retailer --> O[Redirect to / — Store Overview]
+    N -- client --> P[Redirect to /client — Client Portal]
+    N -- supplier --> Q[Redirect to /supplier — Supplier Portal]
+    O --> R[Silent refresh every ~13 min]
+    P --> R
+    Q --> R
+    R --> S{Session still valid?}
+    S -- Yes --> R
+    S -- No --> A
+        </div>
+        <p class="diagram-caption">Fig. 1 — Authentication flow, all personas</p>
+      </div>
+    </section>
+
+    <section class="block" id="admin">
+      <h2>3 · Admin / Store Owner Flows</h2>
+      <p class="kicker">The Admin sidebar is grouped into <strong>My Store</strong> (day-to-day operations), <strong>Management</strong> (catalog/people admin), and <strong>My Activity</strong>.</p>
+
+      <h3>3.1 Store Overview <code>/</code></h3>
+      <p style="font-size:14px;color:var(--ink-soft);line-height:1.6;">The landing dashboard: store-wide stats (products, orders, revenue, invoices, warehouses, suppliers, categories — including client/supplier activity, not just the admin's own), a Quick Access grid to every section, and inline Products/Suppliers/Categories lists. "My Activities" is the personal-only equivalent.</p>
+
+      <h3>3.2 Product management</h3>
+      <ol class="steps">
+        <li>Admin opens <strong>Products</strong>, sees stock/status/QR per row.</li>
+        <li><strong>Create</strong> a product — name, SKU, price, category, supplier, opening stock, expiry date.</li>
+        <li><strong>Import</strong> products in bulk (CSV) or <strong>export</strong> the catalog.</li>
+        <li>Edit or <strong>delete</strong> a product (confirmation dialog).</li>
+        <li>Low-stock / stock-out counts surface on stat cards and drive warehouse allocation decisions.</li>
+      </ol>
+
+      <h3>3.3 Orders</h3>
+      <p style="font-size:13.5px;color:var(--muted);margin:0 0 6px;">Order status lifecycle:</p>
+      <div class="lifecycle-pill-row">
+        <span class="pill arrow">pending</span><span class="pill arrow">confirmed</span><span class="pill arrow">processing</span><span class="pill arrow">shipped</span><span class="pill terminal-ok">delivered</span>
+        <span class="pill terminal-bad">cancelled (from any pre-delivered state)</span>
+      </div>
+      <p style="font-size:13.5px;color:var(--muted);margin:14px 0 6px;">Payment status (tracked independently):</p>
+      <div class="lifecycle-pill-row">
+        <span class="pill arrow">unpaid</span><span class="pill arrow">partial</span><span class="pill terminal-ok">paid</span>
+        <span class="pill terminal-bad">refunded</span>
+      </div>
+      <ol class="steps" style="margin-top:16px;">
+        <li>Admin reviews incoming orders, confirms → allocates stock across Warehouses (auto-assign or manual pick, capped at on-hand quantity).</li>
+        <li>Advances status as fulfillment progresses — the client sees the same status live.</li>
+        <li>Cancels/refunds when needed — reflected in both the order and its linked invoice.</li>
+      </ol>
+
+      <h3>3.4 Invoices</h3>
+      <div class="lifecycle-pill-row">
+        <span class="pill arrow">draft</span><span class="pill arrow">sent</span><span class="pill terminal-ok">paid</span>
+        <span class="pill terminal-bad">overdue</span><span class="pill terminal-bad">cancelled</span>
+      </div>
+      <p style="font-size:14px;color:var(--ink-soft);line-height:1.6;margin-top:12px;">Generated from orders; Admin can resend, mark paid, or cancel.</p>
+
+      <h3>3.5 Warehouses &amp; stock</h3>
+      <p style="font-size:14px;color:var(--ink-soft);line-height:1.6;">Admin manages warehouse records and allocates order stock across them (auto-assign or manual, capped per-warehouse). Transfers between warehouses are also supported.</p>
+
+      <h3>3.6 – 3.8 Tickets, Reviews, People</h3>
+      <ul class="steps">
+        <li><strong>Support Tickets</strong>: triage, reassign, reply. Lifecycle: <code>open → in_progress → resolved → closed</code>. Priority: <code>low / medium / high / urgent</code>.</li>
+        <li><strong>Product Reviews</strong>: client-submitted, moderated <code>pending → approved</code> or <code>rejected</code> before going public.</li>
+        <li><strong>Supplier Portal / Client Portal (admin view)</strong>: read/manage each supplier's and client's own activity from the admin side.</li>
+        <li><strong>User Management</strong>: create users, assign roles, suspend/delete (confirmation dialog).</li>
+        <li><strong>Activity History</strong>: audit trail. <strong>Business Insights</strong>: analytics beyond dashboard totals. <strong>Email Preferences</strong>: which notification emails the admin receives.</li>
+      </ul>
+
+      <div class="diagram-card">
+        <div class="mermaid">
+flowchart LR
+    subgraph MyStore["My Store"]
+        Dash["Dashboard (/)"] --> Overview["Store Overview"]
+        Overview --> BI["Business Insights"]
+        Overview --> Orders["Orders"]
+        Orders --> Invoices["Invoices"]
+        Overview --> Tickets["Support Tickets"]
+        Overview --> Reviews["Product Reviews"]
+    end
+    subgraph Management
+        Products["Products"] --> Categories
+        Products --> Suppliers
+        Orders --> Warehouses["Warehouses — stock allocation"]
+        Warehouses --> SupplierPortal["Supplier Portal view"]
+        Orders --> ClientPortal["Client Portal view"]
+        ClientPortal --> Users["User Management"]
+    end
+    Dash --> Products
+    Users --> Activity["Activity History"]
+        </div>
+        <p class="diagram-caption">Fig. 2 — Admin sidebar structure &amp; flow</p>
+      </div>
+    </section>
+
+    <section class="block" id="client">
+      <h2>4 · Client Flows</h2>
+      <p class="kicker">Nav: Client Portal · Browse Products · My Orders · My Invoices.</p>
+      <ol class="steps">
+        <li>Lands on <code>/client</code> — personal snapshot (orders, invoices due, recent activity).</li>
+        <li><strong>Browse Products</strong> — catalog, filter by category/supplier, see stock availability.</li>
+        <li><strong>Place an order</strong> — the system checks real stock availability and blocks over-quantity requests.</li>
+        <li><strong>Track the order</strong> through <code>pending → confirmed → processing → shipped → delivered</code>, live.</li>
+        <li><strong>Pay an invoice</strong> generated from the order — <code>unpaid/partial → paid</code>.</li>
+        <li><strong>Write a product review</strong> once delivered — enters <code>pending</code> moderation.</li>
+        <li><strong>Raise a support ticket</strong> for order/product/invoice issues — same lifecycle Admin sees.</li>
+        <li>Receives <strong>notifications</strong> for status changes, due dates, and ticket replies.</li>
+      </ol>
+
+      <div class="diagram-card">
+        <div class="mermaid">
+flowchart TD
+    A["/client — Client Portal home"] --> B["Browse Products"]
+    B --> C["Place order: pick product + qty"]
+    C --> D{Stock available?}
+    D -- No --> B
+    D -- Yes --> E["Order: pending"]
+    E --> F["Admin confirms + allocates stock"]
+    F --> G["confirmed -> processing -> shipped -> delivered"]
+    G --> H["Invoice generated: draft/sent"]
+    H --> I["Pay invoice: unpaid -> paid"]
+    G --> J["Write product review (pending moderation)"]
+    E -.-> K["Cancel"]
+    G -- issue --> L["Raise support ticket"]
+    L --> M["open -> in_progress -> resolved -> closed"]
+    H -.-> N["Notification: invoice due"]
+    G -.-> O["Notification: order status changed"]
+        </div>
+        <p class="diagram-caption">Fig. 3 — Client purchase journey</p>
+      </div>
+    </section>
+
+    <section class="block" id="supplier">
+      <h2>5 · Supplier Flows</h2>
+      <p class="kicker">Nav: Supplier Portal · My Products · View Orders · Related Invoices.</p>
+      <ol class="steps">
+        <li>Lands on <code>/supplier</code> — snapshot scoped to their own catalog: products, orders containing their products, pending orders awaiting action, and revenue (paid/due/partial/refund, excluding cancelled).</li>
+        <li><strong>My Products</strong> — manage only the products they supply.</li>
+        <li><strong>View Orders</strong> — any order containing at least one of their products; fulfillment actions typically stay with Admin.</li>
+        <li><strong>Related Invoices</strong> — view-only detail, same <code>/invoices/[id]</code> route Admin/Client use.</li>
+        <li>Sees a <strong>Monthly Revenue</strong> trend chart (6 months) and a <strong>Pro-tier upsell</strong> card (multi-warehouse allocation, AI demand forecasting).</li>
+        <li>Same support-ticket and notification access as every role.</li>
+      </ol>
+
+      <div class="diagram-card">
+        <div class="mermaid">
+flowchart TD
+    A["/supplier — Supplier Portal home"] --> B["My Products: manage own catalog"]
+    A --> C["View Orders: containing my products"]
+    C --> D["Order status updates (read/track)"]
+    D --> E["Related Invoices (view-only)"]
+    A --> F["Monthly Revenue chart"]
+    A --> G["Pro upsell: multi-warehouse, AI forecasting"]
+    C -- issue --> H["Raise support ticket"]
+        </div>
+        <p class="diagram-caption">Fig. 4 — Supplier fulfillment flow</p>
+      </div>
+    </section>
+
+    <section class="block" id="cross-cutting">
+      <h2>6 · Cross-Cutting Flows</h2>
+      <p class="kicker">Not role-specific — every persona touches these the same way.</p>
+
+      <h3>6.1 Support ticket lifecycle</h3>
+      <div class="diagram-card">
+        <div class="mermaid">
+stateDiagram-v2
+    [*] --> open: User creates ticket (priority: low/medium/high/urgent)
+    open --> in_progress: Admin picks up / reassigns
+    in_progress --> resolved: Admin resolves
+    resolved --> closed: Auto-close or user confirms
+    resolved --> in_progress: Reopened
+    in_progress --> closed: Closed without reopen
+        </div>
+        <p class="diagram-caption">Fig. 5 — Support ticket lifecycle</p>
+      </div>
+
+      <h3>6.2 Product review moderation</h3>
+      <div class="diagram-card">
+        <div class="mermaid">
+stateDiagram-v2
+    [*] --> pending: Client submits review (post-delivery)
+    pending --> approved: Admin approves — now public
+    pending --> rejected: Admin rejects — stays hidden
+        </div>
+        <p class="diagram-caption">Fig. 6 — Review moderation</p>
+      </div>
+
+      <h3>6.3 Notifications</h3>
+      <p style="font-size:14px;color:var(--ink-soft);line-height:1.6;">Bell icon in the topbar, every role. Sources: order status changes, invoice due/overdue, ticket replies, low-stock alerts (admin/supplier). Each is individually dismissible with the same confirmation-dialog pattern used for logout and other destructive actions.</p>
+    </section>
+
+    <section class="block" id="nav-map">
+      <h2>7 · Role &amp; Navigation Map</h2>
+      <div class="diagram-card">
+        <div class="mermaid">
+flowchart TB
+    Login["/login"] -->|admin/user/retailer| AdminHome["/"]
+    Login -->|client| ClientHome["/client"]
+    Login -->|supplier| SupplierHome["/supplier"]
+
+    AdminHome --> AProducts["/admin/products"]
+    AdminHome --> AOrders["/admin/orders"]
+    AdminHome --> AInvoices["/admin/invoices"]
+    AdminHome --> AWarehouses["/admin/warehouses"]
+    AdminHome --> ATickets["/admin/support-tickets"]
+    AdminHome --> AReviews["/admin/product-reviews"]
+    AdminHome --> AUsers["/admin/user-management"]
+    AdminHome --> ABI["/business-insights"]
+
+    ClientHome --> CProducts["/products"]
+    ClientHome --> COrders["/orders"]
+    ClientHome --> CInvoices["/invoices"]
+
+    SupplierHome --> SProducts["/products (scoped)"]
+    SupplierHome --> SOrders["/orders (scoped)"]
+    SupplierHome --> SInvoices["/invoices (scoped, view-only)"]
+
+    AOrders -.->|same order| COrders
+    AInvoices -.->|same invoice| CInvoices
+    AOrders -.->|contains their products| SOrders
+        </div>
+        <p class="diagram-caption">Fig. 7 — Who can reach what, and where flows intersect</p>
+      </div>
+    </section>
+
+    <section class="block" id="stories">
+      <h2>8 · User Stories</h2>
+      <p class="kicker">Format: <strong>As a</strong> persona, <strong>I want to</strong> action, <strong>so that</strong> benefit. <span class="prio p0">P0</span> core/day-one · <span class="prio p1">P1</span> important · <span class="prio p2">P2</span> nice-to-have.</p>
+
+      <h3>Authentication</h3>
+      <table class="stories">
+        <thead><tr><th>#</th><th>Priority</th><th>Story</th></tr></thead>
+        <tbody>
+          <tr><td class="id">US-01</td><td><span class="prio p0">P0</span></td><td>As a <span class="persona-inline">visitor</span>, I want to sign in with email/password, so that I can access my workspace.</td></tr>
+          <tr><td class="id">US-02</td><td><span class="prio p0">P0</span></td><td>As a <span class="persona-inline">visitor</span>, I want to sign in with Google, so that I don't need a separate password.</td></tr>
+          <tr><td class="id">US-03</td><td><span class="prio p1">P1</span></td><td>As a <span class="persona-inline">returning user</span>, I want a "Keep me signed in" option, so that I'm not forced to re-login every day on my own device.</td></tr>
+          <tr><td class="id">US-04</td><td><span class="prio p2">P2</span></td><td>As a <span class="persona-inline">QA tester</span>, I want a role-based demo-account select on login, so that I can exercise every persona without memorizing credentials.</td></tr>
+          <tr><td class="id">US-05</td><td><span class="prio p0">P0</span></td><td>As <span class="persona-inline">any logged-in user</span>, I want a confirmation prompt before logging out, so that I don't lose my session by an accidental click.</td></tr>
+          <tr><td class="id">US-06</td><td><span class="prio p1">P1</span></td><td>As a <span class="persona-inline">new user</span>, I want to self-register an account, so that I can start using the store without waiting on an admin invite.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Store Owner (Admin) — Catalog &amp; Operations</h3>
+      <table class="stories">
+        <thead><tr><th>#</th><th>Priority</th><th>Story</th></tr></thead>
+        <tbody>
+          <tr><td class="id">US-07</td><td><span class="prio p0">P0</span></td><td>As a <span class="persona-inline">Store Owner</span>, I want a single dashboard with store-wide totals, so that I can gauge business health at a glance.</td></tr>
+          <tr><td class="id">US-08</td><td><span class="prio p0">P0</span></td><td>As a <span class="persona-inline">Store Owner</span>, I want to create/edit/delete products with category, supplier, price, and stock, so that my catalog stays accurate.</td></tr>
+          <tr><td class="id">US-09</td><td><span class="prio p1">P1</span></td><td>As a <span class="persona-inline">Store Owner</span>, I want to bulk-import/export products via CSV, so that I can onboard or migrate a large catalog quickly.</td></tr>
+          <tr><td class="id">US-10</td><td><span class="prio p0">P0</span></td><td>As a <span class="persona-inline">Store Owner</span>, I want to see low-stock and stock-out counts on the dashboard, so that I can reorder before I run out.</td></tr>
+          <tr><td class="id">US-11</td><td><span class="prio p0">P0</span></td><td>As a <span class="persona-inline">Store Owner</span>, I want to review and confirm incoming orders, so that fulfillment only starts on orders I've vetted.</td></tr>
+          <tr><td class="id">US-12</td><td><span class="prio p0">P0</span></td><td>As a <span class="persona-inline">Store Owner</span>, I want to allocate order stock across specific warehouses, so that fulfillment reflects real warehouse availability.</td></tr>
+          <tr><td class="id">US-13</td><td><span class="prio p0">P0</span></td><td>As a <span class="persona-inline">Store Owner</span>, I want to advance an order through its full lifecycle, so that the client always sees accurate status.</td></tr>
+          <tr><td class="id">US-14</td><td><span class="prio p1">P1</span></td><td>As a <span class="persona-inline">Store Owner</span>, I want to cancel or refund an order, so that I can handle exceptions without a false "delivered" state.</td></tr>
+          <tr><td class="id">US-15</td><td><span class="prio p0">P0</span></td><td>As a <span class="persona-inline">Store Owner</span>, I want invoices generated from orders and trackable through their lifecycle, so that I know what revenue is outstanding.</td></tr>
+          <tr><td class="id">US-16</td><td><span class="prio p1">P1</span></td><td>As a <span class="persona-inline">Store Owner</span>, I want to manage warehouses and transfer stock between them, so that I can rebalance inventory as demand shifts.</td></tr>
+          <tr><td class="id">US-17</td><td><span class="prio p0">P0</span></td><td>As a <span class="persona-inline">Store Owner</span>, I want a badge-counted sidebar, so that I never lose track of what's pending.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Store Owner (Admin) — People &amp; Moderation</h3>
+      <table class="stories">
+        <thead><tr><th>#</th><th>Priority</th><th>Story</th></tr></thead>
+        <tbody>
+          <tr><td class="id">US-18</td><td><span class="prio p0">P0</span></td><td>As a <span class="persona-inline">Store Owner</span>, I want to create users and assign roles, so that I control who can do what.</td></tr>
+          <tr><td class="id">US-19</td><td><span class="prio p1">P1</span></td><td>As a <span class="persona-inline">Store Owner</span>, I want to suspend or delete a user account (with confirmation), so that I can revoke access without accidental data loss.</td></tr>
+          <tr><td class="id">US-20</td><td><span class="prio p1">P1</span></td><td>As a <span class="persona-inline">Store Owner</span>, I want a read view into each client's and supplier's own portal activity, so that I can support them without asking them to screen-share.</td></tr>
+          <tr><td class="id">US-21</td><td><span class="prio p0">P0</span></td><td>As a <span class="persona-inline">Store Owner</span>, I want to triage, reassign, and reply to support tickets by priority, so that urgent issues get handled first.</td></tr>
+          <tr><td class="id">US-22</td><td><span class="prio p1">P1</span></td><td>As a <span class="persona-inline">Store Owner</span>, I want to approve or reject client-submitted product reviews, so that spam never reaches the storefront.</td></tr>
+          <tr><td class="id">US-23</td><td><span class="prio p2">P2</span></td><td>As a <span class="persona-inline">Store Owner</span>, I want an activity-history audit trail, so that I can answer "who changed this and when."</td></tr>
+          <tr><td class="id">US-24</td><td><span class="prio p1">P1</span></td><td>As a <span class="persona-inline">Store Owner</span>, I want business-insights analytics beyond headline numbers, so that I can spot trends, not just totals.</td></tr>
+          <tr><td class="id">US-25</td><td><span class="prio p2">P2</span></td><td>As a <span class="persona-inline">Store Owner</span>, I want to control which notification emails I receive, so that I'm not flooded with alerts I don't need.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Client</h3>
+      <table class="stories">
+        <thead><tr><th>#</th><th>Priority</th><th>Story</th></tr></thead>
+        <tbody>
+          <tr><td class="id">US-26</td><td><span class="prio p0">P0</span></td><td>As a <span class="persona-inline">Client</span>, I want to browse the catalog with category/supplier filters, so that I can find what I need quickly.</td></tr>
+          <tr><td class="id">US-27</td><td><span class="prio p0">P0</span></td><td>As a <span class="persona-inline">Client</span>, I want an order blocked if stock isn't actually available, so that I never order something I can't receive.</td></tr>
+          <tr><td class="id">US-28</td><td><span class="prio p0">P0</span></td><td>As a <span class="persona-inline">Client</span>, I want to track my order's status in real time, so that I know when to expect delivery.</td></tr>
+          <tr><td class="id">US-29</td><td><span class="prio p0">P0</span></td><td>As a <span class="persona-inline">Client</span>, I want to view and pay my invoices, so that I can settle what I owe without a manual back-and-forth.</td></tr>
+          <tr><td class="id">US-30</td><td><span class="prio p1">P1</span></td><td>As a <span class="persona-inline">Client</span>, I want to write a review after delivery, so that I can share feedback on the product.</td></tr>
+          <tr><td class="id">US-31</td><td><span class="prio p1">P1</span></td><td>As a <span class="persona-inline">Client</span>, I want to raise a support ticket tied to my order/invoice, so that I have a documented, trackable way to resolve issues.</td></tr>
+          <tr><td class="id">US-32</td><td><span class="prio p1">P1</span></td><td>As a <span class="persona-inline">Client</span>, I want notifications when my order/invoice changes, so that I don't have to keep checking manually.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Supplier</h3>
+      <table class="stories">
+        <thead><tr><th>#</th><th>Priority</th><th>Story</th></tr></thead>
+        <tbody>
+          <tr><td class="id">US-33</td><td><span class="prio p0">P0</span></td><td>As a <span class="persona-inline">Supplier</span>, I want a dashboard scoped to only my own data, so that I never see or worry about other suppliers' data.</td></tr>
+          <tr><td class="id">US-34</td><td><span class="prio p0">P0</span></td><td>As a <span class="persona-inline">Supplier</span>, I want to manage only the products I supply, so that I control my own catalog.</td></tr>
+          <tr><td class="id">US-35</td><td><span class="prio p0">P0</span></td><td>As a <span class="persona-inline">Supplier</span>, I want to see every order containing at least one of my products, so that I know what I need to fulfill.</td></tr>
+          <tr><td class="id">US-36</td><td><span class="prio p1">P1</span></td><td>As a <span class="persona-inline">Supplier</span>, I want view-only access to invoices tied to my orders, so that I can confirm billing without editing rights I shouldn't have.</td></tr>
+          <tr><td class="id">US-37</td><td><span class="prio p1">P1</span></td><td>As a <span class="persona-inline">Supplier</span>, I want a revenue trend chart, so that I can track my own earnings over time.</td></tr>
+          <tr><td class="id">US-38</td><td><span class="prio p2">P2</span></td><td>As a <span class="persona-inline">Supplier</span>, I want to see what Pro-tier features unlock, so that I can decide if upgrading is worth it.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Cross-cutting</h3>
+      <table class="stories">
+        <thead><tr><th>#</th><th>Priority</th><th>Story</th></tr></thead>
+        <tbody>
+          <tr><td class="id">US-39</td><td><span class="prio p0">P0</span></td><td>As <span class="persona-inline">any user</span>, I want a confirmation dialog before any destructive action, so that I can't lose data with one misclick.</td></tr>
+          <tr><td class="id">US-40</td><td><span class="prio p1">P1</span></td><td>As <span class="persona-inline">any user</span>, I want to dismiss a confirmation dialog by clicking outside it, so that backing out doesn't require hunting for Cancel.</td></tr>
+          <tr><td class="id">US-41</td><td><span class="prio p1">P1</span></td><td>As <span class="persona-inline">any user</span>, I want individually dismissible notifications, so that I can clear what I've seen without losing what's new.</td></tr>
+          <tr><td class="id">US-42</td><td><span class="prio p2">P2</span></td><td>As <span class="persona-inline">any user</span>, I want light/dark mode, so that the app is comfortable in my environment.</td></tr>
+          <tr><td class="id">US-43</td><td><span class="prio p1">P1</span></td><td>As <span class="persona-inline">any user</span>, I want a working global search in the topbar, so that I can jump to any page without hunting through the sidebar.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer class="doc-footer">
+      Last updated alongside the Suite Portal design reskin and the "Keep me signed in" login feature (2026-09-03). Markdown source: <a href="./user-flows-and-stories.md">user-flows-and-stories.md</a>.
+    </footer>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: "base",
+    themeVariables: {
+      primaryColor: "#eaf3ff",
+      primaryTextColor: "#0f172a",
+      primaryBorderColor: "#0064E0",
+      lineColor: "#94a3b8",
+      secondaryColor: "#ecfdf5",
+      tertiaryColor: "#fff7e6",
+      fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      fontSize: "14px"
+    },
+    flowchart: { curve: "basis", padding: 12 },
+    securityLevel: "strict"
+  });
+
+  // Scrollspy for the sidebar TOC
+  const links = Array.from(document.querySelectorAll("#toc a"));
+  const sections = links.map((a) => document.querySelector(a.getAttribute("href")));
+  function onScroll() {
+    let current = sections[0];
+    const y = window.scrollY + 120;
+    for (const s of sections) {
+      if (s && s.offsetTop <= y) current = s;
+    }
+    links.forEach((a) => a.classList.toggle("active", a.getAttribute("href") === "#" + current.id));
+  }
+  document.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+</script>
+</body>
+</html>
