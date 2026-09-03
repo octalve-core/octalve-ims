@@ -33,3 +33,19 @@ CREATE ROLE ims_app WITH LOGIN PASSWORD '<pick>' NOSUPERUSER NOCREATEDB NOCREATE
 CREATE DATABASE octalve_ims OWNER ims_app;
 ```
 and update `DATABASE_URL` accordingly — everything else in this doc stays the same, since `FORCE ROW LEVEL SECURITY` doesn't care whether the connecting role is the owner or not.
+
+## `DIRECT_URL` (only needed for pooled hosts, e.g. Neon)
+
+This local setup connects directly to Postgres, so `DIRECT_URL` is irrelevant
+here — it's unset and everything works off `DATABASE_URL` alone. It matters
+once `DATABASE_URL` points at a **pooled** endpoint (Neon's `-pooler` host,
+Supabase's transaction pooler, PgBouncer): `prisma migrate`/`db push` take a
+session-level advisory lock that a transaction-mode pooler silently drops,
+so the Prisma CLI needs a direct, unpooled connection while the running app
+keeps using the pooled one. `prisma.config.ts` handles this automatically —
+it reads `DIRECT_URL` for CLI work only (falling back to `DATABASE_URL` when
+`DIRECT_URL` is unset), and `prisma/client.ts`'s `PrismaClient` is never
+affected. Set `DIRECT_URL` in `.env` to the same host's non-pooled connection
+string (e.g. Neon's plain, non `-pooler` host) if `prisma migrate dev` ever
+fails against a pooled `DATABASE_URL` with an advisory-lock or prepared-
+statement error. Ported from the same pattern in the `proplity` project.

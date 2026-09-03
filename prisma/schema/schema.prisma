@@ -48,6 +48,14 @@ generator client {
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
+// url is what PrismaClient uses at runtime -- point DATABASE_URL at a pooled
+// endpoint in production (Neon's "-pooler" host, PgBouncer, Supabase's
+// transaction pooler) so serverless invocations don't exhaust the direct
+// connection limit. The Prisma CLI (migrate/db push/introspect) needs a
+// DIRECT, unpooled connection instead -- see prisma.config.ts, which
+// overrides this url with DIRECT_URL (falling back to DATABASE_URL) for CLI
+// work only; PrismaClient at runtime is unaffected and always uses the url
+// below.
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")

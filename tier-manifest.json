@@ -407,6 +407,7 @@
     "hooks/queries/index.ts",
 
     "prisma/client.ts", "prisma/rls", "prisma/schema", "prisma/migrations", "prisma.config.ts",
+    "prisma/seed.ts",
     "eslint.config.mjs", "eslint.tier-boundaries.mjs", "tier-manifest.json"
   ],
 

@@ -304,6 +304,7 @@ After DB is empty or reset, seed demo users:
 npm run script:reset-demo-db              # accounts (+ Test Supplier entity)
 npm run script:seed-demo-catalog          # small explore catalog (optional)
 # or: npx tsx scripts/reset-demo-db.ts --with-catalog
+npm run script:seed-full-demo             # wipes DB, seeds every table (>=4 rows each) — see docs/MANUAL_TEST_FIXTURES.md
 ```
 
 | Role     | Email               | Password   |
@@ -311,6 +312,8 @@ npm run script:seed-demo-catalog          # small explore catalog (optional)
 | Admin    | `test@admin.com`    | `12345678` |
 | Client   | `test@client.com`   | `12345678` |
 | Supplier | `test@supplier.com` | `12345678` |
+
+`test@retailer.com` / `12345678` is also available after `script:seed-full-demo`.
 
 On `/login`, the role Select can pre-fill these demo credentials for faster QA.
 
@@ -350,12 +353,14 @@ NEXT_PUBLIC_API_URL="http://localhost:3000"
 | **Stripe**       | `STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`      | [dashboard.stripe.com](https://dashboard.stripe.com) — webhook → `/api/payments/webhook`                                     |
 | **Shippo**       | `SHIPPO_API_KEY`, optional `SHIPPO_FROM_*`                                           | [goshippo.com](https://goshippo.com) — use `shippo_test_*` for free-tier label tests                                         |
 | **Misc**         | `NEXT_PUBLIC_APP_URL`, `INTERNAL_API_KEY`, `NEXT_PUBLIC_DISABLE_BROWSER_TRANSLATE`   | App metadata; cron Bearer for reminders; optional `translate="no"` in prod                                                   |
+| **Prisma CLI**   | `DIRECT_URL`                                                                         | Only needed when `DATABASE_URL` is a pooled endpoint (Neon `-pooler`, PgBouncer, Supabase transaction pooler) — see below     |
 
 ### How to achieve each required variable
 
 1. **`DATABASE_URL`**
    - Local: install PostgreSQL 16 → create DB `octalve_ims` → see [docs/local-dev-setup.md](docs/local-dev-setup.md) for the full role/RLS setup.
-   - Hosted: any managed Postgres (Supabase, Neon, RDS, etc.) — copy its connection string and replace the DB name.
+   - Hosted: any managed Postgres (Supabase, Neon, RDS, etc.) — copy its connection string and replace the DB name. In production, use the **pooled** endpoint (Neon's `-pooler` host, Supabase's transaction pooler, PgBouncer) so serverless invocations don't exhaust the direct connection limit.
+   - If `DATABASE_URL` is pooled, also set `DIRECT_URL` to that same host's **direct**, unpooled connection string — `prisma migrate`/`db push` take a session-level advisory lock that a transaction-mode pooler silently drops. `prisma.config.ts` reads `DIRECT_URL` for CLI work only (falls back to `DATABASE_URL` when unset); the running app's `PrismaClient` always uses `DATABASE_URL` and is unaffected.
 
 2. **`JWT_SECRET`**
    - Generate: `openssl rand -base64 48` (or any long random string).

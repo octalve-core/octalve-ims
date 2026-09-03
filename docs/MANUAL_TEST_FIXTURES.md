@@ -24,6 +24,25 @@ Also creates global supplier entity **Test Supplier** (read-only in UI). No cate
 npx tsx scripts/lib/seed-demo-catalog.ts
 ```
 
+**Optional full-coverage seed (every table, >=4 rows each):**
+
+```bash
+npm run script:seed-full-demo
+```
+
+Wipes `DATABASE_URL` and reseeds **every** Prisma model — Business/Role/
+Permission RBAC rows, 4 businesses with their own manager/lead/purchasing/ops
+users, 4 categories/warehouses/products/suppliers, 6 orders+invoices
+(including a multi-line order), tickets+replies, reviews, notifications,
+import history, system config, audit logs, and auth-adjacent rows
+(RefreshToken/VerificationToken/LoginAttempt). Use this instead of the
+2-step reset+catalog flow above when you need pagination, filters, or an
+empty-state toggle to actually have >1 page of data to test against — not
+for the REQ-0102/0106/0140 explore fixtures below, which assume the small,
+stable 1–4 row shape documented in this file. See
+`scripts/lib/seed-full-demo.ts` for the exact fixture list. Same login
+accounts as below, plus `test@retailer.com` / `12345678`.
+
 ---
 
 ## 2. Create order (admin UI)
