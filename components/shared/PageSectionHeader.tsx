@@ -50,11 +50,11 @@ export function PageSectionHeader({
       {Icon && (
         <div
           className={cn(
-            "flex shrink-0 items-center justify-center self-stretch rounded-xl border px-2 py-1.5 sm:px-2.5",
+            "flex shrink-0 items-center justify-center self-stretch rounded-2xl border px-2.5 py-2 sm:px-3",
             toneConfig.container,
           )}
         >
-          <Icon className={cn("h-5 w-5 sm:h-6 sm:w-6", toneConfig.icon)} />
+          <Icon className={cn("h-6 w-6 sm:h-7 sm:w-7", toneConfig.icon)} />
         </div>
       )}
       <div className="flex min-w-0 flex-1 flex-col justify-center">

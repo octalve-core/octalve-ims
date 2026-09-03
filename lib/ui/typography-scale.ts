@@ -3,17 +3,24 @@
  * Use TYPO_STAT_VALUE only for metric numbers — not section titles.
  */
 
-/** Page/list h1–h2 (PageSectionHeader, list page titles) */
+/**
+ * Page/list h1–h2 (PageSectionHeader, list page titles).
+ * REQ-0231 — Suite Portal reskin: bumped from text-sm/lg font-medium
+ * (14–18px) to match Suite Portal's own page headers (e.g.
+ * ClientProjectsHeader's h1 is 34–42px font-semibold, tracking-tight) —
+ * every one of its pages, not just its dashboard, uses a large bold
+ * title, which is the single biggest legibility/scale gap this app had.
+ */
 export const TYPO_PAGE_HEADER =
-  "text-sm sm:text-lg font-medium leading-tight text-gray-700 dark:text-white";
+  "text-xl sm:text-2xl lg:text-[28px] font-semibold leading-tight tracking-tight text-gray-900 dark:text-white";
 
 /** Card/section h3, dialog titles */
 export const TYPO_CARD_TITLE =
-  "text-sm sm:text-base font-medium leading-tight text-gray-700 dark:text-white";
+  "text-sm sm:text-base font-semibold leading-tight text-gray-700 dark:text-white";
 
-/** Subtitle, description, muted body */
+/** Subtitle, description, muted body — matches Suite Portal's font-medium slate-500 lead paragraphs. */
 export const TYPO_SUBTITLE =
-  "text-xs sm:text-sm leading-tight text-gray-600 dark:text-white/80";
+  "text-xs sm:text-sm font-medium leading-snug text-gray-500 dark:text-white/70";
 
 /** Metric/stat primary value — do not use on titles */
 export const TYPO_STAT_VALUE =

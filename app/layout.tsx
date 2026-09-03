@@ -5,7 +5,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { KeyboardShortcutsProvider } from "@/components/providers/KeyboardShortcutsProvider";
-import { Poppins } from "next/font/google";
+import { Inter } from "next/font/google";
 import localFont from "next/font/local";
 import React from "react";
 import { AuthProvider } from "@/contexts";
@@ -33,7 +33,15 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-const poppins = Poppins({
+/**
+ * REQ-0231 — Suite Portal reskin: swap the app's global sans font from
+ * Poppins (geometric/rounded) to Inter, matching octalve-suite-portal's
+ * font-family stack (Inter → system-ui). Kept as the `--font-poppins`
+ * CSS variable / `.poppins` class name (see globals.css) so the ~60
+ * components applying that class app-wide don't need touching — only
+ * what the variable resolves to changes.
+ */
+const poppins = Inter({
   subsets: ["latin"],
   variable: "--font-poppins",
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
