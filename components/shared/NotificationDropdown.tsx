@@ -5,7 +5,7 @@
 
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { ClientRelativeTime } from "@/components/shared/ClientDateDisplay";
 import {
@@ -24,6 +24,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AlertDialogWrapper } from "@/components/dialogs";
 import { NotificationNewBadge } from "@/lib/ui/semantic-badges";
 import { SectionCountBadge } from "@/components/shared";
 import {
@@ -117,6 +118,7 @@ export function NotificationDropdown({
   const updateNotification = useUpdateNotification();
   const markAllAsRead = useMarkAllNotificationsAsRead();
   const deleteNotification = useDeleteNotification();
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   const unreadNotifications = notifications.filter((n) => !n.read);
   const hasUnread = unreadNotifications.length > 0;
@@ -132,8 +134,10 @@ export function NotificationDropdown({
     await markAllAsRead.mutateAsync();
   };
 
-  const handleDelete = async (notificationId: string) => {
-    await deleteNotification.mutateAsync(notificationId);
+  const handleDelete = async () => {
+    if (!deleteTargetId) return;
+    await deleteNotification.mutateAsync(deleteTargetId);
+    setDeleteTargetId(null);
   };
 
   return (
@@ -281,7 +285,7 @@ export function NotificationDropdown({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(notification.id)}
+                        onClick={() => setDeleteTargetId(notification.id)}
                         disabled={deleteNotification.isPending}
                         className="h-6 w-6 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                         aria-label="Delete notification"
@@ -311,6 +315,21 @@ export function NotificationDropdown({
           </Button>
         </div>
       )}
+
+      <AlertDialogWrapper
+        open={deleteTargetId !== null}
+        onOpenChange={(next) => {
+          if (!next) setDeleteTargetId(null);
+        }}
+        title="Delete this notification?"
+        description="This action cannot be undone. This will permanently delete the notification."
+        actionLabel="Delete"
+        actionLoadingLabel="Deleting..."
+        isLoading={deleteNotification.isPending}
+        onAction={handleDelete}
+        onCancel={() => setDeleteTargetId(null)}
+        actionVariant="destructive"
+      />
     </div>
   );
 }

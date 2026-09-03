@@ -267,7 +267,7 @@ export default function AppSidebar({
         type="button"
         onClick={onLogout}
         disabled={isLoggingOut}
-        className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 disabled:opacity-60"
+        className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <LogOut className="h-[17px] w-[17px] flex-shrink-0" />
         {isLoggingOut ? "Logging Out…" : "Log Out"}
@@ -300,7 +300,7 @@ export default function AppSidebar({
               onClick={onLogout}
               disabled={isLoggingOut}
               title="Log Out"
-              className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-destructive hover:bg-destructive/10 disabled:opacity-60"
+              className="mx-auto flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <LogOut className="h-[17px] w-[17px]" />
             </button>

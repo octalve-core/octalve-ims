@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { setPostLogoutGoodbye } from "@/lib/auth/post-logout-goodbye";
 import { clearAuthToastMarkers } from "@/components/shared/AuthSessionToasts";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialogWrapper } from "@/components/dialogs";
 import ScrollControl from "../shared/ScrollControl";
 import Footer from "./Footer";
 import AppSidebar from "./AppSidebar";
@@ -28,6 +29,7 @@ export default function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const { toast } = useToast();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -86,6 +88,7 @@ export default function AppShell({ children }: AppShellProps) {
       });
     } finally {
       setIsLoggingOut(false);
+      setLogoutDialogOpen(false);
     }
   };
 
@@ -111,7 +114,7 @@ export default function AppShell({ children }: AppShellProps) {
         collapsed={collapsed}
         mobileOpen={mobileOpen}
         onCloseMobile={() => setMobileOpen(false)}
-        onLogout={handleLogout}
+        onLogout={() => setLogoutDialogOpen(true)}
         isLoggingOut={isLoggingOut}
       />
 
@@ -121,7 +124,7 @@ export default function AppShell({ children }: AppShellProps) {
           collapsed={collapsed}
           onToggleCollapsed={toggleCollapsed}
           onOpenMobile={() => setMobileOpen(true)}
-          onLogout={handleLogout}
+          onLogout={() => setLogoutDialogOpen(true)}
           isLoggingOut={isLoggingOut}
         />
         <main
@@ -144,6 +147,19 @@ export default function AppShell({ children }: AppShellProps) {
           {!pathname?.startsWith("/admin") && <Footer />}
         </main>
       </div>
+
+      <AlertDialogWrapper
+        open={logoutDialogOpen}
+        onOpenChange={setLogoutDialogOpen}
+        title="Log out?"
+        description="You'll need to sign in again to access your account."
+        actionLabel="Log Out"
+        actionLoadingLabel="Logging Out…"
+        isLoading={isLoggingOut}
+        onAction={handleLogout}
+        onCancel={() => setLogoutDialogOpen(false)}
+        actionVariant="destructive"
+      />
     </div>
   );
 }
