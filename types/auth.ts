@@ -20,7 +20,7 @@ export interface User {
 export interface AuthContextType {
   isLoggedIn: boolean;
   user: User | null;
-  login: (email: string, password: string) => Promise<User>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<User>;
   logout: () => Promise<void>;
   isCheckingAuth: boolean;
   refreshSession: () => Promise<void>;

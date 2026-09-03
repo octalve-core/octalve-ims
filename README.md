@@ -316,6 +316,12 @@ npm run script:seed-full-demo             # wipes DB, seeds every table (>=4 row
 
 On `/login`, the role Select can pre-fill these 4 demo credentials for faster QA.
 
+The **"Keep me signed in"** checkbox on `/login` controls refresh-token
+lifetime: unchecked (default) issues a 1-day `refresh_token`, checked
+issues 30 days (`lib/auth/cookies.ts`'s `REFRESH_DAYS.short`/`.rememberMe`
+— the server side of this was already ported from Proplity; this wires
+the checkbox itself).
+
 `script:seed-full-demo` additionally creates 4 business-scoped RBAC demo
 accounts (not in the role Select — log in with the email directly):
 `manager@nimbusretail.demo`, `lead@blueanchor.demo`,

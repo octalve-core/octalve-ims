@@ -199,11 +199,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
    * Login function - authenticates user and sets session
    * @returns User data from login response
    */
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, rememberMe = false) => {
     try {
       const response = await axiosInstance.post("/auth/login", {
         email,
         password,
+        rememberMe,
       });
 
       const result = response.data;

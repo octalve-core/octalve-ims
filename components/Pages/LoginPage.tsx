@@ -10,6 +10,7 @@ import {
   AuthPrimaryButton,
 } from "@/components/auth/AuthButtons";
 import Link from "next/link";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { setPostLoginWelcome } from "@/lib/auth/post-login-welcome";
 import { testAccounts } from "@/lib/auth/test-accounts";
@@ -32,6 +33,7 @@ import { Mail } from "lucide-react";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [isNavigatingToHome, setIsNavigatingToHome] = useState(false);
@@ -140,7 +142,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const userData = await login(email, password);
+      const userData = await login(email, password, rememberMe);
       const userName = userData.name || userData.email.split("@")[0] || "User";
 
       navigatingFromSubmitRef.current = true;
@@ -226,8 +228,16 @@ export default function LoginPage() {
 
           <AuthAnimatedBlock
             delayMs={formRowDelay(3)}
-            className="flex items-center justify-end"
+            className="flex items-center justify-between gap-4"
           >
+            <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-600 dark:text-white/70">
+              <Checkbox
+                checked={rememberMe}
+                onCheckedChange={(checked) => setRememberMe(checked === true)}
+                disabled={formDisabled}
+              />
+              Keep me signed in
+            </label>
             <Link
               href="/register"
               className="text-sm font-semibold text-[#0064E0] transition hover:text-[#0052B8] dark:text-[#5ea1ff]"

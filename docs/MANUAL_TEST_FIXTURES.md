@@ -267,7 +267,7 @@ Admin may optionally pick a warehouse; default remains auto-assign for all roles
 
 ## 10. Cache coherence smoke (REQ-0133–0135)
 
-Redeploy → **logout/login once** (1d cookie). Prefer Network: after write, GET must miss stale Redis. Then UI.
+Redeploy → **logout/login once** (1d cookie — leave "Keep me signed in" unchecked). Prefer Network: after write, GET must miss stale Redis. Then UI.
 
 **A — Instant + no revert (core)**
 
