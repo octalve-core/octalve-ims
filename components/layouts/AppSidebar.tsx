@@ -338,7 +338,7 @@ export default function AppSidebar({
           <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#0064E0] text-xl font-bold text-white">
             O
           </div>
-          {!collapsed && <span className="text-3xl font-bold tracking-tight text-white">Octalve IMS</span>}
+          {!collapsed && <span className="text-2xl font-bold tracking-tight text-white">Octalve IMS</span>}
         </div>
         {body}
         {footer}
