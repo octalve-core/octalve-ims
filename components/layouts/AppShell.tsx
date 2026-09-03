@@ -31,7 +31,6 @@ export default function AppShell({ children }: AppShellProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   // Restore the user's collapse preference — AppShell remounts per page (no
   // centralized layout exists yet), so this is what keeps it feeling
@@ -57,7 +56,6 @@ export default function AppShell({ children }: AppShellProps) {
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
-    setMobileOpen(false);
 
     try {
       const userName = user?.name || user?.email?.split("@")[0] || "User";
@@ -112,8 +110,6 @@ export default function AppShell({ children }: AppShellProps) {
       <AppSidebar
         role={role}
         collapsed={collapsed}
-        mobileOpen={mobileOpen}
-        onCloseMobile={() => setMobileOpen(false)}
         onLogout={() => setLogoutDialogOpen(true)}
         isLoggingOut={isLoggingOut}
       />
@@ -123,13 +119,12 @@ export default function AppShell({ children }: AppShellProps) {
           role={role}
           collapsed={collapsed}
           onToggleCollapsed={toggleCollapsed}
-          onOpenMobile={() => setMobileOpen(true)}
           onLogout={() => setLogoutDialogOpen(true)}
           isLoggingOut={isLoggingOut}
         />
         <main
           id="main-content"
-          className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden"
+          className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden pb-24 sm:pb-0"
           tabIndex={-1}
         >
           <div className="flex flex-1 flex-col">

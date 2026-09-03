@@ -7,67 +7,95 @@
 }
 
 @layer base {
+  /*
+   * REQ-0231 — Suite Portal reskin. Values ported 1:1 from
+   * octalve-suite-portal's src/app/globals.css (see docs/local-dev-setup.md-
+   * adjacent design notes); --sidebar-ink/-soft tokens are additive (no
+   * shadcn equivalent) for the always-dark sidebar + tinted icon chips.
+   */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --background: 220 42.9% 97.3%;
+    --foreground: 222.2 47.4% 11.2%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 222.2 47.4% 11.2%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 72.2% 50.6%;
-    --primary-foreground: 0 85.7% 97.3%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
+    --popover-foreground: 222.2 47.4% 11.2%;
+    --primary: 213.2 100% 43.9%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 98%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 98%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 214.3 100% 95.9%;
+    --accent-foreground: 213.2 100% 43.9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 72.2% 50.6%;
-    --success: 142 76% 36%;
+    --border: 216.9 33.3% 92.4%;
+    --input: 216.9 33.3% 92.4%;
+    --ring: 213.2 100% 43.9%;
+    --success: 160.1 84.1% 39.4%;
     --success-foreground: 0 0% 98%;
-    --warning: 38 92% 50%;
+    --warning: 37.7 92.1% 50.2%;
     --warning-foreground: 0 0% 9%;
-    --radius: 0.5rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --radius: 1.125rem;
+    --chart-1: 213.2 100% 43.9%;
+    --chart-2: 160.1 84.1% 39.4%;
+    --chart-3: 20.5 90.2% 48.2%;
+    --chart-4: 272.1 71.7% 47.1%;
+    --chart-5: 0 84.2% 60.2%;
+
+    --sidebar-ink: 212.7 100% 4.3%;
+    --sidebar-ink-active: 212 84% 23%;
+    --sidebar-ink-badge: 212 90% 31%;
+    --surface-soft: 210 40% 98%;
+    --primary-soft: 214.3 100% 95.9%;
+    --success-soft: 151.8 81% 95.9%;
+    --warning-soft: 40.8 100% 95.1%;
+    --danger-soft: 355.7 100% 97.3%;
+    --purple: 272.1 71.7% 47.1%;
+    --purple-soft: 268.7 100% 95.5%;
   }
 
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 72.2% 50.6%;
-    --primary-foreground: 0 85.7% 97.3%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --background: 212.7 60% 5.5%;
+    --foreground: 210 40% 96%;
+    --card: 212.7 55% 8%;
+    --card-foreground: 210 40% 96%;
+    --popover: 212.7 55% 8%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 213.2 100% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 212.7 45% 13%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 212.7 45% 13%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 212.7 45% 16%;
+    --accent-foreground: 213.2 100% 70%;
+    --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 72.2% 50.6%;
-    --success: 142 70% 45%;
-    --success-foreground: 0 0% 98%;
-    --warning: 38 92% 55%;
+    --border: 212.7 40% 16%;
+    --input: 212.7 40% 16%;
+    --ring: 213.2 100% 58%;
+    --success: 160 70% 48%;
+    --success-foreground: 0 0% 9%;
+    --warning: 38 92% 58%;
     --warning-foreground: 0 0% 9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --chart-1: 213.2 100% 58%;
+    --chart-2: 160 70% 48%;
+    --chart-3: 24 90% 58%;
+    --chart-4: 272 71% 62%;
+    --chart-5: 0 70% 60%;
+
+    --sidebar-ink: 212.7 100% 4.3%;
+    --sidebar-ink-active: 212 84% 23%;
+    --sidebar-ink-badge: 212 90% 31%;
+    --surface-soft: 212.7 45% 13%;
+    --primary-soft: 213.2 60% 20%;
+    --success-soft: 160 45% 16%;
+    --warning-soft: 38 45% 18%;
+    --danger-soft: 0 45% 18%;
+    --purple: 272 71% 62%;
+    --purple-soft: 272 45% 20%;
   }
 
   * {
