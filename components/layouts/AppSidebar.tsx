@@ -111,7 +111,7 @@ function sidebarLinkClass(
     collapsed ? "justify-center w-10 h-10 mx-auto px-0" : "px-3",
     isActive
       ? "bg-[hsl(var(--sidebar-ink-active))]/72 text-white ring-1 ring-white/5"
-      : "text-white/82 hover:bg-white/[0.055] hover:text-white",
+      : "text-white/80 hover:bg-white/[0.055] hover:text-white",
   );
 }
 
@@ -148,7 +148,7 @@ function SidebarNavLink({
       <Icon
         className={cn(
           "h-[18px] w-[18px] flex-shrink-0 transition-colors",
-          isActive ? "text-[#5ea1ff]" : "text-white/66 group-hover:text-white",
+          isActive ? "text-[#5ea1ff]" : "text-white/65 group-hover:text-white",
         )}
       />
       {!collapsed && <span className="min-w-0 flex-1 truncate">{label}</span>}
@@ -174,7 +174,7 @@ function SidebarNavLink({
 function GroupLabel({ children, collapsed }: { children: React.ReactNode; collapsed?: boolean }) {
   if (collapsed) return <div className="my-1 w-6 border-t border-white/10" />;
   return (
-    <p className="px-3 pt-4 pb-1 text-[10.5px] font-bold uppercase tracking-wider text-white/34">
+    <p className="px-3 pt-4 pb-1 text-[10.5px] font-bold uppercase tracking-wider text-white/35">
       {children}
     </p>
   );
@@ -358,7 +358,7 @@ export default function AppSidebar({
       </aside>
 
       {/* Mobile: floating bottom tab bar (first 3 nav items) + "More" sheet for the rest */}
-      <nav className="fixed bottom-3 left-3 right-3 z-50 flex items-center gap-2 rounded-[26px] border border-blue-100 bg-white/96 p-2 shadow-[0_20px_50px_rgba(0,100,224,0.18)] backdrop-blur-xl sm:hidden">
+      <nav className="fixed bottom-3 left-3 right-3 z-50 flex items-center gap-2 rounded-[26px] border border-blue-100 bg-white/95 p-2 shadow-[0_20px_50px_rgba(0,100,224,0.18)] backdrop-blur-xl sm:hidden">
         <div className="grid flex-1 grid-cols-3 gap-1">
           {primaryNav.map((item) => {
             const active = isNavPathActive(pathname, item.href);

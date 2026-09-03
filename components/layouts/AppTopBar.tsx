@@ -128,7 +128,7 @@ export default function AppTopBar({
   }
 
   return (
-    <header className="sticky top-0 z-40 flex h-[66px] flex-shrink-0 items-center gap-3 border-b border-border bg-background/92 px-3 backdrop-blur-xl sm:px-5">
+    <header className="sticky top-0 z-40 flex h-[66px] flex-shrink-0 items-center gap-3 border-b border-border bg-background/90 px-3 backdrop-blur-xl sm:px-5">
       {/* Skip to main content — visible on focus (WCAG 2.1) */}
       <a
         href="#main-content"

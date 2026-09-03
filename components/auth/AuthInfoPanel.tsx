@@ -25,7 +25,7 @@ export function AuthInfoPanel({ variant }: AuthInfoPanelProps) {
   return (
     <div className="flex h-full flex-col">
       <AuthAnimatedBlock delayMs={AUTH_STAGGER_MS * 1}>
-        <div className="rounded-[22px] bg-white/94 p-7 text-slate-950 shadow-[0_28px_80px_rgba(0,0,0,0.28)] backdrop-blur-md">
+        <div className="rounded-[22px] bg-white/95 p-7 text-slate-950 shadow-[0_28px_80px_rgba(0,0,0,0.28)] backdrop-blur-md">
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-[#0064E0]">
             Welcome to Octalve IMS
           </p>
