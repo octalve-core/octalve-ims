@@ -123,6 +123,7 @@ export default function AdminUserManagementDetailContent({
 
   const [name, setName] = useState("");
   const [nameTouched, setNameTouched] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!user || nameTouched) return;
@@ -559,7 +560,7 @@ export default function AdminUserManagementDetailContent({
             <ArrowLeft className="h-4 w-4 shrink-0" />
             Back
           </Button>
-          <AlertDialog>
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <AlertDialogTrigger asChild>
               <DialogSubmitButton
                 type="button"
@@ -571,7 +572,12 @@ export default function AdminUserManagementDetailContent({
                 className="w-full sm:w-auto gap-2 px-8"
               />
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent
+              onOverlayClick={() => {
+                if (isDeleting) return;
+                setDeleteDialogOpen(false);
+              }}
+            >
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete user?</AlertDialogTitle>
                 <AlertDialogDescription>

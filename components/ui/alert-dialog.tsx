@@ -28,12 +28,25 @@ const AlertDialogOverlay = React.forwardRef<
 ));
 AlertDialogOverlay.displayName = AlertDialogPrimitive.Overlay.displayName;
 
+interface AlertDialogContentProps
+  extends React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content> {
+  /**
+   * Radix's AlertDialog deliberately ignores outside pointer/interaction
+   * events (onPointerDownOutside/onInteractOutside always preventDefault
+   * internally, even if passed here) so a confirmation can't be dismissed
+   * by accident — see @radix-ui/react-alert-dialog's AlertDialogContent.
+   * Clicking the backdrop overlay is a separate DOM click, so this is the
+   * supported way to add "click outside to dismiss" for an alert dialog.
+   */
+  onOverlayClick?: () => void;
+}
+
 const AlertDialogContent = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content>
->(({ className, ...props }, ref) => (
+  AlertDialogContentProps
+>(({ className, onOverlayClick, ...props }, ref) => (
   <AlertDialogPortal>
-    <AlertDialogOverlay />
+    <AlertDialogOverlay onClick={onOverlayClick} />
     <AlertDialogPrimitive.Content
       ref={ref}
       className={cn(

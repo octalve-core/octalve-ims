@@ -145,7 +145,13 @@ export function AlertDialogWrapper({
       }}
       {...alertDialogProps}
     >
-      <AlertDialogContent className={cn("p-4 sm:p-6", contentClassName)}>
+      <AlertDialogContent
+        className={cn("p-4 sm:p-6", contentClassName)}
+        onOverlayClick={() => {
+          if (isLoading) return;
+          onOpenChange?.(false);
+        }}
+      >
         <AlertDialogHeader>
           <AlertDialogTitle
             className={cn("text-sm sm:text-lg", titleClassName)}
