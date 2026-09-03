@@ -1,75 +1,34 @@
-/** Glass tokens for auth login/register pages (REQ-0032, REQ-0033). */
-
-import type { AuthListHue } from "@/lib/auth/auth-panel-copy";
-import {
-  FOCUS_NO_LAYOUT_SHIFT_CLASS,
-  GLASS_FOCUS_RING,
-  glassFormFieldClasses,
-} from "@/lib/ui/focus-ring-styles";
+/**
+ * REQ-0231 — Suite Portal reskin: flat, bordered field/button tokens
+ * matching octalve-suite-portal's AuthFields/AuthButtons (rounded-2xl,
+ * h-14 inputs, single #0064E0 accent for both login and register — Suite
+ * Portal doesn't split its accent by auth mode the way the old glass
+ * design did). Dark-mode variants are IMS's own extrapolation since the
+ * source design has no dark mode.
+ */
 
 export type AuthGlassVariant = "login" | "register";
 
-/** Right form card — navbar-intensity frosted glass. */
-export const AUTH_FORM_GLASS: Record<AuthGlassVariant, string> = {
-  login:
-    "border border-sky-400/30 dark:border-white/10 bg-gradient-to-br from-sky-500/20 via-sky-500/10 to-sky-500/5 dark:from-white/10 dark:via-white/8 dark:to-white/5 backdrop-blur-2xl shadow-[0_30px_80px_rgba(2,132,199,0.35)] dark:shadow-lg transition-all duration-300 hover:shadow-[0_40px_100px_rgba(2,132,199,0.5)] dark:hover:shadow-[0_40px_100px_rgba(2,132,199,0.4)] hover:border-sky-300/50 dark:hover:border-sky-300/30",
-  register:
-    "border border-emerald-400/30 dark:border-white/10 bg-gradient-to-br from-emerald-500/20 via-emerald-500/10 to-emerald-500/5 dark:from-white/10 dark:via-white/8 dark:to-white/5 backdrop-blur-2xl shadow-[0_30px_80px_rgba(16,185,129,0.35)] dark:shadow-lg transition-all duration-300 hover:shadow-[0_40px_100px_rgba(16,185,129,0.5)] dark:hover:shadow-[0_40px_100px_rgba(16,185,129,0.4)] hover:border-emerald-300/50 dark:hover:border-emerald-300/30",
-};
+/** Shared input/select field shell — icon-left, border, focus ring. */
+export const AUTH_FIELD_SHELL_CLASS =
+  "flex h-14 w-full items-center gap-3 rounded-2xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/[0.04] px-4 text-[15px] font-medium text-slate-950 dark:text-white shadow-[0_1px_0_rgba(15,23,42,0.03)] transition placeholder:text-slate-400 dark:placeholder:text-white/35 focus-within:border-[#0064E0] focus-within:shadow-[0_0_0_4px_rgba(0,100,224,0.12)]";
 
-/** Per-row micro-glass on flat left list (not a parent card). REQ-0033: py-2 for tighter rhythm. */
+/** Role test-account Select trigger — same shell as text inputs. */
+export const AUTH_SELECT_FIELD_CLASS = `${AUTH_FIELD_SHELL_CLASS} gap-2 data-[state=open]:border-[#0064E0] data-[state=open]:shadow-[0_0_0_4px_rgba(0,100,224,0.12)]`;
+
+/** Primary submit button — solid #0064E0, both auth modes. */
+export const AUTH_PRIMARY_BUTTON_CLASS =
+  "group flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#0064E0] px-6 text-[15px] font-semibold text-white shadow-[0_18px_36px_rgba(0,100,224,0.20)] transition hover:-translate-y-0.5 hover:bg-[#0052B8] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0";
+
+/** Google OAuth button — bordered, plain white/slate — both auth modes. */
+export const AUTH_GOOGLE_BUTTON_CLASS: Record<AuthGlassVariant, string> =
+  {
+    login:
+      "flex h-[52px] w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/[0.04] px-5 text-[14px] font-semibold text-slate-700 dark:text-white shadow-[0_8px_20px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:border-slate-300 dark:hover:border-white/25 hover:bg-slate-50 dark:hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0",
+    register:
+      "flex h-[52px] w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/[0.04] px-5 text-[14px] font-semibold text-slate-700 dark:text-white shadow-[0_8px_20px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:border-slate-300 dark:hover:border-white/25 hover:bg-slate-50 dark:hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0",
+  };
+
+/** Rows within the navy side panel (feature list) — micro-glass on dark. */
 export const AUTH_LIST_ROW_GLASS =
-  "rounded-2xl border border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/5 backdrop-blur-md px-4 py-2";
-
-/**
- * REQ-0033 — icon pill glass glow (matches AuthBrandHeader rose box + GLASS_BADGE_CLASS pattern).
- * Applied on login + register list rows in AuthInfoListItem.
- */
-export const AUTH_LIST_ICON_GLASS: Record<AuthListHue, string> = {
-  sky:
-    "border-sky-400/35 bg-gradient-to-br from-sky-500/30 via-sky-500/15 to-sky-500/8 shadow-[0_5px_20px_rgba(14,165,233,0.3)] dark:border-sky-400/30 dark:from-sky-500/25 dark:via-sky-500/12 dark:to-sky-500/6 dark:shadow-[0_5px_20px_rgba(14,165,233,0.25)] backdrop-blur-md",
-  emerald:
-    "border-emerald-400/35 bg-gradient-to-br from-emerald-500/30 via-emerald-500/15 to-emerald-500/8 shadow-[0_5px_20px_rgba(16,185,129,0.3)] dark:border-emerald-400/30 dark:from-emerald-500/25 dark:via-emerald-500/12 dark:to-emerald-500/6 dark:shadow-[0_5px_20px_rgba(16,185,129,0.25)] backdrop-blur-md",
-  amber:
-    "border-amber-400/35 bg-gradient-to-br from-amber-500/30 via-amber-500/15 to-amber-500/8 shadow-[0_5px_20px_rgba(245,158,11,0.3)] dark:border-amber-400/30 dark:from-amber-500/25 dark:via-amber-500/12 dark:to-amber-500/6 dark:shadow-[0_5px_20px_rgba(245,158,11,0.25)] backdrop-blur-md",
-  violet:
-    "border-violet-400/35 bg-gradient-to-br from-violet-500/30 via-violet-500/15 to-violet-500/8 shadow-[0_5px_20px_rgba(139,92,246,0.3)] dark:border-violet-400/30 dark:from-violet-500/25 dark:via-violet-500/12 dark:to-violet-500/6 dark:shadow-[0_5px_20px_rgba(139,92,246,0.25)] backdrop-blur-md",
-  blue:
-    "border-blue-400/35 bg-gradient-to-br from-blue-500/30 via-blue-500/15 to-blue-500/8 shadow-[0_5px_20px_rgba(59,130,246,0.3)] dark:border-blue-400/30 dark:from-blue-500/25 dark:via-blue-500/12 dark:to-blue-500/6 dark:shadow-[0_5px_20px_rgba(59,130,246,0.25)] backdrop-blur-md",
-};
-
-/**
- * REQ-0048 — auth form controls (light-mode readable on pale glass card).
- * Do not reuse DIALOG_FORM_FIELD_* — those assume dark modal shell.
- */
-const AUTH_FORM_FIELD_BASE =
-  "bg-white/70 dark:bg-white/5 backdrop-blur-md text-gray-700 dark:text-white placeholder:text-gray-500 dark:placeholder:text-white/40";
-
-const authSkyShell = `${AUTH_FORM_FIELD_BASE} border border-sky-400/30 dark:border-white/20 shadow-[0_10px_30px_rgba(2,132,199,0.15)]`;
-const authEmeraldShell = `${AUTH_FORM_FIELD_BASE} border border-emerald-400/30 dark:border-white/20 shadow-[0_10px_30px_rgba(16,185,129,0.15)]`;
-
-/** Login page inputs + role Select trigger */
-export const AUTH_FORM_FIELD_SKY = glassFormFieldClasses("sky", authSkyShell);
-
-/** Register page inputs */
-export const AUTH_FORM_FIELD_EMERALD = glassFormFieldClasses(
-  "emerald",
-  authEmeraldShell,
-);
-
-/** Google OAuth — soft opaque fill in light mode (not bg-white/10 on pale card) */
-export const AUTH_GOOGLE_BUTTON: Record<AuthGlassVariant, string> = {
-  login:
-    "w-full border-sky-400/40 dark:border-white/20 bg-white/80 dark:bg-white/5 backdrop-blur-md text-gray-700 dark:text-white shadow-sm hover:bg-white dark:hover:bg-white/10 hover:text-gray-700 dark:hover:text-white",
-  register:
-    "w-full border-emerald-400/40 dark:border-white/20 bg-white/80 dark:bg-white/5 backdrop-blur-md text-gray-700 dark:text-white shadow-sm hover:bg-white dark:hover:bg-white/10 hover:text-gray-700 dark:hover:text-white",
-};
-
-const AUTH_SUBMIT_LAYOUT =
-  "h-11 w-full inline-flex items-center justify-center rounded-xl backdrop-blur-md transition duration-200 text-white font-normal";
-
-/**
- * Register submit — richer opaque gradient on pale emerald glass (matches login CTA punch).
- * Login keeps GLASS_PRIMARY_BUTTON.sky (user-verified).
- */
-export const AUTH_SUBMIT_BUTTON_EMERALD = `${FOCUS_NO_LAYOUT_SHIFT_CLASS} ${GLASS_FOCUS_RING.emerald} ${AUTH_SUBMIT_LAYOUT} border border-emerald-400/40 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-700 shadow-[0_15px_35px_rgba(16,185,129,0.5)] hover:border-emerald-300/50 hover:from-emerald-500 hover:via-emerald-400 hover:to-teal-600 hover:shadow-[0_20px_45px_rgba(16,185,129,0.6)] dark:from-emerald-500/80 dark:via-emerald-500/60 dark:to-teal-600/70`;
+  "flex gap-3 rounded-2xl border border-white/10 bg-white/[0.05] backdrop-blur-md px-3.5 py-2.5";

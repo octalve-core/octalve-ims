@@ -8,7 +8,7 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select";
-import { AUTH_FORM_FIELD_SKY } from "@/components/auth/auth-glass-styles";
+import { AUTH_SELECT_FIELD_CLASS } from "@/components/auth/auth-glass-styles";
 import {
   DIALOG_SELECT_ITEM_CLASS,
   filterCommandPopoverClass,
@@ -52,7 +52,7 @@ export function LoginRoleSelect({
     >
       <SelectTrigger
         data-login-role-select
-        className={cn("w-full gap-2", AUTH_FORM_FIELD_SKY)}
+        className={cn(AUTH_SELECT_FIELD_CLASS, "cursor-pointer")}
       >
         <TriggerIcon
           className={cn(

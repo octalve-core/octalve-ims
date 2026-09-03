@@ -2,15 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { AuthFieldInput, AuthPasswordInput } from "@/components/auth/AuthFieldInput";
 import {
-  AUTH_FORM_FIELD_EMERALD,
-  AUTH_GOOGLE_BUTTON,
-  AUTH_SUBMIT_BUTTON_EMERALD,
-} from "@/components/auth/auth-glass-styles";
-import { GLASS_BUTTON_ICON_HOVER } from "@/components/shared";
-import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+  AuthDivider,
+  AuthGoogleButton,
+  AuthPrimaryButton,
+} from "@/components/auth/AuthButtons";
 import axiosInstance from "@/utils/axiosInstance";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
@@ -22,19 +19,18 @@ import {
   AUTH_FORM_ROW_STAGGER_MS,
   AUTH_FORM_STAGGER_BASE,
 } from "@/components/auth/auth-animation";
-import { Eye, EyeOff, Sparkles } from "lucide-react";
+import { Mail, User } from "lucide-react";
 
 /**
  * Register page — split layout with promo cards + form.
  * REQ-0030 — shared AuthPageShell, stagger animations, max-w-7xl.
+ * REQ-0231 — Suite Portal reskin: field/button visuals only, same behavior.
  */
 export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -113,217 +109,106 @@ export default function RegisterPage() {
   const leftPanel = <AuthInfoPanel variant="register" />;
 
   const rightPanel = (
-    <AuthAnimatedBlock
-      delayMs={AUTH_FORM_STAGGER_BASE}
-      className="w-full max-w-md"
-    >
-      <AuthFormCard variant="register" className="w-full space-y-4">
-        <AuthAnimatedBlock delayMs={formRowDelay(0)} className="space-y-2">
-          <h2 className="text-sm sm:text-base font-medium text-gray-700 dark:text-white text-center">
-            Create Account
-          </h2>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-white/80 text-center">
-            Sign up to get started with your inventory dashboard
-          </p>
-        </AuthAnimatedBlock>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <AuthAnimatedBlock delayMs={formRowDelay(1)} className="space-y-2">
-            <label
-              htmlFor="name"
-              className="text-sm font-medium text-gray-700 dark:text-white/80"
-            >
-              Name
-            </label>
-            <Input
+    <AuthAnimatedBlock delayMs={AUTH_FORM_STAGGER_BASE} className="w-full">
+      <AuthFormCard variant="register" className="w-full">
+        <form onSubmit={handleSubmit} className="grid gap-5">
+          <AuthAnimatedBlock delayMs={formRowDelay(0)}>
+            <AuthFieldInput
+              label="Name"
+              icon={<User size={18} strokeWidth={2} />}
               id="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="John Doe"
+              autoComplete="name"
               required
-              className={cn("w-full", AUTH_FORM_FIELD_EMERALD)}
+              disabled={isLoading}
             />
           </AuthAnimatedBlock>
 
-          <AuthAnimatedBlock delayMs={formRowDelay(2)} className="space-y-2">
-            <label
-              htmlFor="email"
-              className="text-sm font-medium text-gray-700 dark:text-white/80"
-            >
-              Email
-            </label>
-            <Input
+          <AuthAnimatedBlock delayMs={formRowDelay(1)}>
+            <AuthFieldInput
+              label="Email"
+              icon={<Mail size={18} strokeWidth={2} />}
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
+              autoComplete="email"
               required
-              className={cn("w-full", AUTH_FORM_FIELD_EMERALD)}
+              disabled={isLoading}
             />
           </AuthAnimatedBlock>
 
-          <AuthAnimatedBlock delayMs={formRowDelay(3)} className="space-y-2">
-            <label
-              htmlFor="password"
-              className="text-sm font-medium text-gray-700 dark:text-white/80"
-            >
-              Password
-            </label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                required
-                className={cn("w-full pr-10", AUTH_FORM_FIELD_EMERALD)}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-gray-500 hover:text-gray-700 dark:text-white/60 dark:hover:text-white/80"
-                onClick={() => setShowPassword((v) => !v)}
-                tabIndex={-1}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
+          <AuthAnimatedBlock delayMs={formRowDelay(2)}>
+            <AuthPasswordInput
+              label="Password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              autoComplete="new-password"
+              disabled={isLoading}
+            />
           </AuthAnimatedBlock>
 
-          <AuthAnimatedBlock delayMs={formRowDelay(4)} className="space-y-2">
-            <label
-              htmlFor="confirmPassword"
-              className="text-sm font-medium text-gray-700 dark:text-white/80"
-            >
-              Confirm Password
-            </label>
-            <div className="relative">
-              <Input
-                id="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm your password"
-                required
-                className={cn("w-full pr-10", AUTH_FORM_FIELD_EMERALD)}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-gray-500 hover:text-gray-700 dark:text-white/60 dark:hover:text-white/80"
-                onClick={() => setShowConfirmPassword((v) => !v)}
-                tabIndex={-1}
-                aria-label={
-                  showConfirmPassword ? "Hide password" : "Show password"
-                }
-              >
-                {showConfirmPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
+          <AuthAnimatedBlock delayMs={formRowDelay(3)}>
+            <AuthPasswordInput
+              label="Confirm Password"
+              id="confirmPassword"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirm your password"
+              autoComplete="new-password"
+              disabled={isLoading}
+            />
+          </AuthAnimatedBlock>
+
+          <AuthAnimatedBlock delayMs={formRowDelay(4)}>
+            <AuthPrimaryButton type="submit" loading={isLoading}>
+              {isLoading ? "Creating Account…" : "Sign Up"}
+            </AuthPrimaryButton>
           </AuthAnimatedBlock>
 
           <AuthAnimatedBlock delayMs={formRowDelay(5)}>
-            <Button
-              type="submit"
-              className={cn(
-                GLASS_BUTTON_ICON_HOVER,
-                AUTH_SUBMIT_BUTTON_EMERALD,
-              )}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                "Creating Account..."
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Sign Up
-                </>
-              )}
-            </Button>
+            <AuthDivider label="or" />
           </AuthAnimatedBlock>
-        </form>
 
-        <AuthAnimatedBlock delayMs={formRowDelay(6)} className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-emerald-400/20 dark:border-white/10" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-transparent px-2 text-gray-600 dark:text-white/80">
-              Or continue with
-            </span>
-          </div>
-        </AuthAnimatedBlock>
-
-        <AuthAnimatedBlock delayMs={formRowDelay(7)}>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleGoogleSignUp}
-            disabled={isLoading}
-            className={AUTH_GOOGLE_BUTTON.register}
-          >
-            <svg
-              className="mr-2 h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="currentColor"
+          <AuthAnimatedBlock delayMs={formRowDelay(6)}>
+            <AuthGoogleButton
+              variant="register"
+              loading={isLoading}
+              onClick={handleGoogleSignUp}
             >
-              <path
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                fill="#4285F4"
-              />
-              <path
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                fill="#34A853"
-              />
-              <path
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                fill="#FBBC05"
-              />
-              <path
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                fill="#EA4335"
-              />
-            </svg>
-            Continue with Google
-          </Button>
-        </AuthAnimatedBlock>
+              Continue with Google
+            </AuthGoogleButton>
+          </AuthAnimatedBlock>
 
-        <AuthAnimatedBlock
-          delayMs={formRowDelay(8)}
-          className="text-center text-sm"
-        >
-          <p className="text-gray-600 dark:text-white/80">
+          <AuthAnimatedBlock
+            delayMs={formRowDelay(7)}
+            className="pt-1 text-center text-[15px] font-medium text-slate-500 dark:text-white/60"
+          >
             Already have an account?{" "}
             <Link
               href="/login"
-              className="text-emerald-600 dark:text-sky-400 hover:text-emerald-700 dark:hover:text-sky-300 transition-colors font-medium"
+              className="inline-flex rounded-full bg-[#EAF3FF] px-3 py-1 font-semibold text-[#0064E0] ring-1 ring-[#0064E0]/10 transition hover:bg-[#0064E0] hover:text-white dark:bg-white/10 dark:text-[#5ea1ff] dark:ring-white/10 dark:hover:bg-[#0064E0] dark:hover:text-white"
             >
               Sign in
             </Link>
-          </p>
-        </AuthAnimatedBlock>
+          </AuthAnimatedBlock>
+        </form>
       </AuthFormCard>
     </AuthAnimatedBlock>
   );
 
   return (
     <AuthPageShell
-      illustrationSrc="/personal-finance.svg"
-      illustrationAlt="Personal Finance Illustration"
+      illustrationSrc="/octalve-ims.svg"
+      illustrationAlt="Octalve IMS Illustration"
+      title="Create account"
+      subtitle="Sign up to get started with your inventory dashboard."
       left={leftPanel}
       right={rightPanel}
     />

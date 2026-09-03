@@ -3,17 +3,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts";
 import { useRouter, useSearchParams } from "next/navigation";
+import { AuthFieldInput, AuthPasswordInput } from "@/components/auth/AuthFieldInput";
 import {
-  AUTH_FORM_FIELD_SKY,
-  AUTH_GOOGLE_BUTTON,
-} from "@/components/auth/auth-glass-styles";
-import {
-  GLASS_BUTTON_ICON_HOVER,
-  GLASS_PRIMARY_BUTTON,
-} from "@/components/shared";
-import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+  AuthDivider,
+  AuthGoogleButton,
+  AuthPrimaryButton,
+} from "@/components/auth/AuthButtons";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { setPostLoginWelcome } from "@/lib/auth/post-login-welcome";
@@ -27,16 +22,16 @@ import {
   AUTH_FORM_ROW_STAGGER_MS,
   AUTH_FORM_STAGGER_BASE,
 } from "@/components/auth/auth-animation";
-import { Eye, EyeOff, Loader2, Zap } from "lucide-react";
+import { Mail } from "lucide-react";
 
 /**
  * Login page client component (uses useSearchParams for OAuth/redirect).
  * REQ-0030 — shared AuthPageShell, role Select icons, stagger animations.
+ * REQ-0231 — Suite Portal reskin: field/button visuals only, same behavior.
  */
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [isNavigatingToHome, setIsNavigatingToHome] = useState(false);
@@ -187,25 +182,13 @@ export default function LoginPage() {
   const leftPanel = <AuthInfoPanel variant="login" />;
 
   const rightPanel = (
-    <AuthAnimatedBlock
-      delayMs={AUTH_FORM_STAGGER_BASE}
-      className="w-full max-w-md"
-    >
+    <AuthAnimatedBlock delayMs={AUTH_FORM_STAGGER_BASE} className="w-full">
       <AuthFormCard variant="login" className="w-full">
-        <AuthAnimatedBlock delayMs={formRowDelay(0)} className="space-y-2 mb-6">
-          <h2 className="text-sm sm:text-base font-medium text-gray-700 dark:text-white text-center">
-            Welcome Back
-          </h2>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-white/80 text-center">
-            Sign in to your account to continue
-          </p>
-        </AuthAnimatedBlock>
-
-        <form onSubmit={handleSubmit} className="space-y-4 mb-6">
-          <AuthAnimatedBlock delayMs={formRowDelay(1)} className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-white/80">
+        <form onSubmit={handleSubmit} className="grid gap-5">
+          <AuthAnimatedBlock delayMs={formRowDelay(0)} className="space-y-2">
+            <span className="mb-2 block text-[13px] font-semibold text-slate-700 dark:text-white/80">
               Test Accounts To Login With
-            </label>
+            </span>
             <LoginRoleSelect
               selectedRole={selectedRole}
               onRoleSelect={handleRoleSelect}
@@ -213,150 +196,83 @@ export default function LoginPage() {
             />
           </AuthAnimatedBlock>
 
-          <AuthAnimatedBlock delayMs={formRowDelay(2)} className="space-y-2">
-            <label
-              htmlFor="email"
-              className="text-sm font-medium text-gray-700 dark:text-white/80"
-            >
-              Email
-            </label>
-            <Input
+          <AuthAnimatedBlock delayMs={formRowDelay(1)}>
+            <AuthFieldInput
+              label="Email"
+              icon={<Mail size={18} strokeWidth={2} />}
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
+              autoComplete="email"
               required
               disabled={formDisabled}
-              className={cn("w-full", AUTH_FORM_FIELD_SKY)}
             />
           </AuthAnimatedBlock>
 
-          <AuthAnimatedBlock delayMs={formRowDelay(3)} className="space-y-2">
-            <label
-              htmlFor="password"
-              className="text-sm font-medium text-gray-700 dark:text-white/80"
+          <AuthAnimatedBlock delayMs={formRowDelay(2)}>
+            <AuthPasswordInput
+              label="Password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              autoComplete="current-password"
+              required
+              disabled={formDisabled}
+            />
+          </AuthAnimatedBlock>
+
+          <AuthAnimatedBlock
+            delayMs={formRowDelay(3)}
+            className="flex items-center justify-end"
+          >
+            <Link
+              href="/register"
+              className="text-sm font-semibold text-[#0064E0] transition hover:text-[#0052B8] dark:text-[#5ea1ff]"
             >
-              Password
-            </label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                required
-                disabled={formDisabled}
-                className={cn("w-full pr-10", AUTH_FORM_FIELD_SKY)}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-gray-500 hover:text-gray-700 dark:text-white/60 dark:hover:text-white/80"
-                onClick={() => setShowPassword((v) => !v)}
-                tabIndex={-1}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
+              Need an account?
+            </Link>
           </AuthAnimatedBlock>
 
           <AuthAnimatedBlock delayMs={formRowDelay(4)}>
-            <Button
-              type="submit"
-              className={cn(
-                GLASS_BUTTON_ICON_HOVER,
-                "w-full",
-                GLASS_PRIMARY_BUTTON.sky,
-              )}
-              disabled={formDisabled}
-            >
-              {isNavigatingToHome ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading Dashboard…
-                </>
-              ) : isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing In…
-                </>
-              ) : (
-                <>
-                  <Zap className="mr-2 h-4 w-4" />
-                  Sign In
-                </>
-              )}
-            </Button>
+            <AuthPrimaryButton type="submit" loading={formDisabled}>
+              {isNavigatingToHome
+                ? "Loading Dashboard…"
+                : isLoading
+                  ? "Signing In…"
+                  : "Sign In"}
+            </AuthPrimaryButton>
           </AuthAnimatedBlock>
-        </form>
 
-        <AuthAnimatedBlock delayMs={formRowDelay(5)} className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-sky-400/20 dark:border-white/10" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-transparent px-2 text-gray-600 dark:text-white/80">
-              Or continue with
-            </span>
-          </div>
-        </AuthAnimatedBlock>
+          <AuthAnimatedBlock delayMs={formRowDelay(5)}>
+            <AuthDivider label="or" />
+          </AuthAnimatedBlock>
 
-        <AuthAnimatedBlock delayMs={formRowDelay(6)}>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleGoogleSignIn}
-            disabled={formDisabled}
-            className={cn(AUTH_GOOGLE_BUTTON.login, "mb-6")}
-          >
-            <svg
-              className="mr-2 h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="currentColor"
+          <AuthAnimatedBlock delayMs={formRowDelay(6)}>
+            <AuthGoogleButton
+              variant="login"
+              loading={formDisabled}
+              onClick={handleGoogleSignIn}
             >
-              <path
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                fill="#4285F4"
-              />
-              <path
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                fill="#34A853"
-              />
-              <path
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                fill="#FBBC05"
-              />
-              <path
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                fill="#EA4335"
-              />
-            </svg>
-            Continue with Google
-          </Button>
-        </AuthAnimatedBlock>
+              Continue with Google
+            </AuthGoogleButton>
+          </AuthAnimatedBlock>
 
-        <AuthAnimatedBlock
-          delayMs={formRowDelay(7)}
-          className="text-center text-sm"
-        >
-          <p className="text-gray-600 dark:text-white/80">
+          <AuthAnimatedBlock
+            delayMs={formRowDelay(7)}
+            className="pt-1 text-center text-[15px] font-medium text-slate-500 dark:text-white/60"
+          >
             Don&apos;t have an account?{" "}
             <Link
               href="/register"
-              className="text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 transition-colors font-medium"
+              className="inline-flex rounded-full bg-[#EAF3FF] px-3 py-1 font-semibold text-[#0064E0] ring-1 ring-[#0064E0]/10 transition hover:bg-[#0064E0] hover:text-white dark:bg-white/10 dark:text-[#5ea1ff] dark:ring-white/10 dark:hover:bg-[#0064E0] dark:hover:text-white"
             >
-              Sign up
+              Create account
             </Link>
-          </p>
-        </AuthAnimatedBlock>
+          </AuthAnimatedBlock>
+        </form>
       </AuthFormCard>
     </AuthAnimatedBlock>
   );
@@ -365,6 +281,8 @@ export default function LoginPage() {
     <AuthPageShell
       illustrationSrc="/octalve-ims.svg"
       illustrationAlt="Octalve IMS Illustration"
+      title="Sign in"
+      subtitle="Sign in to your account to continue to your workspace."
       left={leftPanel}
       right={rightPanel}
     />
