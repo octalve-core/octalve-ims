@@ -1,13 +1,14 @@
 /**
  * Full-coverage demo seed — every Prisma model gets >=4 rows so every list/
  * filter/detail page has real pagination, filtering, and empty-state data to
- * exercise. Distinct from seed-demo-catalog.ts (REQ-0137's 1-2 row "explore"
- * fixtures, which the login-dropdown/e2e flows depend on staying small and
- * stable) — this seed is for local QA of tables and dashboards, not for the
- * canonical demo-account fixtures.
+ * exercise. Reuses the same 4 canonical accounts as the login dropdown/
+ * reset-demo-db (DEMO_SEED_USERS), then adds 4 business-scoped RBAC accounts
+ * on top — distinct from seed-demo-catalog.ts (REQ-0137's 1-2 row "explore"
+ * fixtures) which this is meant to replace for local QA of tables and
+ * dashboards, not for testing the canonical account set itself.
  *
- * Wipes the database first (see scripts/seed-full-demo.ts) — never run this
- * against a shared/production DATABASE_URL.
+ * Wipes the database first (see prisma/seed.ts) — never run this against a
+ * shared/production DATABASE_URL.
  */
 
 import crypto from "node:crypto";
@@ -15,9 +16,13 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { DEFAULT_EMAIL_PREFERENCES } from "@/types/auth";
 import { getRoboHashAvatarUrl } from "@/lib/ui/user-avatar-sources";
+import {
+  DEMO_PASSWORD,
+  DEMO_SEED_USERS,
+  type DemoSeedUser,
+} from "@/lib/auth/demo-seed-users";
 
 const BCRYPT_ROUNDS = 10;
-const DEMO_PASSWORD = "12345678";
 
 const day = (isoDate: string) => new Date(isoDate);
 const addDays = (date: Date, days: number) => {
@@ -142,67 +147,35 @@ export async function seedFullDemo(prisma: PrismaClient): Promise<FullDemoSeedRe
   counts.Permission = permissionCount;
 
   // ---------------------------------------------------------------------
-  // User (3 canonical demo accounts + 4 business-scoped accounts = 7)
+  // User (4 canonical demo accounts, from DEMO_SEED_USERS — same accounts
+  // the login-dropdown/reset-demo-db flow uses — + 4 business-scoped
+  // accounts = 8)
   // ---------------------------------------------------------------------
   const emailPreferences = DEFAULT_EMAIL_PREFERENCES as unknown as Prisma.InputJsonValue;
 
-  const admin = await prisma.user.create({
-    data: {
-      email: "test@admin.com",
-      name: "Test Admin",
-      username: "testadmin",
-      password: hashedPassword,
-      role: "admin",
-      roleId: adminRole.id,
-      googleId: "demo-admin",
-      image: getRoboHashAvatarUrl("demo-admin"),
-      emailPreferences,
-      createdAt: now,
-      updatedAt: now,
-    },
-  });
-  const client = await prisma.user.create({
-    data: {
-      email: "test@client.com",
-      name: "Test Client",
-      username: "testclient",
-      password: hashedPassword,
-      role: "client",
-      googleId: "demo-client",
-      image: getRoboHashAvatarUrl("demo-client"),
-      emailPreferences,
-      createdAt: now,
-      updatedAt: now,
-    },
-  });
-  const supplierUser = await prisma.user.create({
-    data: {
-      email: "test@supplier.com",
-      name: "Test Supplier",
-      username: "testsupplier",
-      password: hashedPassword,
-      role: "supplier",
-      googleId: "demo-supplier",
-      image: getRoboHashAvatarUrl("demo-supplier"),
-      emailPreferences,
-      createdAt: now,
-      updatedAt: now,
-    },
-  });
-  const retailer = await prisma.user.create({
-    data: {
-      email: "test@retailer.com",
-      name: "Test Retailer",
-      username: "testretailer",
-      password: hashedPassword,
-      role: "retailer",
-      googleId: "demo-retailer",
-      image: getRoboHashAvatarUrl("demo-retailer"),
-      emailPreferences,
-      createdAt: now,
-      updatedAt: now,
-    },
-  });
+  const canonicalByRole: Partial<Record<DemoSeedUser["role"], Awaited<ReturnType<typeof prisma.user.create>>>> = {};
+  for (const spec of DEMO_SEED_USERS) {
+    const user = await prisma.user.create({
+      data: {
+        email: spec.email,
+        name: spec.name,
+        username: spec.username,
+        password: hashedPassword,
+        role: spec.role,
+        roleId: spec.role === "admin" ? adminRole.id : undefined,
+        googleId: spec.googleId,
+        image: spec.image,
+        emailPreferences,
+        createdAt: now,
+        updatedAt: now,
+      },
+    });
+    canonicalByRole[spec.role] = user;
+  }
+  const admin = canonicalByRole.admin!;
+  const client = canonicalByRole.client!;
+  const supplierUser = canonicalByRole.supplier!;
+  const retailer = canonicalByRole.retailer!;
 
   const businessUserSpecs = [
     { email: "manager@nimbusretail.demo", name: "Priya Sharma", username: "priyasharma" },

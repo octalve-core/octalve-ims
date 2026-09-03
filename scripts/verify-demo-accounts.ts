@@ -50,6 +50,7 @@ async function main() {
   const adminCount = users.filter((u) => u.role === "admin").length;
   const clientCount = users.filter((u) => u.role === "client").length;
   const supplierCount = users.filter((u) => u.role === "supplier").length;
+  const retailerCount = users.filter((u) => u.role === "retailer").length;
 
   const supplierUser = await prisma.user.findUnique({
     where: { email: DEMO_SUPPLIER_EMAIL },
@@ -96,8 +97,10 @@ async function main() {
   ]);
 
   console.log("\n---");
-  console.log(`   Demo users: ${users.length}/3`);
-  console.log(`   admin: ${adminCount}, client: ${clientCount}, supplier: ${supplierCount}`);
+  console.log(`   Demo users: ${users.length}/${DEMO_SEED_USERS.length}`);
+  console.log(
+    `   admin: ${adminCount}, client: ${clientCount}, supplier: ${supplierCount}, retailer: ${retailerCount}`,
+  );
 
   if (demoSupplier) {
     console.log(`\n   Test Supplier entity: "${demoSupplier.name}"`);
@@ -129,8 +132,14 @@ async function main() {
   console.log(`      systemConfig: ${systemConfigCount}`);
   console.log(`      audits: ${auditCount}`);
 
-  if (users.length >= 3 && adminCount >= 1 && clientCount >= 1 && supplierCount >= 1) {
-    console.log("\n   ✓ Three roles present — login via role dropdown.\n");
+  if (
+    users.length >= 4 &&
+    adminCount >= 1 &&
+    clientCount >= 1 &&
+    supplierCount >= 1 &&
+    retailerCount >= 1
+  ) {
+    console.log("\n   ✓ Four roles present — login via role dropdown.\n");
   } else {
     console.log("");
   }

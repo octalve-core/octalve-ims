@@ -312,10 +312,14 @@ npm run script:seed-full-demo             # wipes DB, seeds every table (>=4 row
 | Admin    | `test@admin.com`    | `12345678` |
 | Client   | `test@client.com`   | `12345678` |
 | Supplier | `test@supplier.com` | `12345678` |
+| Retailer | `test@retailer.com` | `12345678` |
 
-`test@retailer.com` / `12345678` is also available after `script:seed-full-demo`.
+On `/login`, the role Select can pre-fill these 4 demo credentials for faster QA.
 
-On `/login`, the role Select can pre-fill these demo credentials for faster QA.
+`script:seed-full-demo` additionally creates 4 business-scoped RBAC demo
+accounts (not in the role Select — log in with the email directly):
+`manager@nimbusretail.demo`, `lead@blueanchor.demo`,
+`purchasing@solsticehw.demo`, `ops@vertexwholesale.demo` (all `12345678`).
 
 ---
 

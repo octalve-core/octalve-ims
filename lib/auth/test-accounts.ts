@@ -1,4 +1,4 @@
-import { Shield, Store, ShoppingBag } from "lucide-react";
+import { Shield, Store, ShoppingBag, Package } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { DEMO_PASSWORD, DEMO_SEED_USERS, type DemoRoleKey } from "./demo-seed-users";
 
@@ -16,7 +16,7 @@ export const testAccounts: Record<
   ]),
 ) as Record<TestAccountRoleKey, { email: string; password: string }>;
 
-export type RoleMetaHue = "sky" | "emerald" | "amber";
+export type RoleMetaHue = "sky" | "emerald" | "amber" | "violet";
 
 /** Icon, label, and Tailwind hue for each demo role row. */
 export const roleMeta: Record<
@@ -38,6 +38,11 @@ export const roleMeta: Record<
     label: "Client (test@client.com)",
     hue: "emerald",
   },
+  "guest-retailer": {
+    icon: Package,
+    label: "Retailer (test@retailer.com)",
+    hue: "violet",
+  },
 };
 
 export const testAccountRoleKeys = Object.keys(roleMeta) as TestAccountRoleKey[];
@@ -47,4 +52,5 @@ export const roleIconClassByHue: Record<RoleMetaHue, string> = {
   sky: "text-sky-600 dark:text-sky-400",
   emerald: "text-emerald-600 dark:text-emerald-400",
   amber: "text-amber-600 dark:text-amber-400",
+  violet: "text-violet-600 dark:text-violet-400",
 };

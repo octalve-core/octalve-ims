@@ -6,7 +6,11 @@
 import { getRoboHashAvatarUrl } from "@/lib/ui/user-avatar-sources";
 
 /** Demo role keys — match LoginRoleSelect + test-accounts.ts. */
-export type DemoRoleKey = "guest-user" | "guest-supplier" | "guest-client";
+export type DemoRoleKey =
+  | "guest-user"
+  | "guest-supplier"
+  | "guest-client"
+  | "guest-retailer";
 
 /** Shared password for all demo accounts (login role Select pre-fill). */
 export const DEMO_PASSWORD = "12345678";
@@ -16,14 +20,14 @@ export type DemoSeedUser = {
   email: string;
   name: string;
   username: string;
-  role: "admin" | "client" | "supplier";
+  role: "admin" | "client" | "supplier" | "retailer";
   /** Unique placeholder — avoids sparse googleId index collisions in MongoDB. */
   googleId: string;
   /** Stable robohash profile image for navbar/avatars at seed time. */
   image: string;
 };
 
-/** Three demo users wiped + recreated by `npm run script:reset-demo-db`. */
+/** Four demo users wiped + recreated by `npm run script:reset-demo-db`. */
 export const DEMO_SEED_USERS: readonly DemoSeedUser[] = [
   {
     roleKey: "guest-user",
@@ -51,5 +55,14 @@ export const DEMO_SEED_USERS: readonly DemoSeedUser[] = [
     role: "supplier",
     googleId: "demo-supplier",
     image: getRoboHashAvatarUrl("demo-supplier"),
+  },
+  {
+    roleKey: "guest-retailer",
+    email: "test@retailer.com",
+    name: "Test Retailer",
+    username: "testretailer",
+    role: "retailer",
+    googleId: "demo-retailer",
+    image: getRoboHashAvatarUrl("demo-retailer"),
   },
 ] as const;

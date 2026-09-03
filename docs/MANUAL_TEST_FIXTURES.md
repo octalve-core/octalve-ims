@@ -15,6 +15,7 @@ Creates only:
 | Test Admin    | <test@admin.com>    | 12345678 | admin    |
 | Test Client   | <test@client.com>   | 12345678 | client   |
 | Test Supplier | <test@supplier.com> | 12345678 | supplier |
+| Test Retailer | <test@retailer.com> | 12345678 | retailer |
 
 Also creates global supplier entity **Test Supplier** (read-only in UI). No categories, warehouses, or products.
 
@@ -40,8 +41,11 @@ import history, system config, audit logs, and auth-adjacent rows
 empty-state toggle to actually have >1 page of data to test against — not
 for the REQ-0102/0106/0140 explore fixtures below, which assume the small,
 stable 1–4 row shape documented in this file. See
-`scripts/lib/seed-full-demo.ts` for the exact fixture list. Same login
-accounts as below, plus `test@retailer.com` / `12345678`.
+`scripts/lib/seed-full-demo.ts` for the exact fixture list. Same 4 login
+accounts as below, plus 4 business-scoped accounts (not in the login
+dropdown — log in with the email directly): `manager@nimbusretail.demo`,
+`lead@blueanchor.demo`, `purchasing@solsticehw.demo`,
+`ops@vertexwholesale.demo` (all `12345678`).
 
 ---
 
@@ -226,6 +230,7 @@ Example split for **Demo Wireless Headphone** (catalog qty `100`):
 | Admin    | <test@admin.com>    | 12345678 |
 | Client   | <test@client.com>   | 12345678 |
 | Supplier | <test@supplier.com> | 12345678 |
+| Retailer | <test@retailer.com> | 12345678 |
 
 **Supplier account:** products linked to **Test Supplier** appear under supplier portal **My Products**.
 

@@ -6,6 +6,7 @@
  *   test@admin.com    / 12345678 / admin
  *   test@client.com   / 12345678 / client
  *   test@supplier.com / 12345678 / supplier (+ linked "Test Supplier" entity)
+ *   test@retailer.com / 12345678 / retailer
  *
  * Default (REQ-0092): accounts only — empty catalog.
  * Explore seed (REQ-0137): pass --with-catalog for 1–2 rows per entity.
@@ -98,6 +99,7 @@ async function main() {
   console.log(`   Admin:    test@admin.com    / ${DEMO_PASSWORD}`);
   console.log(`   Client:   test@client.com   / ${DEMO_PASSWORD}`);
   console.log(`   Supplier: test@supplier.com / ${DEMO_PASSWORD}`);
+  console.log(`   Retailer: test@retailer.com / ${DEMO_PASSWORD}`);
   if (withCatalog) {
     console.log("\n   Explore catalog seeded — browse each page for UI QA.\n");
   } else {

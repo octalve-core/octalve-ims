@@ -1,5 +1,5 @@
 /**
- * Create Demo Accounts (legacy — admin + client + supplier)
+ * Create Demo Accounts (legacy — admin + client + supplier + retailer)
  *
  * Prefer the all-in-one fresh reset:
  *   npm run script:reset-demo-db
@@ -27,7 +27,7 @@ const BCRYPT_ROUNDS = 10;
 const DEMO_SUPPLIER_EMAIL = "test@supplier.com";
 
 async function main() {
-  console.log("\n📦 Create demo accounts (admin + client + supplier)\n");
+  console.log("\n📦 Create demo accounts (admin + client + supplier + retailer)\n");
   console.log("   Tip: for a full wipe + seed use  npm run script:reset-demo-db\n");
 
   const hashedPassword = await bcrypt.hash(DEMO_PASSWORD, BCRYPT_ROUNDS);
