@@ -24,6 +24,22 @@ model VerificationToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// Deliberately separate from VerificationToken (which invite/activation
+// flows use to let a not-yet-activated user set an initial password) even
+// though both are one-per-user, single-use, hashed-token records. Sharing
+// one table would mean requesting a password reset silently clobbers a
+// still-pending invite/activation link for the same user (both are
+// `userId @unique`, so a forgot-password upsert would overwrite it) — kept
+// on separate tables so the two purposes can never collide.
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String   @unique // a user has at most one live reset token
+  tokenHash String   @unique
+  expiresAt DateTime @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model LoginAttempt {
   id         String   @id @default(cuid())
   identifier String // e.g. "register:<ip>", "<ip>:<email>", "refresh:<ip>"

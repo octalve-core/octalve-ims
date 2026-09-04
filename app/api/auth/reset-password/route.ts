@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     if (rateLimited) return rateLimited;
 
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-    const record = await prisma.verificationToken.findUnique({
+    const record = await prisma.passwordResetToken.findUnique({
       where: { tokenHash },
     });
 
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         where: { id: record.userId },
         data: { password: passwordHash },
       }),
-      prisma.verificationToken.delete({ where: { id: record.id } }),
+      prisma.passwordResetToken.delete({ where: { id: record.id } }),
       prisma.refreshToken.updateMany({
         where: { userId: record.userId, revokedAt: null },
         data: { revokedAt: new Date() },

@@ -1,11 +1,13 @@
 /**
  * Forgot Password API Route Handler
- * Requests a password reset link for an email. Reuses the existing
- * VerificationToken model (userId unique — one live token per user) that
- * /api/auth/verify-email already consumes for the "set password via
- * emailed link" flow. Always responds with a generic success message
- * regardless of whether the email is registered, to avoid leaking which
- * emails have accounts.
+ * Requests a password reset link for an email. Uses its own
+ * PasswordResetToken model (userId unique — one live token per user),
+ * deliberately separate from VerificationToken (which invite/activation
+ * flows use to let a not-yet-activated user set an initial password) —
+ * sharing that table would let a reset request silently clobber a
+ * still-pending invite link for the same user. Always responds with a
+ * generic success message regardless of whether the email is registered,
+ * to avoid leaking which emails have accounts.
  */
 
 import crypto from "node:crypto";
@@ -74,7 +76,7 @@ export async function POST(request: NextRequest) {
       Date.now() + RESET_TOKEN_TTL_MINUTES * 60 * 1000,
     );
 
-    await prisma.verificationToken.upsert({
+    await prisma.passwordResetToken.upsert({
       where: { userId: user.id },
       create: { userId: user.id, tokenHash, expiresAt },
       update: { tokenHash, expiresAt },
