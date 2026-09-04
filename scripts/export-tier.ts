@@ -46,10 +46,36 @@ const excludedBuckets = BUCKET_ORDER.filter((b) => !includedBuckets.includes(b))
  */
 const INTERNAL_ONLY = new Set(["tier-manifest.json", "eslint.tier-boundaries.mjs"]);
 
+/**
+ * Loose files directly under app/ — layout.tsx, page.tsx (the "/" route
+ * itself), globals.css, etc. check-tier-manifest-coverage.ts's own comment
+ * calls these "the shell itself... implicitly always shared" and
+ * deliberately skips requiring them in tier-manifest.json's bucket arrays.
+ * That assumption was never actually enforced here: nothing copied these
+ * files, so every export shipped with NO root layout (no AuthProvider/
+ * ThemeProvider/QueryProvider — `useAuth` throws on first client render),
+ * NO "/" route at all (app/page.tsx missing), and unstyled pages
+ * (globals.css missing). tsc --noEmit can't see this class of bug — none
+ * of these files are reached via a module import, only Next's file-system
+ * routing convention — which is exactly why 20+ documented verification
+ * phases in tier-manifest.json never caught it. Found by actually running
+ * an exported tier and visually testing it in a browser, not by typechecking.
+ */
+const APP_ROOT_SHELL_FILES = [
+  "app/layout.tsx",
+  "app/page.tsx",
+  "app/globals.css",
+  "app/favicon.ico",
+  "app/global-error.tsx",
+  "app/robots.ts",
+  "app/scroll-control.ts",
+];
+
 /** Root-level items outside tier-manifest.json's tracked scope (app/lib/
  * components/hooks/types/contexts/stores/utils/middleware) that every
  * export still needs to actually install and build. */
 const ALWAYS_COPY_ROOT = [
+  ...APP_ROOT_SHELL_FILES,
   "package.json",
   "pnpm-lock.yaml",
   "tsconfig.json",
