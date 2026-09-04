@@ -108,7 +108,7 @@ export function StatisticsCard({
       <div className="flex flex-1 flex-col min-h-0 min-w-0 w-full">
         {/* Title and icon inline so badges get full width below */}
         <div className="flex items-center justify-between gap-2 shrink-0">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium min-w-0">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium min-w-0 break-words">
             {title}
           </p>
           <div
