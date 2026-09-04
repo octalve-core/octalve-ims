@@ -193,28 +193,46 @@ seed path that's actually self-contained (wipes then recreates every
 table), so it's the only one safe to point at a brand-new ephemeral
 database.
 
-**Verified against a real run, not just written**: this job's first
-real execution (this PR, before the RLS step below was added) hit 827/829
-passing on a completely fresh, from-scratch ephemeral database — the
-ephemeral-DB + seed design holds up. Two failures surfaced, both now
-understood:
+**Verified against two real runs, not just written**: this job's first
+real execution (this PR) hit 827/829 passing on a completely fresh,
+from-scratch ephemeral database — the ephemeral-DB + seed design holds up.
+Two failures surfaced:
 
 - `lib/orders/invoice-event-date.test.ts` — a pre-existing, known-flaky
   date-fixture test, unrelated to this environment (documented elsewhere
-  in this repo's own test history before this PR existed).
-- `lib/server/tenant-prisma.test.ts` — a **real finding**, not a test bug:
-  `prisma/rls/001_enable_rls.sql` (the Postgres row-level-security policy
-  for the `Product` table) lives outside `prisma/migrations/` on purpose
-  (see `docs/local-dev-setup.md`) and so was never applied by
-  `migrate deploy` on the fresh ephemeral database — RLS was simply off,
-  so the tenant-isolation assertion correctly failed. Fixed by adding an
-  explicit "Apply RLS policies" step (`prisma db execute --file
-  prisma/rls/NNN_*.sql`, in filename order) right after migrations, before
-  seeding. Safe here because a `postgres:18` service container's default
-  role (`postgres`) is a superuser, and Postgres superusers always bypass
-  RLS regardless of `FORCE ROW LEVEL SECURITY` — so the later seed step
-  (which writes rows with real `businessId`s, unscoped by `forTenant()`)
-  is unaffected by enabling RLS first.
+  in this repo's own test history before this PR existed). Still fails;
+  not addressed here, not new.
+- `lib/server/tenant-prisma.test.ts` — investigated across two runs, has
+  a real but **unfixed** root cause, documented as a known gap (see §7)
+  rather than patched blind a third time:
+  1. First hypothesis (partially right, insufficient alone):
+     `prisma/rls/001_enable_rls.sql` lives outside `prisma/migrations/`
+     on purpose (see `docs/local-dev-setup.md`) and so was never applied
+     by `migrate deploy` on the fresh ephemeral database. Added an
+     explicit "Apply RLS policies" step (`prisma db execute --file
+     prisma/rls/NNN_*.sql`, in filename order) right after migrations,
+     before seeding.
+  2. Second run, same failure. **Actual root cause**: the `postgres:18`
+     service container's default role (`postgres`) — which every step in
+     this job, including the test's own DB connection, connects as — is
+     a Postgres **superuser**, and superusers unconditionally bypass row
+     security, `FORCE ROW LEVEL SECURITY` included. So `forTenant()`'s
+     `set_config` + RLS-policy mechanism (`lib/server/tenant-prisma.ts`)
+     can never be observed enforcing anything here, no matter how
+     correctly the policy itself is applied. This is *not* how the real
+     Neon staging database behaves — its connecting role isn't a
+     superuser, which is exactly why this same test has passed there all
+     along. Fixing this for real means creating a dedicated
+     non-superuser role in the CI container (mirroring Neon's actual
+     permission model — schema ownership, explicit grants) and pointing
+     migrate/RLS/seed/test at it instead of the built-in `postgres` role.
+     That's real, unverifiable-without-Docker surgery, so it's filed as
+     a follow-up (§7) rather than attempted a third time blind.
+  3. The RLS-apply step from (1) stays — it's still correct and needed
+     for when (2)'s role fix lands — but by itself does not make this
+     test pass in CI today. **This repo's actual RLS enforcement is not
+     in question**; only whether *this specific test* can observe it
+     working inside this specific CI container as currently configured.
 
 **This fix was deliberately NOT ported to `migrate-staging.yml` /
 `migrate-production.yml`.** Those run against real, persistent databases —
@@ -298,6 +316,20 @@ uptime monitor at this path once production exists.
   `prisma/rls/001_enable_rls.sql` by hand (same command
   `docs/local-dev-setup.md` documents) the first time a *new* database
   (i.e. the eventual production one) is provisioned.
+- **`ci.yml`'s ephemeral test DB cannot demonstrate RLS actually
+  enforcing anything** — `lib/server/tenant-prisma.test.ts` fails there
+  even with the policy correctly applied, because the `postgres:18`
+  service container's default role is a Postgres superuser, and
+  superusers unconditionally bypass row security. This is a CI-container
+  limitation, not evidence of an app bug — the real staging database
+  (non-superuser role) enforces it correctly, which is why this test has
+  passed there throughout this repo's history. Full write-up under §5's
+  `test` job description. **Follow-up**: add a step to `ci.yml` that
+  creates a dedicated non-superuser role (with explicit schema
+  ownership/grants, mirroring Neon's actual permission model) and points
+  migrate/RLS/seed/test at it instead of the built-in `postgres` role —
+  needs a real Postgres instance to verify against, which wasn't
+  available while authoring this pipeline.
 - **`preview.yml` currently fails and is likely redundant** — this repo
   already has Vercel's own git integration active (it deployed
   successfully alongside `preview.yml`'s failure on this pipeline's first
