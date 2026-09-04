@@ -116,6 +116,22 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/octalve_ims_ci?schema=public
         run: pnpm exec prisma migrate deploy
 
+      # RLS policies (prisma/rls/*.sql) live outside prisma/migrations/ on
+      # purpose (see docs/local-dev-setup.md) and so are NOT applied by
+      # `migrate deploy` above -- confirmed by this job's own first real
+      # run, where lib/server/tenant-prisma.test.ts failed without this
+      # step. Every *.sql file here is applied in name order, matching the
+      # numeric prefix convention (001_, 002_, ...) the one file so far
+      # already follows.
+      - name: Apply RLS policies
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/octalve_ims_ci?schema=public
+        run: |
+          for f in prisma/rls/*.sql; do
+            echo "Applying $f"
+            pnpm exec prisma db execute --file "$f" --url "$DATABASE_URL"
+          done
+
       - name: Seed full-coverage demo data
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/octalve_ims_ci?schema=public

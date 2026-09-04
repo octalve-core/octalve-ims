@@ -140,10 +140,12 @@ workflow cannot touch it from anywhere else. `staging` needs no such
 restriction; it only ever runs from `migrate-staging.yml`'s own `main`-only
 trigger.
 
-**None of this — the two Environments, their secrets, or the Vercel
-dashboard settings in §3 — has been created yet.** The workflow files exist
-and validate; wiring the actual secrets/environments/dashboard settings is
-a manual setup pass against the real GitHub repo and Vercel project.
+**Current state**: the `staging` Environment exists with `DATABASE_URL`
+and `DIRECT_URL` set, pointing at the one Neon database this repo has used
+all along. `production` does not exist yet — no second database has been
+provisioned — so `migrate-production.yml`/`deploy-production.yml` and the
+Vercel dashboard settings in §3 are configured-in-code but not yet usable
+for real.
 
 ### Required secrets, per Environment
 
@@ -180,24 +182,53 @@ only catches the "every file classified exactly once" half of the
 problem, not "classified in the *right* bucket."
 
 `test` spins up a throwaway `postgres:18` service container, runs
-`prisma migrate deploy` against it, then `pnpm script:seed-full-demo`
-(`prisma/seed.ts`) to populate every table from scratch, then `pnpm test`.
-This is a deliberate departure from a simpler "just run migrations and
-test" setup: **20+ of this repo's test files run real Prisma queries and
-expect specific rows to already exist** — they were written against this
-repo's persistent shared dev database, not a bare freshly-migrated schema.
-`seed-full-demo` is the one seed path that's actually self-contained
-(wipes then recreates every table), so it's the only one safe to point at
-a brand-new ephemeral database.
+`prisma migrate deploy` against it, applies `prisma/rls/*.sql` (see below),
+then `pnpm script:seed-full-demo` (`prisma/seed.ts`) to populate every
+table from scratch, then `pnpm test`. This is a deliberate departure from
+a simpler "just run migrations and test" setup: **20+ of this repo's test
+files run real Prisma queries and expect specific rows to already
+exist** — they were written against this repo's persistent shared dev
+database, not a bare freshly-migrated schema. `seed-full-demo` is the one
+seed path that's actually self-contained (wipes then recreates every
+table), so it's the only one safe to point at a brand-new ephemeral
+database.
 
-> **Caveat**: this test job's shape (ephemeral DB → migrate → seed →
-> test) was written without being able to dry-run it end-to-end — no
-> Docker was available in the sandbox this was authored in. If a specific
-> test hard-codes a fixture value `seed-full-demo` doesn't happen to
-> produce (an exact id, count, or SKU), the first real CI run is where
-> that surfaces. Fix the test's fixture assumption if so — the job's
-> shape (ephemeral, self-seeded, isolated from the real dev DB) is the
-> right target regardless.
+**Verified against a real run, not just written**: this job's first
+real execution (this PR, before the RLS step below was added) hit 827/829
+passing on a completely fresh, from-scratch ephemeral database — the
+ephemeral-DB + seed design holds up. Two failures surfaced, both now
+understood:
+
+- `lib/orders/invoice-event-date.test.ts` — a pre-existing, known-flaky
+  date-fixture test, unrelated to this environment (documented elsewhere
+  in this repo's own test history before this PR existed).
+- `lib/server/tenant-prisma.test.ts` — a **real finding**, not a test bug:
+  `prisma/rls/001_enable_rls.sql` (the Postgres row-level-security policy
+  for the `Product` table) lives outside `prisma/migrations/` on purpose
+  (see `docs/local-dev-setup.md`) and so was never applied by
+  `migrate deploy` on the fresh ephemeral database — RLS was simply off,
+  so the tenant-isolation assertion correctly failed. Fixed by adding an
+  explicit "Apply RLS policies" step (`prisma db execute --file
+  prisma/rls/NNN_*.sql`, in filename order) right after migrations, before
+  seeding. Safe here because a `postgres:18` service container's default
+  role (`postgres`) is a superuser, and Postgres superusers always bypass
+  RLS regardless of `FORCE ROW LEVEL SECURITY` — so the later seed step
+  (which writes rows with real `businessId`s, unscoped by `forTenant()`)
+  is unaffected by enabling RLS first.
+
+**This fix was deliberately NOT ported to `migrate-staging.yml` /
+`migrate-production.yml`.** Those run against real, persistent databases —
+re-running `CREATE POLICY tenant_isolation ...` on a database that already
+has it (staging does, applied by hand per `docs/local-dev-setup.md` at
+some point before this pipeline existed) would error on every subsequent
+push, since Postgres has no `CREATE POLICY IF NOT EXISTS`. Making that
+idempotent and safe to blindly rerun against a real, currently-serving
+database is exactly the kind of change that deserves its own verified PR,
+not a drive-by edit bundled into this one. **Action item**: when the
+`production` database is eventually provisioned, run
+`prisma/rls/001_enable_rls.sql` against it by hand once (same command
+`docs/local-dev-setup.md` documents for local dev), before trusting
+tenant isolation there.
 
 `quality`'s `lint` step (`pnpm lint` / `eslint .`) is **not** part of this
 gate — it currently fails with pre-existing errors and ~200 warnings
@@ -259,17 +290,32 @@ uptime monitor at this path once production exists.
 - **`pnpm lint` currently fails** — 8 errors, ~210 warnings, entirely
   pre-existing and not wired into `ci.yml`'s gate (see §5). Worth
   triaging before turning it into a blocker.
-- **`ci.yml`'s test job is unverified end-to-end** (no Docker in the
-  sandbox that authored it) — see the caveat under §5.
+- **RLS policies (`prisma/rls/*.sql`) aren't part of `prisma migrate
+  deploy`** on any real database — `ci.yml`'s ephemeral test DB applies
+  them explicitly now (see §5), but `migrate-staging.yml` and
+  `migrate-production.yml` deliberately do not, since re-running
+  `CREATE POLICY` against a database that already has it errors. Run
+  `prisma/rls/001_enable_rls.sql` by hand (same command
+  `docs/local-dev-setup.md` documents) the first time a *new* database
+  (i.e. the eventual production one) is provisioned.
+- **`preview.yml` currently fails and is likely redundant** — this repo
+  already has Vercel's own git integration active (it deployed
+  successfully alongside `preview.yml`'s failure on this pipeline's first
+  PR), and `preview.yml` has no repo-level `VERCEL_TOKEN`/`VERCEL_ORG_ID`/
+  `VERCEL_PROJECT_ID` secrets set, so it fails outright rather than being
+  skipped. Decide: either set those three as repo secrets (not
+  environment secrets — `preview.yml` has no `environment:` key) to make
+  it work standalone, or delete `preview.yml` and rely on Vercel's native
+  integration for PR previews, which appears to already cover this.
 - **No `production` Neon database exists yet** — only the single database
-  this repo's `.env` has used all along, which should back `staging`. A
+  this repo's `.env` has used all along, which now backs `staging`. A
   second, separate database needs provisioning before `production`'s
   secrets can be real and `migrate-production.yml`/`deploy-production.yml`
   attempted for real.
-- **No GitHub Environments, secrets, or Vercel dashboard settings have
-  been created yet** — the workflow files and `vercel.json` change in this
-  commit are necessary but not sufficient; §2, §3, and §5's "Required
-  secrets" table are the manual setup checklist.
+- **`staging`'s GitHub Environment + secrets are done; `production`'s and
+  the Vercel dashboard settings are not** — see §5's "Current state". §2,
+  §3, and §5's "Required secrets" table are the remaining manual setup
+  checklist.
 - **Rate limiting** and other cross-cutting concerns are handled
   elsewhere in this codebase (see root `CLAUDE.md` / `docs/` if present) —
   not re-documented here since this file is scoped to deployment plumbing.
