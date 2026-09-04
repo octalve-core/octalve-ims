@@ -1,4 +1,9 @@
 {
+  "git": {
+    "deploymentEnabled": {
+      "prod": false
+    }
+  },
   "functions": {
     "app/api/**/route.ts": {
       "maxDuration": 60
