@@ -1,0 +1,70 @@
+name: Deploy migrations to production
+
+# Deliberately NOT triggered by push or merge -- production must not be
+# touched automatically. Run this by hand from the Actions tab (or
+# `gh workflow run migrate-production.yml --ref prod`) only after the
+# migration has been verified against staging (migrate-staging.yml /
+# migration-check.yml) and you are ready for real users to be affected.
+#
+# The real gate is the `production` GitHub Environment's deployment-branch
+# policy, restricted server-side to the `prod` branch (Settings ->
+# Environments -> production -> Deployment branches) -- that's enforced by
+# GitHub itself, not just the YAML check below, which exists only to fail
+# fast with a clear message instead of a bare permissions error.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "migrate production" to confirm you want to run migrations against the real production database'
+        required: true
+
+jobs:
+  migrate:
+    name: Migrate production database
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Verify confirmation input
+        if: inputs.confirm != 'migrate production'
+        run: |
+          echo "::error::Confirmation input didn't match 'migrate production' -- aborting."
+          exit 1
+
+      - name: Verify this is running from the prod branch
+        if: github.ref != 'refs/heads/prod'
+        run: |
+          echo "::error::This workflow may only be run from the prod branch (was: ${{ github.ref }}). The production GitHub Environment should already block this -- seeing this message means that policy changed."
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: prisma migrate status (pre-flight, dry check)
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm exec prisma migrate status
+
+      - name: prisma migrate deploy
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm db:migrate:deploy
+
+      - name: prisma migrate status (post-flight)
+        if: always()
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm exec prisma migrate status

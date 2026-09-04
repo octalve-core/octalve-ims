@@ -1,0 +1,134 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev, prod]
+  pull_request:
+    branches: [main, dev, prod]
+  workflow_dispatch:
+
+# A second push to the same branch cancels the first still-running build.
+# Safe to always cancel: this file only runs quality/test checks --
+# migrations and deploys live in their own dedicated, manually-gated
+# workflows (migrate-staging.yml, migrate-production.yml,
+# deploy-production.yml) that never race a superseding push.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22.x'
+  PNPM_VERSION: '10'
+
+jobs:
+  quality:
+    name: Typecheck, tier-manifest & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      # postinstall runs `prisma generate`, which needs no DATABASE_URL.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      # Guards the exact class of bug this repo hit repeatedly: a file
+      # silently unclassified (or wrongly classified) by tier-manifest.json,
+      # invisible to tsc until someone actually runs `pnpm export:core` (see
+      # DEPLOYMENT.md "Known gaps" -- this check does not replace that,
+      # it only catches the coverage half of the problem).
+      - name: Tier-manifest coverage
+        run: pnpm check:manifest
+
+      # No DATABASE_URL/JWT_SECRET fail-fast guard exists in this codebase
+      # (lib/env.ts's validateEnv() is defined but never called), so the
+      # build doesn't strictly require real values here today -- these are
+      # placeholders set defensively, in case that changes or a page
+      # statically touches Prisma at build time.
+      - name: Build
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/placeholder?schema=public
+          JWT_SECRET: ci_build_placeholder_secret_not_used_to_sign_anything_real
+          NEXT_PUBLIC_API_URL: http://localhost:3000
+        run: pnpm build
+
+  test:
+    name: Tests (ephemeral DB)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: octalve_ims_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 20+ test files (lib/server/**, lib/products/**, prisma/*.test.ts,
+      # ...) run real Prisma queries and expect specific rows to already
+      # exist -- unlike a from-scratch schema, they were written against
+      # this repo's shared dev database, not a bare `migrate deploy`.
+      # prisma/seed.ts (script:seed-full-demo) is the one seed path that is
+      # actually self-contained -- it wipes then recreates every table from
+      # scratch -- so it's the only one safe to run against a brand-new
+      # ephemeral database here.
+      #
+      # CAVEAT (unverified as of this workflow's introduction): this
+      # sandbox had no Docker available to dry-run migrate+seed+test
+      # end-to-end before this file was written. If a specific test
+      # hard-codes a fixture value that seed-full-demo doesn't produce
+      # (an exact id, count, or SKU), the first real CI run is where that
+      # surfaces -- fix the test's fixture assumption, not this job's shape.
+      - name: Apply migrations
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/octalve_ims_ci?schema=public
+        run: pnpm exec prisma migrate deploy
+
+      - name: Seed full-coverage demo data
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/octalve_ims_ci?schema=public
+        run: pnpm script:seed-full-demo
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/octalve_ims_ci?schema=public
+          JWT_SECRET: test_only_jwt_secret_do_not_use_in_production
+          NEXT_PUBLIC_API_URL: http://localhost:3000
+        run: pnpm test
+
+  # Migrations and Vercel deploys deliberately do not live here. main is the
+  # staging tier (migrate-staging.yml) and prod is the real production gate
+  # (migrate-production.yml, deploy-production.yml) -- production must not
+  # be touched by an ordinary push.

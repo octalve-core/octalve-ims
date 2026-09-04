@@ -1,0 +1,50 @@
+name: Check migrations against staging
+
+# Read-only safety net: on any PR into main or prod that touches the schema
+# or migrations, validate the schema and diff it against the staging
+# database before merge -- catches drift or conflicts before they reach
+# migrate-staging.yml's auto-apply or a manual migrate-production.yml run.
+# Never writes to any database.
+on:
+  pull_request:
+    branches: [main, prod]
+    paths:
+      - 'prisma/migrations/**'
+      - 'prisma/schema/**'
+
+jobs:
+  check:
+    name: Validate schema & diff against staging
+    runs-on: ubuntu-latest
+    environment: staging
+    # Forks don't get repository/environment secrets, so this would fail
+    # with a confusing auth error rather than being skipped -- same guard
+    # preview.yml already uses for the same reason.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: prisma validate
+        run: pnpm exec prisma validate
+
+      - name: Diff staging against this branch's schema
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Pending schema diff for staging (informational -- does not fail the build):"
+          pnpm exec prisma migrate diff \
+            --from-url "$DATABASE_URL" \
+            --to-schema-datamodel prisma/schema \
+            --script || true

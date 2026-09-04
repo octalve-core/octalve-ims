@@ -1,0 +1,56 @@
+name: Deploy migrations to staging
+
+# main is the staging branch -- every push that touches the Prisma schema
+# or migrations applies pending migrations to the staging database
+# automatically. Low risk by design: staging is never the database real
+# users hit (that's prod, gated by migrate-production.yml).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'prisma/migrations/**'
+      - 'prisma/schema/**'
+
+# Never cancel a migration mid-flight -- a superseding push waits instead.
+concurrency:
+  group: migrate-staging
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Migrate staging database
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # DIRECT_URL, not the pooled DATABASE_URL: `migrate deploy` takes a
+      # session-level advisory lock that a transaction-mode pooler drops.
+      # prisma.config.ts prefers DIRECT_URL and falls back to DATABASE_URL.
+      # If this step sees empty values, the secrets aren't defined on this
+      # job's GitHub *Environment* (staging) -- Settings -> Environments ->
+      # staging -> Secrets, not repo/org secrets.
+      - name: prisma migrate deploy
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm db:migrate:deploy
+
+      - name: prisma migrate status
+        if: always()
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm exec prisma migrate status

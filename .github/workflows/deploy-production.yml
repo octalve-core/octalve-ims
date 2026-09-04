@@ -1,0 +1,72 @@
+name: Deploy to production
+
+# Deliberately NOT triggered by push or merge, same reasoning as
+# migrate-production.yml -- and deliberately a SEPARATE manual step from
+# it, not chained automatically: migrations must be confirmed healthy
+# (migrate-production.yml's post-flight `prisma migrate status`) before
+# the new application code that expects the new schema goes live. Run
+# migrate-production.yml first, verify it succeeded, then run this one.
+#
+# vercel.json must set git.deploymentEnabled.prod = false so Vercel's own
+# git integration never races this -- see DEPLOYMENT.md §3. GitHub Actions
+# is the only thing that should deploy prod, and only when a human runs it.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "deploy production" to confirm you have already run migrate-production.yml and it succeeded'
+        required: true
+
+jobs:
+  deploy:
+    name: Deploy to Vercel
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Verify confirmation input
+        if: inputs.confirm != 'deploy production'
+        run: |
+          echo "::error::Confirmation input didn't match 'deploy production' -- aborting."
+          exit 1
+
+      - name: Verify this is running from the prod branch
+        if: github.ref != 'refs/heads/prod'
+        run: |
+          echo "::error::This workflow may only be run from the prod branch (was: ${{ github.ref }}). The production GitHub Environment should already block this -- seeing this message means that policy changed."
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: pnpm
+
+      - name: Install Vercel CLI
+        run: pnpm add -g vercel@latest
+
+      # Pulls the project's real production env vars into .vercel, so the
+      # build below sees the same configuration the deployed app will.
+      - name: Pull Vercel environment
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Build
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      # --prebuilt uploads the artifact built above rather than rebuilding on
+      # Vercel, so what was migrated against is exactly what ships.
+      - name: Deploy
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
