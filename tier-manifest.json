@@ -458,7 +458,9 @@
     "app/api/admin/client-orders", "app/api/admin/client-invoices", "app/api/admin/counts",
 
     "lib/catalog", "lib/invoices", "lib/notifications", "lib/orders", "lib/pdf",
-    "lib/products", "lib/warehouses", "lib/navigation",
+    "lib/products", "lib/warehouses", "lib/navigation", "lib/stock-allocation",
+
+    "prisma/stock-allocation.ts",
 
     "lib/insights/payment-money-stats.ts", "lib/insights/payment-money-stats.test.ts",
     "lib/insights/warehouse-insights-compute.ts", "lib/insights/warehouse-insights-compute.test.ts",
@@ -510,7 +512,7 @@
     "components/admin/HistoryFilters.tsx", "components/admin/ImportStatusFilter.tsx",
     "components/admin/ImportTypeFilter.tsx", "components/admin/SystemConfigSettings.tsx",
 
-    "lib/stock-allocation", "lib/stripe", "lib/export", "lib/import",
+    "lib/stripe", "lib/export", "lib/import",
     "lib/history",
 
     "lib/payments/confirm-checkout-session.ts", "lib/payments/reconcile-stripe-return.ts",
@@ -520,7 +522,7 @@
     "lib/insights/business-insights-warehouse-rollup.ts",
     "lib/insights/business-insights-warehouse-rollup.test.ts",
 
-    "prisma/stock-allocation.ts", "prisma/import-history.ts",
+    "prisma/import-history.ts",
 
     "components/payments", "components/business-insights",
     "components/Pages/BusinessInsightPage.tsx",

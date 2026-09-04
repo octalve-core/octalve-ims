@@ -326,21 +326,26 @@ export default function AppSidebar({
 
   return (
     <>
-      {/* Desktop sidebar (full or collapsed rail) — always the dark navy skin */}
+      {/* Desktop sidebar (full or collapsed rail) — always the dark navy skin.
+          The aside itself never scrolls; only the nav list in the middle
+          does (flex-1 min-h-0 overflow-y-auto below) — the footer (Pro
+          upsell + user/logout) stays pinned below it so it can never be
+          scrolled out of view on a short viewport, however many nav items
+          there are. */}
       <aside
         className={cn(
-          "sticky top-0 hidden h-screen flex-shrink-0 flex-col overflow-y-auto bg-[hsl(var(--sidebar-ink))] py-5 sm:flex",
+          "sticky top-0 hidden h-screen flex-shrink-0 flex-col bg-[hsl(var(--sidebar-ink))] py-5 sm:flex",
           collapsed ? "w-[76px] px-3" : "w-[260px] px-4",
         )}
         aria-label="Primary navigation"
       >
-        <div className={cn("flex h-11 items-center gap-2.5 pb-6", collapsed ? "justify-center" : "px-1")}>
+        <div className={cn("flex h-11 flex-shrink-0 items-center gap-2.5 pb-6", collapsed ? "justify-center" : "px-1")}>
           <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#0064E0] text-xl font-bold text-white">
             O
           </div>
           {!collapsed && <span className="text-2xl font-bold tracking-tight text-white">Octalve IMS</span>}
         </div>
-        {body}
+        <div className="min-h-0 flex-1 overflow-y-auto">{body}</div>
         {footer}
         {collapsed && (
           <div className="pt-3">
