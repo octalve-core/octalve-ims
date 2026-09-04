@@ -47,8 +47,12 @@ export {
   registerBodySchema,
   loginSchema,
   loginBodySchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
   type RegisterFormData,
   type LoginFormData,
+  type ForgotPasswordFormData,
+  type ResetPasswordFormData,
 } from "./auth";
 
 // Category validations

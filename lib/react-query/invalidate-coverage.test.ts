@@ -31,6 +31,8 @@ const COMPONENT_FETCH_CRUD_ALLOWLIST = new Set([
   "components/admin/AdminAnalyticsContent.pro.tsx",
   "components/Pages/ApiStatusPage.tsx",
   "components/Pages/ApiDocsPage.tsx",
+  "components/Pages/ForgotPasswordPage.tsx",
+  "components/Pages/ResetPasswordPage.tsx",
 ]);
 
 /** Domains with query sub-keys beyond list/detail — invalidate-all must use *.all */
@@ -77,6 +79,7 @@ const API_WRITE_ROUTE_INVALIDATION_SPEC: Record<string, readonly string[]> = {
   "app/api/auth/register/route.ts": ["scheduleInvalidateAuthCaches"],
   "app/api/auth/change-password/route.ts": ["scheduleInvalidateAuthCaches"],
   "app/api/auth/verify-email/route.ts": ["scheduleInvalidateAuthCaches"],
+  "app/api/auth/reset-password/route.ts": ["scheduleInvalidateAuthCaches"],
   "app/api/payments/checkout/route.ts": ["scheduleInvalidateOrderGraphCaches"],
   "app/api/payments/confirm-session/route.ts": ["confirmCheckoutSessionById"],
   "app/api/payments/webhook/route.ts": [
@@ -116,6 +119,7 @@ const API_WRITE_EXEMPT = new Set([
   "app/api/auth/login/route.ts",
   "app/api/auth/logout/route.ts",
   "app/api/auth/refresh/route.ts",
+  "app/api/auth/forgot-password/route.ts",
   "app/api/ai/insights/route.ts",
   "app/api/shipping/rates/route.ts",
   "app/api/notifications/route.ts",

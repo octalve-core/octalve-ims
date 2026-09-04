@@ -370,13 +370,15 @@
   ],
 
   "shared": [
-    "app/login", "app/register", "app/settings", "app/_not-found", "app/fonts",
+    "app/login", "app/register", "app/forgot-password", "app/reset-password",
+    "app/settings", "app/_not-found", "app/fonts",
     "app/api-docs", "app/api-status",
     "app/api/auth", "app/api/health", "app/api/openapi", "app/api/user", "app/api/users",
     "app/admin/settings", "app/admin/layout.tsx", "app/admin/page.tsx",
 
     "components/Pages/ApiDocsPage.tsx", "components/Pages/ApiStatusPage.tsx",
     "components/Pages/LoginPage.tsx", "components/Pages/RegisterPage.tsx",
+    "components/Pages/ForgotPasswordPage.tsx", "components/Pages/ResetPasswordPage.tsx",
     "components/Pages/EmailPreferencesPage.tsx", "components/Pages/HomePage.tsx",
 
     "lib/api", "lib/auth", "lib/auth-server.ts", "lib/cache", "lib/date", "lib/email",

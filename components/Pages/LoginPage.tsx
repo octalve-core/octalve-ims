@@ -239,10 +239,10 @@ export default function LoginPage() {
               Keep me signed in
             </label>
             <Link
-              href="/register"
+              href="/forgot-password"
               className="text-sm font-semibold text-[#0064E0] transition hover:text-[#0052B8] dark:text-[#5ea1ff]"
             >
-              Need an account?
+              Forgot password?
             </Link>
           </AuthAnimatedBlock>
 

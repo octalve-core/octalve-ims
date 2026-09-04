@@ -28,7 +28,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth/jwt";
 
-const PUBLIC = new Set(["/login", "/register"]);
+const PUBLIC = new Set([
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+]);
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

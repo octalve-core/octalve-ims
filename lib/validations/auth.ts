@@ -46,3 +46,25 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 /** API body alias for POST /api/auth/register */
 export const registerBodySchema = registerSchema;
 
+/**
+ * Forgot-password request schema — POST /api/auth/forgot-password
+ */
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
+export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
+
+/**
+ * Reset-password consume schema — POST /api/auth/reset-password
+ */
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Reset token is required"),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .max(100, "Password must be 100 characters or less"),
+});
+
+export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
+
