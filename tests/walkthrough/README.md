@@ -1,0 +1,56 @@
+# Walkthrough (FULL_PRODUCT) — Octalve IMS
+
+Status (updated 2026-10-21): **Phase 0 (plan) complete for the full monorepo build; a per-package plan was added; paused before Phase 0b and Phase 1.** No guardrail code and no browser dependencies exist. The local database `octalve_ims_test` exists, empty. **Read [`per-package-plan.md`](per-package-plan.md) first:** the owner asked for one walkthrough per package (Core, Pro, Premium), so the 255-row matrix and the 100-step storyboard below describe the Premium/full build and still need per-tier versions. Decisions D1 and D2 are settled, D10 is new, D4 is amended; D3 and D5 to D9 are open. Resume at `docs/HANDOVER.md` section 0. Files here:
+
+| File | What it is |
+|---|---|
+| `per-package-plan.md` | How the walkthrough becomes three (Core, Pro, Premium): per-tier matrices, run recipe, viewports, findings, done-when |
+| `coverage.yaml` | Machine-readable coverage matrix: 255 rows (62 pages, 78 API routes, 56 features, 10 role-boundary checks, 15 validation states, 16 empty states, 15 not-demonstrable items, 3 candidate findings) |
+| `storyboard.md` | The ordered journey: 100 steps in 11 chapters, 71 expected results read from code or docs, 29 assumed and to be confirmed at the first run |
+| `README.md` | This file |
+
+## The brief, with what I filled in
+
+| Field | Value | Basis |
+|---|---|---|
+| SCOPE | FULL_PRODUCT | given |
+| PROJECT_NAME | Octalve IMS (`octalve-ims`) | given |
+| BASE_BRANCH | **`dev`** (D2 settled 2026-10-21: `dev` was fast-forwarded to `main`, both at `d7e6720`) | owner's decision |
+| STACK | Next.js 16 App Router, React 19, TypeScript, Prisma 6, PostgreSQL, TanStack Query, Tailwind/shadcn, pnpm 10, Node 24 | read |
+| PROD_BUILD_AND_START | `NEXT_PUBLIC_API_URL=<BASE_URL> pnpm build` then `pnpm exec next start -p <port>`. `NEXT_PUBLIC_*` is baked in at build time, so the build must run with the walkthrough URL | assumed |
+| BASE_URL | `http://localhost:3100` (3000 is free but 3001 and 3002 are taken; 3100 avoids collisions) | assumed |
+| DEDICATED_DB | **`octalve_ims_test`** on the local Postgres (`127.0.0.1:5432`), the third `DATABASE_URL` line in `.env`; created empty on 2026-10-21; **never** the hosted Neon database. Recreated empty before every package run; nothing else may use it (D1 settled; this replaces the earlier plan name `octalve_ims_walkthrough`) | owner's decision |
+| ROLES, in journey order | anonymous → admin (created through `/register`) → supplier → client ×2 → retailer, the last four created by the admin in User Management | read |
+| First screen | no setup wizard exists; the recording starts at `/` which redirects to `/login` | read |
+| DATA_ENTRY_PATHS | products CSV import, product image upload, product CSV/Excel export; fictional fixtures under `fixtures/` (to be created in Phase 1) | read |
+| EXTERNAL_DEPENDENCIES | all listed as "not demonstrable here" with reasons in `coverage.yaml` (`ND-02`…`ND-17`); none has a local catcher today | read |
+| SOURCES | `lib/navigation/*`, every `app/**/page.tsx`, every `app/api/**/route.ts`, `docs/user-flows-and-stories.md`, `lib/auth/can.ts` | read |
+| VIEWPORTS | desktop 1440×900 (primary), 1100×800, tablet 820×1180, mobile 390×844 — **see D4** | assumed |
+| OUTPUT_DIR | `out/walkthrough/` (already git-ignored: `/out/` is in `.gitignore`) | read |
+| FFMPEG_ALLOWED | assumed yes, installed outside the repo — **see D7**; none is installed today | assumed |
+| AUTONOMY | pause for approval after Phase 0 | default, because decisions D1–D7 are open |
+
+## Scope statement (goes into the PDF)
+
+This run exercises the **full monorepo build** (every feature, Premium behaviour) as a production build (`next build` / `next start`), against a new empty PostgreSQL database and local Redis, with no third-party service configured. It shows, for each role (admin, supplier, client, retailer), every screen reachable by clicking, including the empty, validation-error and populated states of every list and form, the role-scoped navigation, the order → invoice → payment → review → ticket lifecycle, user creation, CSV import/export, and session behaviour (sign-in, sign-out, silent refresh, rate limit, Back button after sign-out). Every step is a hard assertion made without database access, API calls, URL navigation, cookie edits or waits.
+
+It does **not** prove: that direct-URL or direct-API access is blocked for the wrong role (a person cannot type a URL in this run; the static review covers that); that concurrent requests are safe (stock races, double payment); the behaviour of Stripe, Shippo, ImageKit, Brevo email, Google sign-in, AI providers, QStash or Sentry; anything that needs days of real time; the Core and Pro exports (only the full build is run); other browsers; or accessibility beyond what automated axe scans find.
+
+## Decisions I need before Phase 1
+
+| # | Decision | Recommendation |
+|---|---|---|
+| **D1** | **SETTLED 2026-10-21: local `octalve_ims_test`, created.** (Original text follows.) **Dedicated database.** `.env` has two `DATABASE_URL` lines, both pointing at hosted Neon (your staging database), so it cannot be used. I need a new local database. I tried to connect to the local Postgres with the role documented in `docs/local-dev-setup.md`, and the permission system blocked that, rightly: you have not authorised me to use that password. Either (a) create `octalve_ims_walkthrough` yourself, or (b) give me a connection URL for it in an env var (for example `WALKTHROUGH_DATABASE_URL`) and say I may run migrations against it | (b), with the name check in preflight so nothing else can ever be targeted |
+| **D2** | **SETTLED 2026-10-21: `dev`; `origin/dev` fast-forwarded to `d7e6720`.** (Original text follows.) **Where the PR goes.** You said "current", which is `main`. `DEPLOYMENT.md` says `main` is staging and that `dev` is the PR target, but `origin/dev` is at `baa1138`, behind `main` (`d7e6720`), so the documented flow does not match the branches. A PR into `main` goes through the staging pipeline (my changes contain no migrations) | PR into `main` from a feature branch, unless you want `dev` synced first |
+| **D3** | **Redis.** Local Redis is running. Without it the auth rate limits fail open, so step S-133 (rate-limit message) cannot be shown and the cache layer is unexercised | Use logical database 15, flushed in preflight, never touching others |
+| **D4** | **AMENDED by D10:** three desktop passes first (Premium, Pro, Core), then the other viewports per package. (Original text follows.) **Viewports.** Four full passes from a fresh database each, the desktop pass being the primary deliverable (this follows AlEemaan's task 0033 design). Alternative: desktop only, plus a short responsive spot-check chapter | Four passes; stabilise desktop first |
+| **D5** | **Email.** `lib/email/brevo.ts` hard-codes the Brevo URL, so there is no way to point it at a catcher. Making forgot-password, reset-password and notification emails demonstrable needs a one-line `BREVO_API_URL` override plus a small local inbox page | Leave as not demonstrable for now; add later if you want email flows in the video |
+| **D6** | **Stripe, Shippo, ImageKit, AI, Google.** No keys exist. Test-mode keys would put real third-party pages and the network into the recording | Keep as not demonstrable; show the "not configured" states |
+| **D7** | **ffmpeg.** Not installed. Burned-in captions and chapters need a static build from npm (`ffmpeg-static`) into a tools folder outside the repo, no sudo, needs the network. Playwright's own `.webm` and the PDF need nothing new | Yes |
+| **D8** | **Playwright.** Phase 1 adds `@playwright/test@1.56.1` and `@axe-core/playwright` as devDependencies (the versions AlEemaan already uses; `~/.cache/ms-playwright` holds Chromium builds 1194, 1243 and 1248 from earlier installs, so a download may not be needed, but I have not confirmed that one of them matches Playwright 1.56.1) | Approve |
+| **D9** | **Product decisions the run will expose and I will not guess:** every self-registration becomes an admin (code comment calls it a product decision); a retailer lands in the admin shell; there is no change-password screen; no screen manages businesses, roles or permissions. These become findings marked "needs decision" unless you decide now | Decide before or during Phase 2 |
+| **D10** | **One walkthrough per package, decided 2026-10-21.** "Package" is taken to mean tier (Core, Pro, Premium). Each package is exported, installed, built and run separately, with the database dropped and recreated before each; three sets of deliverables under `out/walkthrough/<tier>/`. The scope statement above (which says the Core and Pro exports are not run) is **superseded** by this. To confirm with the owner: that "package" means tier | Plan in `per-package-plan.md` |
+
+## What Phase 1 will build (after approval)
+
+`tests/walkthrough/` with its own Playwright config (one worker, no retries, fixed viewport, one context and one recording per pass); a `nav` wrapper that allows exactly one load; wrapped helpers so steps never see raw `page`; a static guard (lint rule and unit test with a planted-violation negative test) over `tests/walkthrough/steps/`; runtime observers in a separate `observers/` module that cannot act; a visible cursor and click ripple; the step timeline JSON that the PDF, captions, chapters and coverage check are generated from; a preflight that hard-exits unless the database name, local URL, production build, clean git tree and empty database all check out; a run manifest. Then Phase 2, the audit-and-fix loop.
