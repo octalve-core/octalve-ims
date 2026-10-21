@@ -520,6 +520,7 @@
     "lib/payments/confirm-checkout-session.ts", "lib/payments/reconcile-stripe-return.ts",
     "lib/payments/resolve-order-pay-amount.ts", "lib/payments/resolve-order-pay-amount.test.ts",
     "lib/payments/stripe-checkout-return-urls.ts", "lib/payments/stripe-checkout-return-urls.test.ts",
+    "lib/payments/apply-stripe-session-payment.ts", "lib/payments/apply-stripe-session-payment.test.ts",
 
     "lib/insights/business-insights-warehouse-rollup.ts",
     "lib/insights/business-insights-warehouse-rollup.test.ts",
