@@ -23,7 +23,7 @@ export default async function AdminOrderDetailPage({
   const sp = await searchParams;
 
   // REQ-0209 — confirm before SSR detail (no Pending→Confirmed client flash)
-  const stripeReturn = await reconcileStripeReturnBeforeDetail(sp);
+  const stripeReturn = await reconcileStripeReturnBeforeDetail(sp, user);
   if (stripeReturn.shouldRedirect) {
     redirect(`/admin/orders/${id}`);
   }
