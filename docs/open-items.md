@@ -49,6 +49,7 @@ Updated 2026-10-21 (end of session). When an item is done, tick it here and link
 - [ ] Push the local commits on `dev` (`git push origin dev`) after a look at `git log --oneline origin/dev..dev`.
 - [ ] Decide whether and when to promote `main` to `prod` (see `HANDOVER.md` section 3). `origin/prod` is at `baa1138`.
 - [ ] Repoint the `out/phases/...` citations in `tier-manifest.json` to `docs/development-history/phases/...`, then delete the originals in `out/` once the copies are checked (`diff -r` showed the 26 phase files identical).
-- [ ] Add a short pointer from `CLAUDE.md` to `docs/HANDOVER.md`, and correct the MongoDB statements in `CLAUDE.md` and `docs/PROJECT_WALKTHROUGH.md` (ISS-0065, ISS-0066).
+- [x] Pointer from `CLAUDE.md` to `docs/HANDOVER.md`, its Stack and schema-change lines corrected, and `AGENTS.md` added (2026-10-21).
+- [ ] Remaining MongoDB and `npm` statements: `docs/PROJECT_WALKTHROUGH.md` lines 31 and 50, `README.md:537`, `CLAUDE.md` line 76 and its `npm run` commands (ISS-0065, ISS-0066).
 - [ ] Fix the time-bomb test `lib/orders/invoice-event-date.test.ts` so CI can go green (ISS-0057); it is a one-file change.
 - [ ] Add a check that `NOTICE` and `LICENSE` exist and are in every export (nothing enforces it today; ADR 0007 says "review only").

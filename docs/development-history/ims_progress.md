@@ -1,6 +1,6 @@
 # Octalve IMS — Development Progress Tracker
 
-Last Updated: 2026-08-28 (Phase 20)
+Last Updated: 2026-10-21 (Phase 20 below; later work outside the phases is logged at the end of this file)
 
 ---
 
@@ -678,3 +678,30 @@ inline "KNOWN REAL GAP" documentation and in-conversation summaries only.
 Phases 0-4 were backfilled from that record when this tracker was set up;
 treat their dates as approximate where not independently confirmed. Phases
 5 onward are logged contemporaneously.
+
+---
+
+## Work outside the phases (2026-10-21)
+
+Phase 21 is still in progress and was not touched. The work below is
+repository housekeeping and audit work, tracked as numbered tasks in
+`docs/tasks/` rather than as phases.
+
+- **Canonical location of this tracker.** From 2026-10-21 this file and
+  `phases/*.md` live in `docs/development-history/` (copied from the
+  git-ignored `out/`, identical per `diff -r`). Edit these copies; the
+  originals in `out/` are no longer updated. `tier-manifest.json` still cites
+  `out/phases/...` in about 13 places until it is repointed.
+- **Docs structure adopted** from AlEemaan: `docs/adr/`, `docs/issues/`,
+  `docs/tasks/`, `docs/HANDOVER.md`, `docs/open-items.md` (task 0001).
+- **First full static bug scan:** 85 issues (2 P0, 24 P1, 43 P2, 16 P3) in
+  `docs/issues/README.md`. None fixed except the licence row (task 0003).
+- **Export hardening:** the internal docs and `AGENTS.md`/`CLAUDE.md` are never
+  exported; `NOTICE` ships with `LICENSE` in every export.
+- **Branches:** `origin/dev` fast-forwarded from `baa1138` to `d7e6720` so
+  `dev` = `main`; `origin/prod` left at `baa1138` (task 0003).
+- **Licence:** commercial; the upstream MIT notice kept in `NOTICE`
+  (`docs/adr/0007-*`).
+- **Walkthrough audit** (task 0002): Phase 0 plan for the full build, then a
+  per-package plan (Core, Pro, Premium). Not run yet.
+- Start at `docs/HANDOVER.md` for status and next steps.

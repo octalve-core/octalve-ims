@@ -1,0 +1,1741 @@
+{
+ "pages": [
+  {
+   "file": "app/_not-found/page.tsx",
+   "url": "/_not-found"
+  },
+  {
+   "file": "app/admin/activity-history/[id]/page.tsx",
+   "url": "/admin/activity-history/[id]"
+  },
+  {
+   "file": "app/admin/activity-history/page.tsx",
+   "url": "/admin/activity-history"
+  },
+  {
+   "file": "app/admin/categories/[id]/page.tsx",
+   "url": "/admin/categories/[id]"
+  },
+  {
+   "file": "app/admin/client-invoices/[id]/page.tsx",
+   "url": "/admin/client-invoices/[id]"
+  },
+  {
+   "file": "app/admin/client-invoices/page.tsx",
+   "url": "/admin/client-invoices"
+  },
+  {
+   "file": "app/admin/client-orders/[id]/page.tsx",
+   "url": "/admin/client-orders/[id]"
+  },
+  {
+   "file": "app/admin/client-orders/page.tsx",
+   "url": "/admin/client-orders"
+  },
+  {
+   "file": "app/admin/client-portal/page.tsx",
+   "url": "/admin/client-portal"
+  },
+  {
+   "file": "app/admin/dashboard-overall-insights/page.tsx",
+   "url": "/admin/dashboard-overall-insights"
+  },
+  {
+   "file": "app/admin/history/[id]/page.tsx",
+   "url": "/admin/history/[id]"
+  },
+  {
+   "file": "app/admin/history/page.tsx",
+   "url": "/admin/history"
+  },
+  {
+   "file": "app/admin/insights/page.tsx",
+   "url": "/admin/insights"
+  },
+  {
+   "file": "app/admin/invoices/[id]/page.tsx",
+   "url": "/admin/invoices/[id]"
+  },
+  {
+   "file": "app/admin/invoices/page.tsx",
+   "url": "/admin/invoices"
+  },
+  {
+   "file": "app/admin/my-activity/page.tsx",
+   "url": "/admin/my-activity"
+  },
+  {
+   "file": "app/admin/orders/[id]/page.tsx",
+   "url": "/admin/orders/[id]"
+  },
+  {
+   "file": "app/admin/orders/page.tsx",
+   "url": "/admin/orders"
+  },
+  {
+   "file": "app/admin/page.tsx",
+   "url": "/admin"
+  },
+  {
+   "file": "app/admin/personal-invoices/[id]/page.tsx",
+   "url": "/admin/personal-invoices/[id]"
+  },
+  {
+   "file": "app/admin/personal-invoices/page.tsx",
+   "url": "/admin/personal-invoices"
+  },
+  {
+   "file": "app/admin/personal-orders/[id]/page.tsx",
+   "url": "/admin/personal-orders/[id]"
+  },
+  {
+   "file": "app/admin/personal-orders/page.tsx",
+   "url": "/admin/personal-orders"
+  },
+  {
+   "file": "app/admin/product-reviews/[id]/page.tsx",
+   "url": "/admin/product-reviews/[id]"
+  },
+  {
+   "file": "app/admin/product-reviews/page.tsx",
+   "url": "/admin/product-reviews"
+  },
+  {
+   "file": "app/admin/products/[id]/page.tsx",
+   "url": "/admin/products/[id]"
+  },
+  {
+   "file": "app/admin/products/page.tsx",
+   "url": "/admin/products"
+  },
+  {
+   "file": "app/admin/settings/email-preferences/page.tsx",
+   "url": "/admin/settings/email-preferences"
+  },
+  {
+   "file": "app/admin/settings/page.tsx",
+   "url": "/admin/settings"
+  },
+  {
+   "file": "app/admin/supplier-portal/page.tsx",
+   "url": "/admin/supplier-portal"
+  },
+  {
+   "file": "app/admin/suppliers/[id]/page.tsx",
+   "url": "/admin/suppliers/[id]"
+  },
+  {
+   "file": "app/admin/support-tickets/[id]/page.tsx",
+   "url": "/admin/support-tickets/[id]"
+  },
+  {
+   "file": "app/admin/support-tickets/page.tsx",
+   "url": "/admin/support-tickets"
+  },
+  {
+   "file": "app/admin/user-management/[id]/page.tsx",
+   "url": "/admin/user-management/[id]"
+  },
+  {
+   "file": "app/admin/user-management/page.tsx",
+   "url": "/admin/user-management"
+  },
+  {
+   "file": "app/admin/warehouses/[id]/page.tsx",
+   "url": "/admin/warehouses/[id]"
+  },
+  {
+   "file": "app/admin/warehouses/page.tsx",
+   "url": "/admin/warehouses"
+  },
+  {
+   "file": "app/api-docs/page.tsx",
+   "url": "/api-docs"
+  },
+  {
+   "file": "app/api-status/page.tsx",
+   "url": "/api-status"
+  },
+  {
+   "file": "app/business-insights/page.tsx",
+   "url": "/business-insights"
+  },
+  {
+   "file": "app/categories/[id]/page.tsx",
+   "url": "/categories/[id]"
+  },
+  {
+   "file": "app/categories/page.tsx",
+   "url": "/categories"
+  },
+  {
+   "file": "app/client/page.tsx",
+   "url": "/client"
+  },
+  {
+   "file": "app/forgot-password/page.tsx",
+   "url": "/forgot-password"
+  },
+  {
+   "file": "app/invoices/[id]/page.tsx",
+   "url": "/invoices/[id]"
+  },
+  {
+   "file": "app/invoices/page.tsx",
+   "url": "/invoices"
+  },
+  {
+   "file": "app/login/page.tsx",
+   "url": "/login"
+  },
+  {
+   "file": "app/orders/[id]/page.tsx",
+   "url": "/orders/[id]"
+  },
+  {
+   "file": "app/orders/page.tsx",
+   "url": "/orders"
+  },
+  {
+   "file": "app/page.tsx",
+   "url": "/"
+  },
+  {
+   "file": "app/products/[id]/page.tsx",
+   "url": "/products/[id]"
+  },
+  {
+   "file": "app/products/page.tsx",
+   "url": "/products"
+  },
+  {
+   "file": "app/register/page.tsx",
+   "url": "/register"
+  },
+  {
+   "file": "app/reset-password/page.tsx",
+   "url": "/reset-password"
+  },
+  {
+   "file": "app/settings/email-preferences/page.tsx",
+   "url": "/settings/email-preferences"
+  },
+  {
+   "file": "app/supplier/page.tsx",
+   "url": "/supplier"
+  },
+  {
+   "file": "app/suppliers/[id]/page.tsx",
+   "url": "/suppliers/[id]"
+  },
+  {
+   "file": "app/suppliers/page.tsx",
+   "url": "/suppliers"
+  },
+  {
+   "file": "app/support-tickets/[id]/page.tsx",
+   "url": "/support-tickets/[id]"
+  },
+  {
+   "file": "app/support-tickets/page.tsx",
+   "url": "/support-tickets"
+  },
+  {
+   "file": "app/warehouses/[id]/page.tsx",
+   "url": "/warehouses/[id]"
+  },
+  {
+   "file": "app/warehouses/page.tsx",
+   "url": "/warehouses"
+  }
+ ],
+ "api": [
+  {
+   "file": "app/api/admin/client-invoices/route.ts",
+   "url": "/api/admin/client-invoices",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 0,
+   "clientRefSample": [],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/admin/client-orders/route.ts",
+   "url": "/api/admin/client-orders",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 0,
+   "clientRefSample": [],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/admin/counts/route.ts",
+   "url": "/api/admin/counts",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 1,
+   "clientRefSample": [
+    "lib/server/admin-counts.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/ai/insights/route.ts",
+   "url": "/api/ai/insights",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 7,
+   "clientRefSample": [
+    "lib/ai/create-chat-completion.ts",
+    "lib/ai/constants.ts",
+    "components/admin/AdminAnalyticsContent.pro.tsx"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/audit-logs/route.ts",
+   "url": "/api/audit-logs",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 1,
+   "clientRefSample": [
+    "components/Pages/ApiDocsPage.tsx"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/auth/change-password/route.ts",
+   "url": "/api/auth/change-password",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 0,
+   "clientRefSample": [],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": true,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/auth/forgot-password/route.ts",
+   "url": "/api/auth/forgot-password",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 2,
+   "clientRefSample": [
+    "lib/validations/auth.ts",
+    "components/Pages/ForgotPasswordPage.tsx"
+   ],
+   "guards": {
+    "session": false,
+    "roleCheck": false,
+    "csrf": true,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/auth/login/route.ts",
+   "url": "/api/auth/login",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 3,
+   "clientRefSample": [
+    "lib/validations/auth.ts",
+    "lib/api/openapi-spec.ts",
+    "components/Pages/ApiDocsPage.tsx"
+   ],
+   "guards": {
+    "session": false,
+    "roleCheck": false,
+    "csrf": true,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/auth/logout/route.ts",
+   "url": "/api/auth/logout",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 3,
+   "clientRefSample": [
+    "lib/api/openapi-spec.ts",
+    "components/Pages/ApiDocsPage.tsx",
+    "components/layouts/AppShell.tsx"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": true,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/auth/oauth/google/callback/route.ts",
+   "url": "/api/auth/oauth/google/callback",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 0,
+   "clientRefSample": [],
+   "guards": {
+    "session": false,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/auth/oauth/google/route.ts",
+   "url": "/api/auth/oauth/google",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 2,
+   "clientRefSample": [
+    "components/Pages/RegisterPage.tsx",
+    "components/Pages/LoginPage.tsx"
+   ],
+   "guards": {
+    "session": false,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/auth/refresh/route.ts",
+   "url": "/api/auth/refresh",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 4,
+   "clientRefSample": [
+    "lib/api/openapi-spec.ts",
+    "lib/auth/cookies.ts",
+    "lib/auth/refresh-client.ts"
+   ],
+   "guards": {
+    "session": false,
+    "roleCheck": true,
+    "csrf": true,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/auth/register/route.ts",
+   "url": "/api/auth/register",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 3,
+   "clientRefSample": [
+    "lib/validations/auth.ts",
+    "lib/api/openapi-spec.ts",
+    "components/Pages/ApiDocsPage.tsx"
+   ],
+   "guards": {
+    "session": false,
+    "roleCheck": false,
+    "csrf": true,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/auth/reset-password/route.ts",
+   "url": "/api/auth/reset-password",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 2,
+   "clientRefSample": [
+    "lib/validations/auth.ts",
+    "components/Pages/ResetPasswordPage.tsx"
+   ],
+   "guards": {
+    "session": false,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/auth/session/route.ts",
+   "url": "/api/auth/session",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 8,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/api/openapi-spec.ts",
+    "lib/auth/map-session-user.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/auth/verify-email/route.ts",
+   "url": "/api/auth/verify-email",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 0,
+   "clientRefSample": [],
+   "guards": {
+    "session": false,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/categories/[id]/route.ts",
+   "url": "/api/categories/[id]",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 7,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/validations/category.ts",
+    "lib/server/category-detail-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/categories/route.ts",
+   "url": "/api/categories",
+   "methods": [
+    "GET",
+    "POST",
+    "PUT",
+    "DELETE"
+   ],
+   "clientRefs": 7,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/validations/category.ts",
+    "lib/server/category-detail-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/client-portal/route.ts",
+   "url": "/api/client-portal",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 1,
+   "clientRefSample": [
+    "lib/server/client-portal-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/dashboard/route.ts",
+   "url": "/api/dashboard",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 3,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/server/dashboard-data.ts",
+    "components/Pages/ApiDocsPage.tsx"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/email/queue/process/route.ts",
+   "url": "/api/email/queue/process",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 1,
+   "clientRefSample": [
+    "lib/email/queue.ts"
+   ],
+   "guards": {
+    "session": false,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": true
+   }
+  },
+  {
+   "file": "app/api/forecasting/route.ts",
+   "url": "/api/forecasting",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 2,
+   "clientRefSample": [
+    "lib/forecasting/forecasting-data.ts",
+    "components/Pages/ApiDocsPage.tsx"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/health/route.ts",
+   "url": "/api/health",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 3,
+   "clientRefSample": [
+    "lib/api/openapi-spec.ts",
+    "components/Pages/ApiStatusPage.tsx",
+    "components/Pages/ApiDocsPage.tsx"
+   ],
+   "guards": {
+    "session": false,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/import-history/[id]/route.ts",
+   "url": "/api/import-history/[id]",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 4,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/history/history-detail-data.ts",
+    "lib/history/history-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/import-history/route.ts",
+   "url": "/api/import-history",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 4,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/history/history-detail-data.ts",
+    "lib/history/history-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/invoices/[id]/pdf/route.ts",
+   "url": "/api/invoices/[id]/pdf",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 7,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/server/invoice-detail-data.ts",
+    "lib/server/invoices-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/invoices/[id]/route.ts",
+   "url": "/api/invoices/[id]",
+   "methods": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "clientRefs": 7,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/server/invoice-detail-data.ts",
+    "lib/server/invoices-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/invoices/[id]/send/route.ts",
+   "url": "/api/invoices/[id]/send",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 7,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/server/invoice-detail-data.ts",
+    "lib/server/invoices-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/invoices/reminders/route.ts",
+   "url": "/api/invoices/reminders",
+   "methods": [
+    "POST",
+    "GET"
+   ],
+   "clientRefs": 0,
+   "clientRefSample": [],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/invoices/route.ts",
+   "url": "/api/invoices",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "clientRefs": 7,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/server/invoice-detail-data.ts",
+    "lib/server/invoices-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/notifications/in-app/[id]/route.ts",
+   "url": "/api/notifications/in-app/[id]",
+   "methods": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "clientRefs": 3,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/server/notifications-data.ts",
+    "components/Pages/ApiDocsPage.tsx"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/notifications/in-app/mark-all-read/route.ts",
+   "url": "/api/notifications/in-app/mark-all-read",
+   "methods": [
+    "PUT"
+   ],
+   "clientRefs": 0,
+   "clientRefSample": [],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/notifications/in-app/route.ts",
+   "url": "/api/notifications/in-app",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 3,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/server/notifications-data.ts",
+    "components/Pages/ApiDocsPage.tsx"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/notifications/in-app/unread-count/route.ts",
+   "url": "/api/notifications/in-app/unread-count",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 1,
+   "clientRefSample": [
+    "components/Pages/ApiDocsPage.tsx"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/notifications/route.ts",
+   "url": "/api/notifications",
+   "methods": [
+    "POST",
+    "GET"
+   ],
+   "clientRefs": 4,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/validations/notification.ts",
+    "lib/server/notifications-data.ts"
+   ],
+   "guards": {
+    "session": false,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/openapi/route.ts",
+   "url": "/api/openapi",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 3,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/api/openapi-spec.ts",
+    "components/Pages/ApiDocsPage.tsx"
+   ],
+   "guards": {
+    "session": false,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/orders/[id]/route.ts",
+   "url": "/api/orders/[id]",
+   "methods": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "clientRefs": 6,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/server/orders-data.ts",
+    "lib/server/order-detail-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/orders/route.ts",
+   "url": "/api/orders",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "clientRefs": 6,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/server/orders-data.ts",
+    "lib/server/order-detail-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/payments/checkout/route.ts",
+   "url": "/api/payments/checkout",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 1,
+   "clientRefSample": [
+    "components/Pages/ApiDocsPage.tsx"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/payments/confirm-session/route.ts",
+   "url": "/api/payments/confirm-session",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 0,
+   "clientRefSample": [],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/payments/webhook/route.ts",
+   "url": "/api/payments/webhook",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 0,
+   "clientRefSample": [],
+   "guards": {
+    "session": false,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": true
+   }
+  },
+  {
+   "file": "app/api/performance/route.ts",
+   "url": "/api/performance",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 4,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/monitoring/performance.ts",
+    "components/Pages/ApiStatusPage.tsx"
+   ],
+   "guards": {
+    "session": false,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/portal/client/browse-meta/route.ts",
+   "url": "/api/portal/client/browse-meta",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 1,
+   "clientRefSample": [
+    "lib/server/client-browse-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/portal/client/browse-products/route.ts",
+   "url": "/api/portal/client/browse-products",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 0,
+   "clientRefSample": [],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/portal/client/catalog/route.ts",
+   "url": "/api/portal/client/catalog",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 1,
+   "clientRefSample": [
+    "lib/server/client-catalog-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/portal/client/route.ts",
+   "url": "/api/portal/client",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 2,
+   "clientRefSample": [
+    "lib/server/client-catalog-data.ts",
+    "lib/server/client-browse-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/portal/supplier/route.ts",
+   "url": "/api/portal/supplier",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 1,
+   "clientRefSample": [
+    "lib/cache/cache-utils.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/product-reviews/[id]/route.ts",
+   "url": "/api/product-reviews/[id]",
+   "methods": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "clientRefs": 5,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/server/product-reviews-data.ts",
+    "lib/server/product-review-detail-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/product-reviews/by-product/[productId]/route.ts",
+   "url": "/api/product-reviews/by-product/[productId]",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 1,
+   "clientRefSample": [
+    "lib/product-reviews/product-reviews-detail-data.ts"
+   ],
+   "guards": {
+    "session": false,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/product-reviews/eligibility/route.ts",
+   "url": "/api/product-reviews/eligibility",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 1,
+   "clientRefSample": [
+    "lib/product-reviews/product-reviews-detail-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/product-reviews/route.ts",
+   "url": "/api/product-reviews",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "clientRefs": 5,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/server/product-reviews-data.ts",
+    "lib/server/product-review-detail-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/products/[id]/route.ts",
+   "url": "/api/products/[id]",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 14,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/validations/product.ts",
+    "lib/server/home-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/products/image/route.ts",
+   "url": "/api/products/image",
+   "methods": [
+    "POST",
+    "DELETE"
+   ],
+   "clientRefs": 1,
+   "clientRefSample": [
+    "components/products/form-fields/ImageField.tsx"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/products/qr-code/route.ts",
+   "url": "/api/products/qr-code",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 1,
+   "clientRefSample": [
+    "lib/validations/product.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/products/route.ts",
+   "url": "/api/products",
+   "methods": [
+    "GET",
+    "GET",
+    "POST",
+    "PUT",
+    "DELETE"
+   ],
+   "clientRefs": 14,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/validations/product.ts",
+    "lib/server/home-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/products-import/route.ts",
+   "url": "/api/products-import",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 2,
+   "clientRefSample": [
+    "components/Pages/ApiDocsPage.tsx",
+    "components/products/ProductImportDialog.tsx"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/shipping/labels/route.ts",
+   "url": "/api/shipping/labels",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 0,
+   "clientRefSample": [],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/shipping/rates/route.ts",
+   "url": "/api/shipping/rates",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 0,
+   "clientRefSample": [],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/shipping/tracking/route.ts",
+   "url": "/api/shipping/tracking",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 0,
+   "clientRefSample": [],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/shipping/webhook/route.ts",
+   "url": "/api/shipping/webhook",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 0,
+   "clientRefSample": [],
+   "guards": {
+    "session": false,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/stock-allocations/[id]/route.ts",
+   "url": "/api/stock-allocations/[id]",
+   "methods": [
+    "PUT",
+    "DELETE"
+   ],
+   "clientRefs": 1,
+   "clientRefSample": [
+    "lib/server/product-stock-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/stock-allocations/route.ts",
+   "url": "/api/stock-allocations",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "clientRefs": 1,
+   "clientRefSample": [
+    "lib/server/product-stock-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/stock-transfers/route.ts",
+   "url": "/api/stock-transfers",
+   "methods": [
+    "POST"
+   ],
+   "clientRefs": 0,
+   "clientRefSample": [],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/supplier-portal/route.ts",
+   "url": "/api/supplier-portal",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 1,
+   "clientRefSample": [
+    "lib/server/supplier-portal-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/suppliers/[id]/route.ts",
+   "url": "/api/suppliers/[id]",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 9,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/validations/supplier.ts",
+    "lib/server/supplier-portal-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/suppliers/route.ts",
+   "url": "/api/suppliers",
+   "methods": [
+    "GET",
+    "POST",
+    "PUT",
+    "DELETE"
+   ],
+   "clientRefs": 9,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/validations/supplier.ts",
+    "lib/server/supplier-portal-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/support-tickets/[id]/replies/route.ts",
+   "url": "/api/support-tickets/[id]/replies",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "clientRefs": 4,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/support-tickets/support-ticket-replies-data.ts",
+    "lib/support-tickets/support-ticket-detail-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/support-tickets/[id]/route.ts",
+   "url": "/api/support-tickets/[id]",
+   "methods": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "clientRefs": 4,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/support-tickets/support-ticket-replies-data.ts",
+    "lib/support-tickets/support-ticket-detail-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/support-tickets/owner-products/route.ts",
+   "url": "/api/support-tickets/owner-products",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 0,
+   "clientRefSample": [],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/support-tickets/product-owners/route.ts",
+   "url": "/api/support-tickets/product-owners",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 0,
+   "clientRefSample": [],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/support-tickets/route.ts",
+   "url": "/api/support-tickets",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "clientRefs": 4,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/support-tickets/support-ticket-replies-data.ts",
+    "lib/support-tickets/support-ticket-detail-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/system-config/route.ts",
+   "url": "/api/system-config",
+   "methods": [
+    "GET",
+    "PUT"
+   ],
+   "clientRefs": 2,
+   "clientRefSample": [
+    "lib/server/system-config-data.ts",
+    "components/Pages/ApiDocsPage.tsx"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/system-metrics/route.ts",
+   "url": "/api/system-metrics",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 3,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "components/Pages/ApiStatusPage.tsx",
+    "components/Pages/ApiDocsPage.tsx"
+   ],
+   "guards": {
+    "session": false,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/user/email-preferences/route.ts",
+   "url": "/api/user/email-preferences",
+   "methods": [
+    "GET",
+    "PUT"
+   ],
+   "clientRefs": 1,
+   "clientRefSample": [
+    "components/Pages/ApiDocsPage.tsx"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/users/[id]/route.ts",
+   "url": "/api/users/[id]",
+   "methods": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "clientRefs": 2,
+   "clientRefSample": [
+    "lib/server/users-data.ts",
+    "lib/server/user-detail-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/users/route.ts",
+   "url": "/api/users",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "clientRefs": 2,
+   "clientRefSample": [
+    "lib/server/users-data.ts",
+    "lib/server/user-detail-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": true,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/warehouses/[id]/route.ts",
+   "url": "/api/warehouses/[id]",
+   "methods": [
+    "GET"
+   ],
+   "clientRefs": 4,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/validations/warehouse.ts",
+    "lib/server/warehouse-detail-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": false,
+    "webhookSig": false
+   }
+  },
+  {
+   "file": "app/api/warehouses/route.ts",
+   "url": "/api/warehouses",
+   "methods": [
+    "GET",
+    "POST",
+    "PUT",
+    "DELETE"
+   ],
+   "clientRefs": 4,
+   "clientRefSample": [
+    "lib/monitoring/api-status-endpoints.ts",
+    "lib/validations/warehouse.ts",
+    "lib/server/warehouse-detail-data.ts"
+   ],
+   "guards": {
+    "session": true,
+    "roleCheck": false,
+    "csrf": false,
+    "zod": true,
+    "webhookSig": false
+   }
+  }
+ ]
+}

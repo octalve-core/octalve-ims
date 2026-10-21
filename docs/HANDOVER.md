@@ -98,9 +98,10 @@ The two P0 items share a root: **any visitor can register and becomes an admin (
 | `docs/tasks/` | `current-tasks.md` is the dashboard, one numbered file per work session (0001 to 0003) |
 | `docs/development-history/` | `ims_progress.md` and `phases/*.md`: what was built and why; append-only. Copied here from the gitignored `out/` (originals still there) |
 | `docs/PROJECT_WALKTHROUGH.md`, `docs/user-flows-and-stories.md`, `docs/auth-system-port-plan.md`, `docs/MANUAL_TEST_FIXTURES.md`, `docs/local-dev-setup.md`, … | reference and guides from before the restructure; known inaccuracies are in `issues/scan-2026-10-21-docs.md` |
-| `tests/walkthrough/` | `README.md` (brief, assumptions, decisions D1 to D10), `per-package-plan.md`, `coverage.yaml` (255 rows), `storyboard.md` (100 steps). Not shipped in exports |
+| `tests/walkthrough/` | `README.md` (brief, assumptions, decisions D1 to D10), `per-package-plan.md`, `coverage.yaml` (255 rows), `storyboard.md` (100 steps), `tools/` (the inventory and first-matrix generators, with a README). Not shipped in exports |
+| `AGENTS.md`, `CLAUDE.md` (repository root) | auto-loaded instructions for AI tools; both point here; neither is exported |
 
-Differences from AlEemaan: no `legacy-*` or `feature-reconciliation` document (no legacy repository to reconcile); the task tracker lives in the repository; `AGENTS.md` was not added (`CLAUDE.md` plays that role here and still needs a short pointer to this file).
+Differences from AlEemaan: no `legacy-*` or `feature-reconciliation` document (no legacy repository to reconcile); the task tracker lives in the repository; `AGENTS.md` was added at the repository root (2026-10-21) for tools that read it, and `CLAUDE.md` now starts with a pointer to this file; neither is exported.
 
 ## 7. Rules
 
@@ -119,7 +120,31 @@ Differences from AlEemaan: no `legacy-*` or `feature-reconciliation` document (n
 - Walkthrough Phases 0b, 1 and 2, for all three packages. No Playwright dependency is installed; no fixtures, preflight, observers or recordings exist.
 - Pushing the local `dev` commits; promoting anything to `prod`.
 - Repointing the `out/phases/...` citations in `tier-manifest.json` (about 13) to `docs/development-history/phases/...`, then deleting the original `out/` copies after the owner checks the copies.
-- A short pointer from `CLAUDE.md` to this file; correcting the MongoDB statements in `CLAUDE.md` and `docs/PROJECT_WALKTHROUGH.md` (ISS-0065, ISS-0066).
+- Remaining documentation drift (ISS-0065, ISS-0066, and the rest of `issues/scan-2026-10-21-docs.md`): `docs/PROJECT_WALKTHROUGH.md` lines 31 and 50 still describe MongoDB; `README.md:537` mentions "collections"; `CLAUDE.md` still shows `npm run` commands and its line 76 refers to legacy MongoDB rows. (Done on 2026-10-21: `CLAUDE.md` pointer, its Stack line and its schema-change line; `AGENTS.md`.)
 - Fixing `lib/orders/invoice-event-date.test.ts` (ISS-0057) and the 8 ESLint errors so CI can go green.
 - Legal review of `LICENSE` (copyright holder name "Octalve" and the terms are an assumption).
 - A production build (`pnpm build`) has never been run during this work.
+
+## 9. Continuing with another AI or person
+
+**A different AI does not remember this work.** It knows only the files it reads and anything you tell it. It will not volunteer these decisions, caveats or findings unless it is pointed at them. What makes that work here:
+
+- `CLAUDE.md` (read automatically by Claude Code) and `AGENTS.md` (read by many other tools) both start with a pointer to this file. A tool that loads neither must be told to read the files below first.
+- This file and `open-items.md` hold the decisions and the next steps; `AGENTS.md` holds the safety rules in a short list.
+
+**Paste this to start any other AI:**
+
+> Read `docs/HANDOVER.md` first, then `docs/open-items.md`, `docs/tasks/current-tasks.md`, `AGENTS.md`, and `tests/walkthrough/per-package-plan.md`. Do not change anything until you have read them. Then tell me, in your own words: which branch PRs go into; which database the walkthrough may use; whether you may push to `prod`; what the licence is and what `NOTICE` is for; what "package" means for the walkthrough and which assumption about that is still unconfirmed; which scan findings are unfixed and why ISS-0001 comes first; and what the first technical risk for the Core package is. Then follow the "Resume here" list.
+
+**Check it understood.** The right answers are: `dev`; the local `octalve_ims_test`, recreated empty per run; no, never without the owner; commercial, and `NOTICE` keeps the upstream MIT text that MIT requires to stay with derived code; "package" means tier (Core, Pro, Premium) and that reading is not yet confirmed; 84 of 85 are unfixed and ISS-0001 (anyone can register as admin) underlies the P0s and most P1 authorization rows; the Core export has 17 accepted type errors, so a type-checking `next build` may fail.
+
+**What is in the files (a new AI can rely on it):** every decision the owner made on 2026-10-21 and what was done; the exact git record and what was and was not pushed; the local database and its cautions; 85 findings with severity, scenario, fix direction and evidence level; seven ADRs; the walkthrough plan (255-row matrix, 100-step storyboard, per-package plan, and the scripts that built the first matrix); the licence decision and its open follow-ups; the safety rules.
+
+**What is not in the files:**
+- The reasoning discussion in the conversation beyond what is written down.
+- The raw reports of the seven delegated reviewers: they are distilled into `issues/scan-2026-10-21-*.md`; the originals existed only in the conversation. They were model output, which is why most rows say "Read" and not "Reproduced".
+- Raw logs of `tsc`, `eslint` and `vitest` (their numbers are in section 5 and in task 0001), and the script that built the issue register (re-running it would overwrite hand edits; the register is the record).
+- The conversation transcript, which exists only on this machine: `/home/rojitech/.claude-schulltech/projects/-home-rojitech-Desktop-CODEC-OCTALVE-ims-projects-ims-django-0/b5431ac2-f983-42bc-b30c-ebe36896bc0b.jsonl`. It is large; hand it to another AI only if it must recover a detail the docs lack.
+- Anything about the live deployment: every register row says `Live? unknown` because nobody checked what is deployed (`open-items.md` section 2).
+
+**Where a new AI could still be misled:** `docs/PROJECT_WALKTHROUGH.md` (still describes MongoDB), `CLAUDE.md` below its first lines (older conventions, `npm run`), `README.md` claims about environment validation (ISS in `issues/scan-2026-10-21-docs.md`), and any ADR (all `Proposed`, backfilled from commit messages).
