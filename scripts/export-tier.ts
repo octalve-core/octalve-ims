@@ -116,6 +116,7 @@ const ALWAYS_EXCLUDE = new Set<string>([
   "scripts/export-tier.ts",
   "scripts/check-tier-manifest-coverage.ts",
   "CLAUDE.md",
+  "AGENTS.md",
   // Internal engineering records (decisions, security/issue register, task
   // tracker, phase history, handover). `docs` is an ALWAYS_COPY_ROOT entry, so
   // anything under it ships to customers unless excluded here.
