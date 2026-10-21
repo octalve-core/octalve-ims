@@ -71,15 +71,22 @@ export async function POST(request: NextRequest) {
       counter++;
     }
 
-    // New signups get admin role for full manipulation power (existing
-    // original product decision, unchanged by the auth port).
+    // ISS-0001: self-registration used to grant "admin" unconditionally,
+    // letting any anonymous visitor mint a global admin account — one with
+    // full, unscoped access to every user, order and invoice in the
+    // deployment (see docs/issues/README.md). "user" is the least-privileged
+    // legacy role (lib/auth/can.ts) and already has everything a new
+    // self-service signup actually needs: view/create/edit on Products,
+    // Stock, Orders, Invoicing, and view/create on SupportTickets. Admin
+    // accounts must be provisioned out-of-band (seed scripts, or a future
+    // invite flow), never handed out by self-registration.
     const createdUser = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
         username,
-        role: "admin",
+        role: "user",
       },
     });
 
@@ -98,9 +105,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // ISS-0001: fallback role claim must not be "admin" either.
     const accessToken = await signAccessToken({
       sub: createdUser.id,
-      role: createdUser.role ?? "admin",
+      role: createdUser.role ?? "user",
     });
 
     const cookieStore = await cookies();
