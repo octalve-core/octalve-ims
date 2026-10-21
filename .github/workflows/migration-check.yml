@@ -21,6 +21,11 @@ jobs:
     # with a confusing auth error rather than being skipped -- same guard
     # preview.yml already uses for the same reason.
     if: github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      # Job-level so `prisma validate` also has it -- the schema's
+      # datasource block resolves env("DATABASE_URL") even just to
+      # validate, not only to run the diff in the step below.
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
 
@@ -40,8 +45,6 @@ jobs:
         run: pnpm exec prisma validate
 
       - name: Diff staging against this branch's schema
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           echo "Pending schema diff for staging (informational -- does not fail the build):"
           pnpm exec prisma migrate diff \
