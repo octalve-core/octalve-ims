@@ -137,9 +137,31 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/octalve_ims_ci?schema=public
         run: pnpm script:seed-full-demo
 
-      - name: Run tests
+      # lib/server/tenant-prisma.test.ts proves row-level security actually
+      # isolates tenants -- meaningless if the connecting role bypasses RLS,
+      # which every role is implicitly exempt from unless explicitly denied
+      # (NOBYPASSRLS), and which `postgres:18`'s default `postgres` role
+      # always does (it's a superuser, and BYPASSRLS can't be overridden by
+      # a table's FORCE ROW LEVEL SECURITY -- only a non-superuser,
+      # NOBYPASSRLS role is actually subject to the policy). Migrate/RLS/seed
+      # above stay on the superuser connection (DDL + cross-tenant fixture
+      # writes legitimately need it); only the test run itself switches to
+      # this restricted role, created fresh each run after the schema and
+      # seed data already exist so a flat ALL-TABLES grant is sufficient.
+      - name: Create restricted test role (non-superuser, RLS-enforced)
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/octalve_ims_ci?schema=public
+        run: |
+          pnpm exec prisma db execute --url "$DATABASE_URL" --stdin <<'SQL'
+          CREATE ROLE app_test LOGIN PASSWORD 'app_test' NOSUPERUSER NOBYPASSRLS;
+          GRANT USAGE ON SCHEMA public TO app_test;
+          GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO app_test;
+          GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO app_test;
+          SQL
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://app_test:app_test@localhost:5432/octalve_ims_ci?schema=public
           JWT_SECRET: test_only_jwt_secret_do_not_use_in_production
           NEXT_PUBLIC_API_URL: http://localhost:3000
         run: pnpm test
