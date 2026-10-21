@@ -1,6 +1,6 @@
 # Octalve IMS — Inventory & Warehouse Management System (Next.js, TypeScript, Prisma, PostgreSQL Full-Stack, including AI Business Insights + Admin Panel + Client & Supplier Role-Based Dashboards & more)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Commercial](https://img.shields.io/badge/License-Commercial-blue.svg)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.2-blue)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
@@ -676,4 +676,4 @@ inventory management system, warehouse management, stock allocation, Next.js 16,
 
 ## License
 
-See [LICENSE](LICENSE) for terms.
+Octalve IMS is commercial software. See [LICENSE](LICENSE) for terms. Third-party notices, including the MIT notice for the code this project was forked from, are in [NOTICE](NOTICE).
