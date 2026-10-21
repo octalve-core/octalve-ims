@@ -15,6 +15,7 @@ import {
 } from "@/lib/stripe";
 import { prisma } from "@/prisma/client";
 import { confirmCheckoutSessionById } from "@/lib/payments/confirm-checkout-session";
+import { applyStripeChargeRefund } from "@/lib/payments/apply-stripe-charge-refund";
 import { invalidateOnOrderChange } from "@/lib/cache";
 
 export const runtime = "nodejs";
@@ -124,7 +125,10 @@ async function handleCheckoutExpired(session: Stripe.Checkout.Session) {
 }
 
 /**
- * Handle charge refund (e.g. when refunded from Stripe Dashboard)
+ * Handle charge refund (e.g. when refunded from Stripe Dashboard, or an
+ * echo of our own cancelOrder-triggered refund). ISS-0013 — delegates to
+ * applyStripeChargeRefund for the atomic, idempotent, full-vs-partial-aware
+ * logic; see that module's doc for why.
  */
 async function handleChargeRefunded(charge: Stripe.Charge) {
   const paymentIntentId =
@@ -137,81 +141,26 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     return;
   }
 
+  // Stripe returns the refunds sub-list most-recent-first; that's the
+  // specific Refund object this event is reporting. Payloads can omit the
+  // list in older API versions, so fall back to a key that's still
+  // deterministic per distinct refunded-amount state on this charge.
+  const refundId =
+    charge.refunds?.data?.[0]?.id ?? `${charge.id}:${charge.amount_refunded}`;
+
   logger.info(
-    `Charge refunded: ${charge.id}, PaymentIntent: ${paymentIntentId}`,
+    `Charge refunded: ${charge.id}, PaymentIntent: ${paymentIntentId}, refund: ${refundId}, fully: ${charge.refunded}`,
   );
 
-  const order = await prisma.order.findFirst({
-    where: { stripePaymentIntentId: paymentIntentId },
-    include: { items: true, invoice: true },
+  const result = await applyStripeChargeRefund({
+    refundId,
+    chargeId: charge.id,
+    paymentIntentId,
+    amountRefunded: charge.amount_refunded / 100,
+    isFullyRefunded: charge.refunded,
   });
-  if (order && order.paymentStatus !== "refunded") {
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        paymentStatus: "refunded",
-        status: "cancelled",
-        cancelledAt: new Date(),
-        updatedAt: new Date(),
-      },
-    });
-    for (const item of order.items) {
-      await prisma.product.update({
-        where: { id: item.productId },
-        data: { quantity: { increment: item.quantity } },
-      });
-    }
-    if (order.invoice && order.invoice.status !== "cancelled") {
-      await prisma.invoice.update({
-        where: { id: order.invoice.id },
-        data: {
-          status: "cancelled",
-          cancelledAt: new Date(),
-          amountDue: 0,
-          updatedAt: new Date(),
-        },
-      });
-    }
-    logger.info(`Order ${order.id} marked refunded from charge.refunded`);
-  }
 
-  const invoiceRecord = await prisma.invoice.findFirst({
-    where: { stripePaymentIntentId: paymentIntentId },
-    include: { order: { include: { items: true } } },
-  });
-  if (invoiceRecord && invoiceRecord.status !== "cancelled") {
-    await prisma.invoice.update({
-      where: { id: invoiceRecord.id },
-      data: {
-        status: "cancelled",
-        cancelledAt: new Date(),
-        amountDue: 0,
-        updatedAt: new Date(),
-      },
-    });
-    if (invoiceRecord.order && invoiceRecord.order.paymentStatus !== "refunded") {
-      await prisma.order.update({
-        where: { id: invoiceRecord.order.id },
-        data: {
-          paymentStatus: "refunded",
-          status: "cancelled",
-          cancelledAt: new Date(),
-          updatedAt: new Date(),
-        },
-      });
-      for (const item of invoiceRecord.order.items) {
-        await prisma.product.update({
-          where: { id: item.productId },
-          data: { quantity: { increment: item.quantity } },
-        });
-      }
-    }
-    logger.info(
-      `Invoice ${invoiceRecord.id} marked cancelled from charge.refunded`,
-    );
-  }
-
-  if (order || invoiceRecord) {
+  if (result.applied) {
     await invalidateOnOrderChange();
   }
 }

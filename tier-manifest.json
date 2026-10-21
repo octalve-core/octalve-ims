@@ -521,6 +521,7 @@
     "lib/payments/resolve-order-pay-amount.ts", "lib/payments/resolve-order-pay-amount.test.ts",
     "lib/payments/stripe-checkout-return-urls.ts", "lib/payments/stripe-checkout-return-urls.test.ts",
     "lib/payments/apply-stripe-session-payment.ts", "lib/payments/apply-stripe-session-payment.test.ts",
+    "lib/payments/apply-stripe-charge-refund.ts", "lib/payments/apply-stripe-charge-refund.test.ts",
 
     "lib/insights/business-insights-warehouse-rollup.ts",
     "lib/insights/business-insights-warehouse-rollup.test.ts",

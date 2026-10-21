@@ -109,3 +109,27 @@ model ProcessedPayment {
 
   @@index([invoiceId])
 }
+
+// ISS-0013: same unique-constraint-as-concurrency-primitive pattern as
+// ProcessedPayment, for the opposite direction (money leaving, not
+// arriving). Before this model, the charge.refunded webhook decided
+// "already processed" by re-reading Order.paymentStatus/Invoice.status —
+// a read-then-write with no transaction and no claim, so two deliveries
+// of the same refund event (Stripe explicitly documents webhooks as
+// at-least-once, and the handler's own createStripeRefund call also
+// triggers a delivery for refunds started from our own cancel flow) could
+// both read "not yet refunded" and both restock the same items. refundId
+// is the specific Stripe Refund object id (charge.refunds.data[0].id),
+// so even a second delivery of the exact same refund — not just the same
+// charge — is permanently un-replayable.
+model ProcessedRefund {
+  id        String   @id @default(cuid())
+  refundId  String   @unique
+  chargeId  String
+  orderId   String?
+  invoiceId String?
+  amount    Float
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([chargeId])
+}
