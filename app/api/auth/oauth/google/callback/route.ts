@@ -42,13 +42,17 @@ async function createGoogleOAuthUser(
 
   const displayName = name?.trim() || email.split("@")[0] || "user";
 
+  // ISS-0001: new OAuth signups used to get "admin" unconditionally, the
+  // same unscoped-global-admin hole as self-registration (see
+  // register/route.ts and docs/issues/README.md). Default to the
+  // least-privileged legacy role instead.
   const createData = {
     email,
     name: displayName,
     password: hashedPassword,
     googleId,
     image: userImage,
-    role: "admin",
+    role: "user",
     username,
     createdAt: new Date(),
   };
@@ -97,8 +101,10 @@ async function updateGoogleOAuthUser(
   if (name && name !== user.name && !user.name) {
     updateData.name = name;
   }
+  // ISS-0001: self-heal a missing/empty role to the least-privileged legacy
+  // role, not "admin" — see createGoogleOAuthUser above.
   if (!user.role || (typeof user.role === "string" && user.role.trim() === "")) {
-    updateData.role = "admin";
+    updateData.role = "user";
   }
 
   if (Object.keys(updateData).length === 0) {
@@ -269,9 +275,12 @@ export async function GET(request: NextRequest) {
           ),
         },
       });
+      // ISS-0001: the access-token role claim must not default to "admin"
+      // either — same hole as the two role-write sites above, just at
+      // sign-in time instead of account-creation time.
       const jwtAccessToken = await signAccessToken({
         sub: user.id,
-        role: user.role ?? "admin",
+        role: user.role ?? "user",
       });
 
       // Redirect to role-appropriate page directly (avoids double-redirect chain through /)

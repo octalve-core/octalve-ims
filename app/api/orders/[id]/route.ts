@@ -116,6 +116,13 @@ export async function PUT(
     // Get existing order to track status changes.
     // Admin can update any order (including client orders); other roles
     // can only update their own orders or orders linked to their products.
+    // (ISS-0002 was reassessed, not fixed here: this app is single-tenant
+    // — one company per deployment, just sold in different feature tiers
+    // — with no live branch/warehouse-scoped admin role built yet, so
+    // "admin sees every order in the company" is the correct, intended
+    // behavior once only trusted accounts can hold that role. See
+    // ISS-0001 for the actual fix: self-registration no longer grants
+    // "admin" for free.)
     const isAdmin = session.role === "admin";
     let existingOrder: Awaited<ReturnType<typeof getOrderById>> | null;
     if (isAdmin) {
