@@ -10,7 +10,12 @@ import { logger } from "@/lib/logger";
 import { isStripeConfigured } from "@/lib/stripe";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 import { confirmCheckoutSessionBodySchema } from "@/lib/validations/payment";
-import { confirmCheckoutSessionById } from "@/lib/payments/confirm-checkout-session";
+import {
+  confirmCheckoutSessionById,
+  resolveCheckoutSessionReference,
+} from "@/lib/payments/confirm-checkout-session";
+import { getOrderById, getOrderByIdForProductOwner } from "@/prisma/order";
+import { getInvoiceById, getInvoiceByIdForProductOwner } from "@/prisma/invoice";
 
 export const runtime = "nodejs";
 
@@ -44,6 +49,33 @@ export async function POST(request: NextRequest) {
         { error: "Invalid request body", details: parsed.error.errors },
         { status: 400 },
       );
+    }
+
+    // ISS-0008: a valid session + a session cookie used to be enough to
+    // confirm ANY Checkout Session, including someone else's order/invoice
+    // — the sessionId was never checked against the caller's own orders.
+    // Admin keeps full access (consistent with ISS-0002's reassessment:
+    // this is a single-tenant app, admin legitimately manages every order
+    // in the one company); everyone else must be the order's buyer or own
+    // a product in it, same ownership shape as the order PUT/DELETE routes.
+    if (session.role !== "admin") {
+      const ref = await resolveCheckoutSessionReference(parsed.data.sessionId);
+      if (!ref.ok) {
+        return NextResponse.json({ error: ref.error }, { status: 400 });
+      }
+      const owns =
+        ref.type === "order"
+          ? (await getOrderById(ref.orderId, session.id)) ||
+            (await getOrderByIdForProductOwner(ref.orderId, session.id))
+          : (await getInvoiceById(ref.invoiceId, session.id)) ||
+            (await getInvoiceByIdForProductOwner(ref.invoiceId, session.id));
+      if (!owns) {
+        logger.warn("confirm-session: ownership check failed", {
+          userId: session.id,
+          sessionId: parsed.data.sessionId,
+        });
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     const result = await confirmCheckoutSessionById(parsed.data.sessionId);

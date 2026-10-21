@@ -84,3 +84,28 @@ model Invoice {
 
   @@index([userId, status, dueDate])
 }
+
+// ISS-0008: durable per-Stripe-Checkout-Session dedup ledger. Before this
+// model, "already applied" was decided by comparing a Stripe PaymentIntent
+// id against the single LATEST id stored on Order/Invoice — once a newer
+// session overwrote that pointer, replaying an OLDER (already-paid)
+// session's return URL looked unapplied again and re-credited amountPaid
+// for money that never actually moved. sessionId @unique makes every
+// individual Checkout Session permanently un-replayable, not just the most
+// recent one, and doubles as the concurrency primitive: the application
+// code inserts this row as the FIRST statement of the transaction that
+// applies the charge, so two concurrent callers racing the same session id
+// (the webhook and the browser-return path both fire per REQ-0209) can
+// never both win — whichever insert loses the unique constraint aborts its
+// whole transaction, including any money it attempted to write.
+model ProcessedPayment {
+  id              String   @id @default(cuid())
+  sessionId       String   @unique
+  paymentIntentId String?
+  orderId         String?
+  invoiceId       String?
+  amount          Float
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([invoiceId])
+}

@@ -20,7 +20,7 @@ export default async function OrderDetailRoute({ params, searchParams }: Props) 
   const sp = await searchParams;
 
   // REQ-0209 — confirm Stripe session before SSR so status is Confirmed on first paint
-  const stripeReturn = await reconcileStripeReturnBeforeDetail(sp);
+  const stripeReturn = await reconcileStripeReturnBeforeDetail(sp, user);
   if (stripeReturn.shouldRedirect) {
     redirect(`/orders/${id}`);
   }
