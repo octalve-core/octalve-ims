@@ -27,14 +27,14 @@ describe("getInvoicesByClientId (ISS-0020)", () => {
   it("ignores a clientId filter that differs from the caller's own scope", async () => {
     await getInvoicesByClientId("client-a", { clientId: "client-b" });
 
-    const where = vi.mocked(prisma.invoice.findMany).mock.calls[0][0]!.where!;
+    const where = vi.mocked(prisma.invoice.findMany).mock.calls[0]![0]!.where!;
     expect(where.clientId).toBe("client-a");
   });
 
   it("still applies non-conflicting filters (status) alongside the base scope", async () => {
     await getInvoicesByClientId("client-a", { status: ["sent"] });
 
-    const where = vi.mocked(prisma.invoice.findMany).mock.calls[0][0]!.where!;
+    const where = vi.mocked(prisma.invoice.findMany).mock.calls[0]![0]!.where!;
     expect(where.clientId).toBe("client-a");
     expect(where.status).toEqual({ in: ["sent"] });
   });
@@ -48,7 +48,7 @@ describe("getInvoicesByOrderIds (ISS-0020)", () => {
       orderId: "someone-elses-order",
     });
 
-    const where = vi.mocked(prisma.invoice.findMany).mock.calls[0][0]!.where!;
+    const where = vi.mocked(prisma.invoice.findMany).mock.calls[0]![0]!.where!;
     expect(where.orderId).toEqual({ in: ["own-order-1", "own-order-2"] });
   });
 });
