@@ -10,7 +10,10 @@ vi.mock("@/lib/cache", () => ({
   getCache: (...args: unknown[]) => getCacheMock(...args),
   setCache: vi.fn().mockResolvedValue(undefined),
   cacheKeys: {
-    products: { detail: (id: string) => `products:detail:${id}` },
+    products: {
+      detail: (id: string, scope?: string) =>
+        scope ? `products:detail:${id}:${scope}` : `products:detail:${id}`,
+    },
   },
 }));
 
@@ -41,6 +44,7 @@ vi.mock("@/lib/server/orders-data", () => ({
 }));
 
 import { prisma } from "@/prisma/client";
+import { getSupplierByUserId } from "@/prisma/supplier";
 import { getProductDetailForPage } from "./product-detail-data";
 
 const session = { id: "admin-1", role: "admin" as const };
@@ -138,6 +142,64 @@ describe("getProductDetailForPage recentOrders (REQ-0077)", () => {
       email: "buyer@test.com",
       image: "https://example.com/b.jpg",
     });
+  });
+
+  it("ISS-0018 — redacts placedBy to null for a client viewer (another buyer's identity)", async () => {
+    mockProductDbRow();
+
+    const clientSession = { id: "client-viewer", role: "client" as const };
+    const result = await getProductDetailForPage(clientSession, "prod-1");
+
+    expect(result).not.toBeNull();
+    expect(result!.recentOrders![0]!.placedBy).toBeNull();
+  });
+});
+
+describe("getProductDetailForPage cache scope (ISS-0018)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getCacheMock.mockResolvedValue(null);
+    vi.mocked(prisma.stockAllocation.findMany).mockResolvedValue([]);
+  });
+
+  it("scopes the cache key by supplier entity, not just product id", async () => {
+    mockProductDbRow();
+    vi.mocked(getSupplierByUserId).mockResolvedValue({ id: "sup-A" } as never);
+
+    await getProductDetailForPage(
+      { id: "supplier-user-a", role: "supplier" },
+      "prod-1",
+    );
+
+    expect(getCacheMock).toHaveBeenCalledWith("products:detail:prod-1:supplier:sup-A");
+
+    vi.mocked(getSupplierByUserId).mockResolvedValue({ id: "sup-B" } as never);
+    await getProductDetailForPage(
+      { id: "supplier-user-b", role: "supplier" },
+      "prod-1",
+    );
+
+    expect(getCacheMock).toHaveBeenCalledWith("products:detail:prod-1:supplier:sup-B");
+  });
+
+  it("denies a supplier who doesn't own the product even when another supplier's request already cached it", async () => {
+    // The product belongs to supplier sup-A (mockProductDbRow's supplierId: "sup-1").
+    // A different supplier (sup-B) must be denied by their own scoped query,
+    // not served sup-A's cached/fetched product.
+    vi.mocked(prisma.product.findFirst).mockResolvedValue(null);
+    vi.mocked(getSupplierByUserId).mockResolvedValue({ id: "sup-B" } as never);
+
+    const result = await getProductDetailForPage(
+      { id: "supplier-user-b", role: "supplier" },
+      "prod-1",
+    );
+
+    expect(result).toBeNull();
+    expect(prisma.product.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ supplierId: "sup-B" }),
+      }),
+    );
   });
 });
 

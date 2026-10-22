@@ -389,6 +389,7 @@
     "lib/proportional-line-amount.ts", "lib/proportional-line-amount.test.ts",
 
     "lib/server/admin-counts.ts", "lib/server/catalog-detail-order-select.ts",
+    "lib/server/catalog-buyer-privacy.ts", "lib/server/catalog-buyer-privacy.test.ts",
     "lib/server/catalog-entity-access.test.ts", "lib/server/catalog-entity-access.ts",
     "lib/server/catalog-insights.test.ts", "lib/server/catalog-insights.ts",
     "lib/server/catalog-list-enrich.test.ts", "lib/server/catalog-list-enrich.ts",
