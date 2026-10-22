@@ -114,6 +114,19 @@ describe("applyIncrementalInvoicePayment", () => {
     expect(next.status).toBe("paid");
   });
 
+  it("never revives a cancelled invoice even when a charge fully settles it (ISS-0015)", () => {
+    const next = applyIncrementalInvoicePayment({
+      priorAmountPaid: 0,
+      total: 100,
+      chargeAmount: 100,
+      priorStatus: "cancelled",
+    });
+    expect(next.fullyPaid).toBe(true);
+    expect(next.amountPaid).toBe(100);
+    // Money is still tracked accurately, but status stays cancelled.
+    expect(next.status).toBe("cancelled");
+  });
+
   it("downgrades paid status when somehow still mid (defensive)", () => {
     const next = applyIncrementalInvoicePayment({
       priorAmountPaid: 0,

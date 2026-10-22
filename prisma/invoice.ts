@@ -507,6 +507,17 @@ export async function updateInvoice(
     throw new Error("Invoice not found or unauthorized");
   }
 
+  // ISS-0015 — a cancelled invoice must stay cancelled through this
+  // generic update; reviving it (e.g. back to "sent" or "paid") needs a
+  // deliberate, separate action this fix doesn't invent.
+  if (
+    existingInvoice.status === "cancelled" &&
+    data.status &&
+    data.status !== "cancelled"
+  ) {
+    throw new Error("Cannot change the status of a cancelled invoice");
+  }
+
   // Prepare update data
   const updateData: Prisma.InvoiceUpdateInput = {
     updatedAt: new Date(),
@@ -547,8 +558,13 @@ export async function updateInvoice(
     const amountDue = total - data.amountPaid;
     updateData.amountDue = Math.max(0, amountDue);
 
-    // REQ-0152 — auto paid when fully settled; downgrade paid → sent if amount lowered
-    if (data.amountPaid >= total && existingInvoice.status !== "paid") {
+    // REQ-0152 — auto paid when fully settled; downgrade paid → sent if amount lowered.
+    // ISS-0015 — excludes "cancelled": settling the balance must not auto-revive it.
+    if (
+      data.amountPaid >= total &&
+      existingInvoice.status !== "paid" &&
+      existingInvoice.status !== "cancelled"
+    ) {
       updateData.status = "paid";
       updateData.paidAt = new Date();
     } else if (
