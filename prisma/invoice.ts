@@ -10,7 +10,19 @@ import { logger } from "@/lib/logger";
 import { applyIncrementalInvoicePayment } from "@/lib/invoices/order-payment-sync";
 import { resolveInvoiceBillingAddressInput } from "@/lib/invoices/resolve-invoice-billing-address";
 
-/** Shared Prisma where clauses for invoice list filters (issuer, client, store-by-orderIds). */
+/**
+ * Shared Prisma where clauses for invoice list filters (issuer, client, store-by-orderIds).
+ *
+ * ISS-0020 — `orderId`/`clientId` come straight from request query params.
+ * Callers like getInvoicesByClientId/getInvoicesByOrderIds pass a `base`
+ * that already pins `clientId`/`orderId` to the caller's own authorized
+ * scope (their own client id, or the set of order ids their products
+ * appear on) — this used to let the query-string filter silently overwrite
+ * that exact field, replacing the caller's scope with an arbitrary id and
+ * reading another client's invoices or a supplier's unrelated order's
+ * invoice. Only apply a filter when the base scope hasn't already claimed
+ * that field.
+ */
 function applyInvoiceFiltersToWhere(
   base: Prisma.InvoiceWhereInput,
   filters?: InvoiceFilters,
@@ -28,11 +40,11 @@ function applyInvoiceFiltersToWhere(
     where.status = { in: filters.status };
   }
 
-  if (filters?.orderId) {
+  if (filters?.orderId && base.orderId === undefined) {
     where.orderId = filters.orderId;
   }
 
-  if (filters?.clientId) {
+  if (filters?.clientId && base.clientId === undefined) {
     where.clientId = filters.clientId;
   }
 

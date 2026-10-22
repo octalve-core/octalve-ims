@@ -471,7 +471,8 @@
     "prisma/category.ts", "prisma/product.ts", "prisma/supplier.ts", "prisma/order.ts",
     "prisma/order-cancel-guards.test.ts", "prisma/order-create-fees.test.ts",
     "prisma/order-client-access.test.ts",
-    "prisma/invoice.ts", "prisma/invoice-client-access.test.ts", "prisma/notification.ts",
+    "prisma/invoice.ts", "prisma/invoice-client-access.test.ts",
+    "prisma/invoice-list-filters.test.ts", "prisma/notification.ts",
     "prisma/system-config.ts", "prisma/user-admin.ts",
 
     "components/category", "components/invoices", "components/orders", "components/products",
