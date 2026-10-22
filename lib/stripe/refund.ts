@@ -38,9 +38,16 @@ export async function createStripeRefund(
     logger.info(`Stripe refund created: ${refund.id} for PaymentIntent ${paymentIntentId}`);
     return { id: refund.id };
   } catch (error) {
-    // Handle already-refunded case (idempotent)
-    const err = error as { code?: string; type?: string };
-    if (err.code === "charge_already_refunded" || err.type === "StripeInvalidRequestError") {
+    // ISS-0012: only the specific "already refunded" error code is a safe,
+    // idempotent no-op. `StripeInvalidRequestError` is a broad category that
+    // also covers a bad payment_intent id, a charge that was never captured,
+    // an amount exceeding what's refundable, etc. — real failures where no
+    // money moved. The old code treated ALL of those as "already refunded,
+    // skip", so a caller saw success (null, not a throw) for failures it
+    // should have surfaced; see refund-all-order-payments.ts / cancelOrder,
+    // which now only mark an order "refunded" when this doesn't throw.
+    const err = error as { code?: string };
+    if (err.code === "charge_already_refunded") {
       logger.info(`PaymentIntent ${paymentIntentId} already refunded, skipping`);
       return null;
     }
