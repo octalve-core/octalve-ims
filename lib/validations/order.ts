@@ -61,9 +61,6 @@ export const createOrderSchema = z.object({
   items: z.array(orderItemSchema).min(1, "At least one item is required"),
   shippingAddress: z.preprocess(transformEmptyAddress, shippingAddressSchema.optional()),
   billingAddress: z.preprocess(transformEmptyAddress, billingAddressSchema.optional()),
-  tax: z.number().nonnegative("Tax must be non-negative").optional(),
-  shipping: z.number().nonnegative("Shipping must be non-negative").optional(),
-  discount: z.number().nonnegative("Discount must be non-negative").optional(),
   notes: z.string().optional(),
 });
 

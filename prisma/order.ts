@@ -17,6 +17,7 @@ import {
 } from "@/lib/products/order-stock-reservation";
 import { getOrderLineCatalogAvailable } from "@/lib/orders/order-line-stock-validation";
 import { assertValidOrderStatusTransition } from "@/lib/orders/order-status-transition";
+import { getOrderFeesFromSubtotal } from "@/lib/orders/order-fees";
 import {
   productRequiresWarehousePick,
   resolveWarehouseName,
@@ -173,9 +174,15 @@ export async function createOrder(
   }
 
   // Calculate total
-  const tax = data.tax || 0;
-  const shipping = data.shipping || 0;
-  const discount = data.discount || 0;
+  // ISS-0016 — tax/shipping/discount are a fixed schedule off subtotal,
+  // computed here rather than trusting client-submitted values; a buyer
+  // calling this API directly could otherwise submit an arbitrary discount
+  // and drive the total to zero or negative.
+  const {
+    taxAmount: tax,
+    shippingAmount: shipping,
+    discountAmount: discount,
+  } = getOrderFeesFromSubtotal(subtotal);
   const total = subtotal + tax + shipping - discount;
 
   // Create order with items (REQ-0158 party semantics)
