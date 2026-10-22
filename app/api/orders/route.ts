@@ -29,6 +29,7 @@ import {
 } from "@/lib/orders/order-party";
 import { getOrderDetailForPage } from "@/lib/server/order-detail-data";
 import { resolveOrderStatusAtFromSource } from "@/lib/orders/order-status-display-date";
+import { resolveOrderClientId } from "@/lib/orders/resolve-order-client-id";
 
 /**
  * GET /api/orders
@@ -264,13 +265,18 @@ export async function POST(request: NextRequest) {
       clientId = userId;
     } else {
       // Admin/user self (or optional body.clientId when ordering for a client)
-      storeOwnerUserId = userId;
+      // ISS-0024 — this used to hardcode storeOwnerUserId = userId (the
+      // acting admin/staff member), ignoring which account's products were
+      // actually on the order; an order on someone else's product line
+      // silently filed under the wrong owner's userId, invisible to the
+      // staff member who actually needs to fulfill it. Now resolved the
+      // same way the client branch already does.
+      storeOwnerUserId = ownerFromProducts ?? userId;
       const bodyClientId =
         typeof orderData.clientId === "string" && orderData.clientId.length > 0
           ? orderData.clientId
           : null;
-      clientId =
-        bodyClientId && bodyClientId !== userId ? bodyClientId : null;
+      clientId = await resolveOrderClientId(bodyClientId, userId);
     }
 
     const order = await createOrder(orderData, {
