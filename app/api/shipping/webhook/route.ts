@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/prisma/client";
 import { sendOrderStatusUpdate } from "@/lib/email";
+import { getShippo, isShippoConfigured } from "@/lib/shippo/server";
+import { mapShippoStatusToOrderStatus } from "@/lib/shippo/map-tracking-status-to-order-status";
 import type { OrderStatusUpdateData } from "@/lib/email/types";
 import type { ShippoWebhookPayload } from "@/types";
 
@@ -14,6 +16,15 @@ import { invalidateOnOrderChange } from "@/lib/cache";
 /**
  * POST /api/shipping/webhook
  * Handles Shippo webhook events (tracking updates)
+ *
+ * ISS-0006 — Shippo doesn't sign its webhooks (its own SDK's
+ * `validateWebhook` only checks the payload's JSON shape, not its origin),
+ * so anyone who knows an order's tracking number could POST a fake
+ * `track_updated` event claiming any status. Instead of trusting the
+ * claimed `tracking_status` from the request body, this re-fetches the
+ * REAL status from Shippo's own API (authenticated with our API key) for
+ * the tracking_number/carrier named in the request, and only ever applies
+ * that verified status — a forged claim in the body is simply ignored.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -23,10 +34,15 @@ export async function POST(request: NextRequest) {
     logger.info(`Received Shippo webhook: ${event}`);
 
     if (event === "track_updated" && data) {
-      const { tracking_number, tracking_status, carrier } = data;
+      const { tracking_number, carrier } = data;
 
-      if (!tracking_number) {
-        logger.warn("Shippo webhook missing tracking number");
+      if (!tracking_number || !carrier) {
+        logger.warn("Shippo webhook missing tracking number or carrier");
+        return NextResponse.json({ received: true });
+      }
+
+      if (!isShippoConfigured()) {
+        logger.warn("Shippo webhook received but Shippo is not configured; ignoring");
         return NextResponse.json({ received: true });
       }
 
@@ -40,17 +56,27 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ received: true });
       }
 
-      // Map Shippo status to our order status
-      let newStatus = order.status;
-      const shippoStatus = tracking_status?.status?.toLowerCase();
+      let verifiedStatus: string | undefined;
+      try {
+        const verifiedTrack = await getShippo().trackingStatus.get(
+          tracking_number,
+          carrier,
+        );
+        verifiedStatus = verifiedTrack.trackingStatus?.status;
+      } catch (err) {
+        logger.warn("Shippo webhook: failed to verify tracking status via API, ignoring", {
+          trackingNumber: tracking_number,
+          carrier,
+          error: err,
+        });
+        return NextResponse.json({ received: true });
+      }
 
-      if (shippoStatus === "delivered") {
-        newStatus = "delivered";
-      } else if (shippoStatus === "transit" || shippoStatus === "in_transit") {
-        newStatus = "shipped";
-      } else if (shippoStatus === "returned" || shippoStatus === "failure") {
-        // Keep as shipped, but could add a flag for issues
-        logger.warn(`Shipping issue for order ${order.id}: ${shippoStatus}`);
+      // Map verified Shippo status to our order status
+      const newStatus = mapShippoStatusToOrderStatus(verifiedStatus, order.status);
+      const lowerStatus = verifiedStatus?.toLowerCase();
+      if (lowerStatus === "returned" || lowerStatus === "failure") {
+        logger.warn(`Shipping issue for order ${order.id}: ${lowerStatus}`);
       }
 
       // Update order if status changed
