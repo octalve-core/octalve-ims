@@ -558,7 +558,7 @@
     "components/admin/AdminSupplierPortalContent.tsx", "components/admin/AdminMyActivityContent.tsx",
     "components/admin/ForecastingSection.tsx",
 
-    "lib/ai", "lib/forecasting", "lib/shippo", "lib/support-tickets", "lib/product-reviews",
+    "lib/ai", "lib/forecasting", "lib/shippo", "lib/shipping", "lib/support-tickets", "lib/product-reviews",
 
     "prisma/support-ticket.ts", "prisma/product-review.ts",
 
