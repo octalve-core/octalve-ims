@@ -29,6 +29,10 @@ import {
   type TicketUserSnap,
 } from "@/lib/support-tickets/ticket-list-enrich";
 import type { SupportTicket } from "@/types";
+import {
+  isValidTicketAssignee,
+  orderBelongsToClient,
+} from "@/lib/support-tickets/validate-ticket-create-references";
 
 async function getUsersMap(
   userIds: string[],
@@ -183,6 +187,26 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json(
         { error: "Please select a product owner to send the ticket to." },
+        { status: 400 },
+      );
+    }
+
+    // ISS-0022 — assignedToId/orderId used to be trusted as-is; see
+    // validate-ticket-create-references.ts for why each check exists.
+    if (data.assignedToId && !(await isValidTicketAssignee(data.assignedToId))) {
+      return NextResponse.json(
+        { error: "Selected product owner is invalid." },
+        { status: 400 },
+      );
+    }
+
+    if (
+      data.orderId &&
+      session.role === "client" &&
+      !(await orderBelongsToClient(data.orderId, userId))
+    ) {
+      return NextResponse.json(
+        { error: "Related order must belong to you." },
         { status: 400 },
       );
     }
