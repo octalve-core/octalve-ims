@@ -37,7 +37,19 @@ export function getAvailableCatalogForOrder(
   return Math.max(0, productQty - committed);
 }
 
-/** Pending create — reserve on exactly one path per line. */
+/**
+ * Pending create — reserve on exactly one path per line.
+ *
+ * ISS-0009 — the non-warehouse branch used to be a plain unconditional
+ * `increment` with no check at write time (the caller's earlier
+ * availableStock read was already stale by the time this ran). The UPDATE
+ * below is atomic: its WHERE clause is evaluated against the row's
+ * current committed state as Postgres takes the row lock for the
+ * statement itself, so two concurrent reservations for the same product
+ * — from two different orders, or two lines of the same product within
+ * one order (reserved sequentially, see reservePendingOrderLines) — can
+ * never both succeed past the real stock.
+ */
 export async function reservePendingOrderLine(
   line: OrderStockLine,
 ): Promise<void> {
@@ -50,12 +62,24 @@ export async function reservePendingOrderLine(
     return;
   }
 
-  await prisma.product.update({
-    where: { id: line.productId },
-    data: {
-      reservedQuantity: { increment: line.quantity },
-    },
-  });
+  const affected = await prisma.$executeRaw`
+    UPDATE "Product"
+    SET "reservedQuantity" = "reservedQuantity" + ${line.quantity}
+    WHERE id = ${line.productId}
+      AND ("quantity" - "reservedQuantity") >= ${line.quantity}
+  `;
+  if (affected === 0) {
+    const product = await prisma.product.findUnique({
+      where: { id: line.productId },
+      select: { name: true, quantity: true, reservedQuantity: true },
+    });
+    const available = product
+      ? Number(product.quantity) - Number(product.reservedQuantity)
+      : 0;
+    throw new Error(
+      `Insufficient stock for product ${product?.name ?? line.productId}. Available: ${available}, Requested: ${line.quantity}`,
+    );
+  }
 }
 
 /** Pending cancel — release reservation on exactly one path per line. */
@@ -115,12 +139,29 @@ export async function fulfillPendingOrderLine(
   ]);
 }
 
-/** Batch reserve after order create. */
+/**
+ * Batch reserve after order create.
+ *
+ * ISS-0009 — if a later line in the same order fails (genuinely out of
+ * stock, or lost a race), the lines that already succeeded in THIS call
+ * are released before re-throwing, so a failure here never leaves a
+ * torn partial reservation behind — the caller (createOrder) still must
+ * not persist the order record itself in that case.
+ */
 export async function reservePendingOrderLines(
   lines: OrderStockLine[],
 ): Promise<void> {
-  for (const line of lines) {
-    await reservePendingOrderLine(line);
+  const reserved: OrderStockLine[] = [];
+  try {
+    for (const line of lines) {
+      await reservePendingOrderLine(line);
+      reserved.push(line);
+    }
+  } catch (err) {
+    for (const line of reserved) {
+      await releasePendingOrderLine(line).catch(() => {});
+    }
+    throw err;
   }
 }
 
