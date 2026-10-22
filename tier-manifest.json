@@ -522,6 +522,7 @@
     "lib/payments/stripe-checkout-return-urls.ts", "lib/payments/stripe-checkout-return-urls.test.ts",
     "lib/payments/apply-stripe-session-payment.ts", "lib/payments/apply-stripe-session-payment.test.ts",
     "lib/payments/apply-stripe-charge-refund.ts", "lib/payments/apply-stripe-charge-refund.test.ts",
+    "lib/payments/refund-all-order-payments.ts", "lib/payments/refund-all-order-payments.test.ts",
 
     "lib/insights/business-insights-warehouse-rollup.ts",
     "lib/insights/business-insights-warehouse-rollup.test.ts",

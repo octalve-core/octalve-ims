@@ -4,7 +4,7 @@
  */
 
 import { prisma } from "@/prisma/client";
-import { createStripeRefund } from "@/lib/stripe";
+import { refundAllOrderPayments } from "@/lib/payments/refund-all-order-payments";
 import { orderCancelShouldRefundPayment } from "@/lib/orders/cancel-payment";
 import { Prisma } from "@prisma/client";
 import type { CreateOrderInput, UpdateOrderInput } from "@/types/order";
@@ -835,18 +835,27 @@ export async function cancelOrder(orderId: string, userId: string) {
     select: { id: true, status: true, stripePaymentIntentId: true },
   });
 
-  // Trigger Stripe refund when money was collected and we have a PaymentIntent ID
+  // ISS-0012 — refund every PaymentIntent actually charged (not just the
+  // latest stored pointer), and only claim "refunded" if the money actually
+  // moved: the order stays cancelled either way (cancellation itself is
+  // valid even if Stripe fails), but paymentStatus must not lie about it.
+  let refundSucceeded = true;
   if (shouldRefund) {
-    const paymentIntentId =
+    const legacyFallbackPaymentIntentId =
       orderWithItems.stripePaymentIntentId ??
-      linkedInvoice?.stripePaymentIntentId;
-    if (paymentIntentId) {
-      try {
-        await createStripeRefund(paymentIntentId, "requested_by_customer");
-      } catch (refundErr) {
-        // Log but don't fail - order will still be cancelled; admin can refund manually in Stripe
-        console.error("Stripe refund failed during order cancellation:", refundErr);
-      }
+      linkedInvoice?.stripePaymentIntentId ??
+      null;
+    const refundResult = await refundAllOrderPayments(
+      orderId,
+      linkedInvoice?.id ?? null,
+      legacyFallbackPaymentIntentId,
+    );
+    refundSucceeded = refundResult.allSucceeded;
+    if (!refundSucceeded) {
+      logger.error(
+        "Order cancellation: one or more Stripe refunds failed; paymentStatus left unchanged for manual follow-up",
+        { orderId, failedPaymentIntentIds: refundResult.failedPaymentIntentIds },
+      );
     }
   }
 
@@ -854,7 +863,8 @@ export async function cancelOrder(orderId: string, userId: string) {
     where: { id: orderId },
     data: {
       status: "cancelled",
-      paymentStatus: shouldRefund ? "refunded" : orderWithItems.paymentStatus,
+      paymentStatus:
+        shouldRefund && refundSucceeded ? "refunded" : orderWithItems.paymentStatus,
       cancelledAt: new Date(),
       updatedAt: new Date(),
       updatedBy: userId,
