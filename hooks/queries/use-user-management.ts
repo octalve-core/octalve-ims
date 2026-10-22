@@ -23,13 +23,17 @@ import type {
 
 export type UserDetailForPage = UserForAdmin & { overview?: UserOverview };
 
-export function useUsers(initialData?: UserForAdmin[]) {
+export function useUsers(
+  initialData?: UserForAdmin[],
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: queryKeys.userManagement.lists(),
     queryFn: async () => {
       const response = await apiClient.users.getAll();
       return response.data;
     },
+    enabled: options?.enabled ?? true,
     ...withInitialData(initialData),
   });
 }
