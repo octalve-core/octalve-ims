@@ -502,25 +502,22 @@ const clientOrderDetailInclude = {
 } as const;
 
 /**
- * Get order by ID for client.
- * REQ-0214 — own buyer (`clientId`) first; else any order with line items so
- * product/category/supplier recent-order chips open read-only (mutations stay off in UI).
+ * Get order by ID for client — own orders only.
+ *
+ * ISS-0017 — this used to fall back to "any order with at least one line
+ * item" when the id wasn't the caller's own, on the theory that catalog
+ * recent-order chips should be clickable read-only. That fallback had no
+ * relationship to the chip the client actually clicked — it matched any
+ * order in the system — so any client could read any other buyer's full
+ * order (shipping address, email, items, total) just by requesting an id.
+ * Recent-order chips remain informational display data; they no longer
+ * deep-link into another buyer's order detail.
  */
 export async function getOrderByIdForClient(orderId: string, clientId: string) {
-  const own = await prisma.order.findFirst({
-    where: {
-      id: orderId,
-      clientId,
-    },
-    include: clientOrderDetailInclude,
-  });
-  if (own) return own;
-
-  // Catalog recent-order history rows are clickable for clients — mirror that access.
   return prisma.order.findFirst({
     where: {
       id: orderId,
-      items: { some: {} },
+      clientId,
     },
     include: clientOrderDetailInclude,
   });
