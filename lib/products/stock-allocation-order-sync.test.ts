@@ -9,6 +9,7 @@ const mockFindUnique = vi.fn();
 const mockFindFirst = vi.fn();
 const mockCount = vi.fn();
 const mockUpdate = vi.fn();
+const mockExecuteRaw = vi.fn();
 
 vi.mock("@/prisma/client", () => ({
   prisma: {
@@ -22,6 +23,7 @@ vi.mock("@/prisma/client", () => ({
       findFirst: (...args: unknown[]) => mockFindFirst(...args),
       count: (...args: unknown[]) => mockCount(...args),
     },
+    $executeRaw: (...args: unknown[]) => mockExecuteRaw(...args),
   },
 }));
 
@@ -82,23 +84,25 @@ describe("stock-allocation-order-sync", () => {
     ).rejects.toThrow("Max 1 at Main Warehouse");
   });
 
-  it("reserveAllocationForOrderItem increments reservedQuantity", async () => {
+  it("reserveAllocationForOrderItem issues an atomic conditional increment (ISS-0009)", async () => {
     mockFindUnique.mockResolvedValueOnce({
       quantity: 10n,
       reservedQuantity: 0n,
     });
-    mockUpdate.mockResolvedValueOnce({});
+    mockExecuteRaw.mockResolvedValueOnce(1);
     await reserveAllocationForOrderItem("prod1", "wh1", 3);
-    expect(mockUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          productId_warehouseId: { productId: "prod1", warehouseId: "wh1" },
-        },
-        data: expect.objectContaining({
-          reservedQuantity: { increment: 3 },
-        }),
-      }),
-    );
+    expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it("reserveAllocationForOrderItem throws when the atomic update affects 0 rows (lost the race)", async () => {
+    mockFindUnique.mockResolvedValueOnce({
+      quantity: 10n,
+      reservedQuantity: 0n,
+    });
+    mockExecuteRaw.mockResolvedValueOnce(0);
+    await expect(
+      reserveAllocationForOrderItem("prod1", "wh1", 3),
+    ).rejects.toThrow(/Insufficient allocated stock/);
   });
 
   it("releaseAllocationReservation decrements reservedQuantity", async () => {

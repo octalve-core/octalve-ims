@@ -211,14 +211,23 @@ export async function createOrder(
     },
   });
 
-  // REQ-0103 — disjoint reserve: allocation OR product, never both
-  await reservePendingOrderLines(
-    productsToReserve.map((p) => ({
-      productId: p.id,
-      quantity: p.qty,
-      warehouseId: p.warehouseId,
-    })),
-  );
+  // REQ-0103 — disjoint reserve: allocation OR product, never both.
+  // ISS-0009 — reservePendingOrderLines already releases whatever IT
+  // reserved before re-throwing on a mid-order failure; this order
+  // record itself still must not survive as a pending-with-no/partial-
+  // reservation ghost, so delete it here.
+  try {
+    await reservePendingOrderLines(
+      productsToReserve.map((p) => ({
+        productId: p.id,
+        quantity: p.qty,
+        warehouseId: p.warehouseId,
+      })),
+    );
+  } catch (err) {
+    await prisma.order.delete({ where: { id: order.id } }).catch(() => {});
+    throw err;
+  }
 
   // Invalidate product + allocation cache so UI shows updated reserved stock
   await Promise.all([
