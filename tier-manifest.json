@@ -468,6 +468,7 @@
     "lib/insights/warehouse-insights-compute.ts", "lib/insights/warehouse-insights-compute.test.ts",
 
     "prisma/category.ts", "prisma/product.ts", "prisma/supplier.ts", "prisma/order.ts",
+    "prisma/order-cancel-guards.test.ts",
     "prisma/invoice.ts", "prisma/invoice-client-access.test.ts", "prisma/notification.ts",
     "prisma/system-config.ts", "prisma/user-admin.ts",
 

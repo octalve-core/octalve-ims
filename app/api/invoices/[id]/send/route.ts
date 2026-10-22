@@ -58,6 +58,16 @@ export async function POST(
       return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
+    // ISS-0015 — sending a cancelled invoice would both email the customer
+    // a live Stripe payment link and (via markInvoiceAsSent) flip it back
+    // to "sent", reviving it. Reject before either happens.
+    if (invoice.status === "cancelled") {
+      return NextResponse.json(
+        { error: "Cannot send a cancelled invoice" },
+        { status: 400 },
+      );
+    }
+
     // Get order to get order items for email
     const order = await prisma.order.findUnique({
       where: { id: invoice.orderId },

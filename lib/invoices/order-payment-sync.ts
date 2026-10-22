@@ -145,7 +145,12 @@ export function applyIncrementalInvoicePayment(args: {
   const amountDue = fullyPaid ? 0 : Math.max(0, (totalCents - newPaidCents) / 100);
   let status = args.priorStatus;
   if (fullyPaid) {
-    status = "paid";
+    // ISS-0015 — never revive a cancelled invoice just because a charge
+    // landed against it (e.g. a stale/replayed session). Still track the
+    // money below — it did move — but keep the invoice cancelled rather
+    // than silently resurrecting it, matching the partial-payment branch's
+    // existing "never revive cancelled" rule.
+    status = args.priorStatus === "cancelled" ? "cancelled" : "paid";
   } else if (newPaidCents > 0) {
     // REQ-0211 — any money: draft→sent; keep overdue; never revive cancelled
     if (args.priorStatus === "cancelled") {

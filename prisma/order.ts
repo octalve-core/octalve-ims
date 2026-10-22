@@ -16,6 +16,7 @@ import {
   reservePendingOrderLines,
 } from "@/lib/products/order-stock-reservation";
 import { getOrderLineCatalogAvailable } from "@/lib/orders/order-line-stock-validation";
+import { assertValidOrderStatusTransition } from "@/lib/orders/order-status-transition";
 import {
   productRequiresWarehousePick,
   resolveWarehouseName,
@@ -649,6 +650,9 @@ export async function updateOrder(
   const previousPaymentStatus = existingOrder.paymentStatus;
   const newPaymentStatus = updateData.paymentStatus || previousPaymentStatus;
 
+  // ISS-0011 — reject invalid transitions before writing anything.
+  assertValidOrderStatusTransition({ previousStatus, newStatus, newPaymentStatus });
+
   // Determine status categories
   const wasPending = previousStatus === "pending";
   const wasConfirmedOrPaid =
@@ -829,6 +833,21 @@ export async function cancelOrder(orderId: string, userId: string) {
 
   if (!orderWithItems) {
     throw new Error("Order not found or unauthorized");
+  }
+
+  // ISS-0011 — a delivered order's goods are already with the customer,
+  // not back in the warehouse; the stock-restore logic below assumes the
+  // opposite, so cancelling here would silently inflate stock for
+  // products that were never actually returned. A real return needs its
+  // own process this fix doesn't invent.
+  if (orderWithItems.status === "delivered") {
+    throw new Error(
+      "Cannot cancel a delivered order — process a return instead",
+    );
+  }
+  // Already cancelled: idempotent no-op (DELETE semantics), not an error.
+  if (orderWithItems.status === "cancelled") {
+    return orderWithItems;
   }
 
   // Cancel order (soft delete).
