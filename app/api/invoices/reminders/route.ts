@@ -13,6 +13,7 @@ import { prisma } from "@/prisma/client";
 import { sendInvoiceEmail } from "@/lib/email/notifications";
 import { getApiUrl } from "@/lib/env";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
+import { isAuthorizedInternalCall } from "@/lib/api/internal-call-auth";
 import { scheduleInvalidateInvoiceCaches } from "@/lib/cache";
 import type { InvoiceEmailData, BillingAddress } from "@/types";
 
@@ -28,11 +29,13 @@ export async function POST(request: NextRequest) {
     );
     if (rateLimitResponse) return rateLimitResponse;
 
-    // Check for optional authorization (admin or internal cron call)
+    // Check for optional authorization (admin or internal cron call).
     const session = await getSessionFromRequest(request);
     const authHeader = request.headers.get("authorization");
-    const isInternalCall =
-      authHeader === `Bearer ${process.env.INTERNAL_API_KEY}`;
+    const isInternalCall = isAuthorizedInternalCall(
+      authHeader,
+      process.env.INTERNAL_API_KEY,
+    );
 
     // Either admin or internal call required
     if (!isInternalCall && (!session || session.role !== "admin")) {
