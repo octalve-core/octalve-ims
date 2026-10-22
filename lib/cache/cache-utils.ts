@@ -238,7 +238,9 @@ export const cacheKeys = {
       // REQ-0179 — v3: productOwnerName/Image + supplierImage on all list rows
       return `products:list:v3:${filterStr}`;
     },
-    detail: (id: string) => `products:detail:${id}`,
+    /** Optional scope suffix (e.g. supplier:{entityId}) for role-scoped detail payloads. ISS-0018 */
+    detail: (id: string, scope?: string) =>
+      scope ? `products:detail:${id}:${scope}` : `products:detail:${id}`,
     pattern: "products:*",
   },
 
