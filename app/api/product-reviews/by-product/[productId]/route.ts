@@ -9,6 +9,8 @@ import { logger } from "@/lib/logger";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 import { getReviewsByProductId } from "@/prisma/product-review";
 import { prisma } from "@/prisma/client";
+import { getSessionFromRequest } from "@/utils/auth";
+import { resolvePublicReviewStatus } from "@/lib/product-reviews/resolve-public-review-status";
 import type { ProductReview } from "@/types";
 
 function transform(
@@ -51,13 +53,25 @@ export async function GET(
 
     const { productId } = await params;
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get("status") as "approved" | "pending" | "all" | null;
-    const options =
-      status === "all" || status === "pending"
-        ? { status: status ?? "approved" }
-        : {};
+    const requestedStatus = searchParams.get("status") as
+      | "approved"
+      | "pending"
+      | "all"
+      | null;
 
-    const reviews = await getReviewsByProductId(productId, options);
+    // ISS-0023 — this route has no session check at all (it's the public
+    // product-page reviews list), but used to pass requestedStatus straight
+    // through: anyone, logged in or not, could pass ?status=all or
+    // ?status=pending and see unmoderated reviews (plus reviewer email)
+    // before they're approved.
+    const session = await getSessionFromRequest(request);
+    const status = await resolvePublicReviewStatus(
+      requestedStatus,
+      productId,
+      session ? { id: session.id, role: session.role } : null,
+    );
+
+    const reviews = await getReviewsByProductId(productId, { status });
     const userIds = [...new Set(reviews.map((r) => r.userId))];
     const users =
       userIds.length > 0

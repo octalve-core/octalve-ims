@@ -45,18 +45,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // ISS-0023 — this was inverted: admin (who should see every review
+    // under the single-tenant model) got scoped to only their own
+    // products, while every non-admin role got getAllProductReviews()
+    // unscoped — any client/supplier could list every review in the
+    // system, reviewer emails included.
     const isAdmin = session.role === "admin";
     const cacheFilter = isAdmin
-      ? { productOwnerId: session.id }
-      : {};
+      ? {}
+      : { productOwnerId: session.id };
     const cacheKey = cacheKeys.productReviews.list(cacheFilter);
     const cacheReadStartedAt = Date.now();
     const cached = await getCache<ProductReview[]>(cacheKey);
     if (hasReviewListV2Shape(cached)) return NextResponse.json(cached);
 
     const records = isAdmin
-      ? await getProductReviewsForProductOwner(session.id)
-      : await getAllProductReviews();
+      ? await getAllProductReviews()
+      : await getProductReviewsForProductOwner(session.id);
     const transformed = await mapProductReviewsWithCatalog(records);
     await setCache(cacheKey, transformed, 300, { fetchedAt: cacheReadStartedAt });
     return NextResponse.json(transformed);
