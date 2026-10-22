@@ -25,6 +25,10 @@ import type { GenerateLabelResponse } from "@/types";
 
 import { invalidateOnOrderChange } from "@/lib/cache";
 import { canGenerateShippingLabel } from "@/lib/orders/order-ship-eligibility";
+import {
+  claimOrderForLabelPurchase,
+  releaseOrderLabelClaim,
+} from "@/lib/shipping/claim-label-slot";
 /**
  * POST /api/shipping/labels
  * Generate a shipping label for an order
@@ -90,10 +94,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    // Allow: admin, order creator, client, or supplier on this order
+    // ISS-0014 — buying a label spends money from the seller's own Shippo
+    // account, so only the seller side (admin, order creator, or the
+    // supplier fulfilling it) may do it — never the buyer, even on their
+    // own order.
     const isAdmin = session.role === "admin";
     const isCreator = order.userId === session.id;
-    const isClient = order.clientId === session.id;
     let isSupplierOnOrder = false;
     if (session.role === "supplier") {
       const supplier = await getSupplierByUserId(session.id);
@@ -101,7 +107,7 @@ export async function POST(request: NextRequest) {
         !!supplier &&
         order.items.some((item) => item.product.supplierId === supplier.id);
     }
-    if (!isAdmin && !isCreator && !isClient && !isSupplierOnOrder) {
+    if (!isAdmin && !isCreator && !isSupplierOnOrder) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -126,6 +132,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ISS-0014 — atomic conditional claim closes the concurrent-double-label
+    // race: only one concurrent request can win this claim, so only one
+    // ever reaches the (slow, money-charging) Shippo purchase call below.
+    // Released in the finally block if anything after this point fails
+    // before the real tracking info lands.
+    if (!(await claimOrderForLabelPurchase(orderId))) {
+      return NextResponse.json(
+        { error: "Order already has a tracking number" },
+        { status: 400 },
+      );
+    }
+
+    let labelPurchased = false;
+    try {
     const shippo = getShippo();
     const testMode = isShippoTestMode();
     let trackingNumber: string;
@@ -328,6 +348,7 @@ export async function POST(request: NextRequest) {
         items: true,
       },
     });
+    labelPurchased = true;
 
     // Get client info for shipping notification email
     let clientEmail: string | null = null;
@@ -412,6 +433,11 @@ export async function POST(request: NextRequest) {
     );
 
     return NextResponse.json(response);
+    } finally {
+      if (!labelPurchased) {
+        await releaseOrderLabelClaim(orderId);
+      }
+    }
   } catch (error) {
     logger.error("Error generating shipping label:", error);
     return NextResponse.json(
