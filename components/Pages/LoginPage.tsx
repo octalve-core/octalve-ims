@@ -86,6 +86,10 @@ export default function LoginPage() {
         case "no_email":
           errorMessage = "Google account email is required. Please try again.";
           break;
+        case "email_not_verified":
+          errorMessage =
+            "Your Google account's email isn't verified. Please verify it with Google, or sign in with your password instead.";
+          break;
         case "oauth_processing_failed":
         case "oauth_error":
           errorMessage =
