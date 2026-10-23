@@ -6,6 +6,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
+import { getSessionFromRequest } from "@/utils/auth";
+import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 import { emailNotificationBodySchema } from "@/lib/validations/notification";
 import {
   sendEmailViaBrevo,
@@ -32,6 +34,19 @@ import { getErrorMessage } from "@/lib/api/errors";
  */
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitResponse = await withRateLimit(
+      request,
+      defaultRateLimits.standard
+    );
+    if (rateLimitResponse) return rateLimitResponse;
+
+    // ISS-0003 — this dispatches a real email to a body-chosen recipient;
+    // require an admin session so it can't be used as an open mail relay.
+    const session = await getSessionFromRequest(request);
+    if (!session || session.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     // Check if Brevo is configured
     if (!isBrevoConfigured()) {
       logger.warn("Brevo email service is not configured");
@@ -170,6 +185,12 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    // ISS-0003 — previously leaked the admin email to any unauthenticated caller.
+    const session = await getSessionFromRequest(request);
+    if (!session || session.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const isConfigured = isBrevoConfigured();
     const adminEmail = getAdminEmail();
 
