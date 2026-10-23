@@ -11,6 +11,7 @@ import {
   getGoogleClientId,
   getGoogleClientSecret,
   isGoogleOAuthConfigured,
+  isVerifiedGoogleEmail,
 } from "@/lib/auth/oauth";
 import { logger } from "@/lib/logger";
 import { generateUniqueUsername } from "@/lib/auth/unique-username";
@@ -217,12 +218,33 @@ export async function GET(request: NextRequest) {
       const googleUser = await userInfoResponse.json();
       // Extract user data from Google OAuth response
       // Note: Google uses 'picture' field, but we map it to 'image' for consistency
-      const { id: googleId, email, name, picture: googleImage } = googleUser;
+      const {
+        id: googleId,
+        email,
+        name,
+        picture: googleImage,
+        verified_email: verifiedEmail,
+      } = googleUser;
 
       if (!email) {
         logger.error("Google user info missing email");
         return NextResponse.redirect(
           new URL("/login?error=no_email", request.url)
+        );
+      }
+
+      // ISS-0007 — this used to trust `email` to look up (and silently link
+      // Google sign-in to, then mint a session for) an existing account with
+      // no check that Google has actually verified the attacker controls
+      // that address: anyone able to set an arbitrary unverified email on
+      // their own Google account could take over any existing IMS account
+      // sharing that email.
+      if (!isVerifiedGoogleEmail(verifiedEmail)) {
+        logger.warn("Google account email is not verified - rejecting OAuth sign-in", {
+          email,
+        });
+        return NextResponse.redirect(
+          new URL("/login?error=email_not_verified", request.url)
         );
       }
 

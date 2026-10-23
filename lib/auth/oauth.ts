@@ -38,6 +38,18 @@ export function getGoogleClientSecret(): string | undefined {
 }
 
 /**
+ * ISS-0007 — Google's userinfo response includes `verified_email`; trusting
+ * an unverified email to look up (and silently link sign-in to, then mint a
+ * session for) an existing account is an account-takeover primitive, since
+ * anyone can set an arbitrary unverified secondary email on their own Google
+ * account. Only `true` counts as verified — anything else (false, missing,
+ * a non-boolean) fails closed.
+ */
+export function isVerifiedGoogleEmail(verifiedEmail: unknown): boolean {
+  return verifiedEmail === true;
+}
+
+/**
  * Google OAuth configuration
  * Returns null if OAuth is not configured (graceful degradation)
  */
