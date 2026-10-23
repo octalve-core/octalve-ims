@@ -102,4 +102,28 @@ describe.skipIf(!process.env.DATABASE_URL)("cancelOrder guards (ISS-0011)", () =
     // No double stock-restore from reprocessing an already-cancelled order.
     expect(Number(after.quantity)).toBe(Number(before.quantity));
   });
+
+  /**
+   * ISS-0010 — a double-clicked DELETE (two concurrent cancelOrder calls on
+   * the same not-yet-cancelled order) used to both pass the stale in-memory
+   * status read and both run the stock-restore block, incrementing
+   * product.quantity twice for one real cancellation.
+   */
+  it("only lets one of two concurrent cancels restore stock (Failure: double-clicked DELETE)", async () => {
+    const order = await createOrderWithStatus("concurrent-cancel", "confirmed");
+    const before = await prisma.product.findUniqueOrThrow({ where: { id: productId } });
+
+    const [a, b] = await Promise.allSettled([
+      cancelOrder(order.id, "test-user"),
+      cancelOrder(order.id, "test-user"),
+    ]);
+    expect([a, b].every((r) => r.status === "fulfilled")).toBe(true);
+
+    const refreshedOrder = await prisma.order.findUniqueOrThrow({ where: { id: order.id } });
+    expect(refreshedOrder.status).toBe("cancelled");
+
+    const after = await prisma.product.findUniqueOrThrow({ where: { id: productId } });
+    // Restored exactly once (+1), not twice (+2).
+    expect(Number(after.quantity)).toBe(Number(before.quantity) + 1);
+  });
 });

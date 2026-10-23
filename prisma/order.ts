@@ -891,8 +891,19 @@ export async function cancelOrder(orderId: string, userId: string) {
     }
   }
 
-  const cancelledOrder = await prisma.order.update({
-    where: { id: orderId },
+  // ISS-0010 — a plain `update` here always "succeeds" regardless of the
+  // order's actual current status, so a double-clicked DELETE (two
+  // concurrent cancelOrder calls) could both pass the stale-status checks
+  // above and both run the stock-restore block below, double-incrementing
+  // product.quantity. Claim the not-cancelled→cancelled transition
+  // atomically; only the caller whose claim actually flips a row (count 1)
+  // gets to restore stock.
+  const claim = await prisma.order.updateMany({
+    where: {
+      id: orderId,
+      userId,
+      status: { notIn: ["cancelled", "delivered"] },
+    },
     data: {
       status: "cancelled",
       paymentStatus:
@@ -901,10 +912,19 @@ export async function cancelOrder(orderId: string, userId: string) {
       updatedAt: new Date(),
       updatedBy: userId,
     },
-    include: {
-      items: true,
-    },
   });
+
+  const cancelledOrder = await prisma.order.findUniqueOrThrow({
+    where: { id: orderId },
+    include: { items: true },
+  });
+
+  if (claim.count === 0) {
+    // Lost the race — another concurrent call already cancelled this
+    // order (or it moved to "delivered" since our read above); idempotent
+    // no-op, no double refund/invoice-cancel/stock-restore.
+    return cancelledOrder;
+  }
 
   // Cancel linked invoice if it exists (so unpaid/outstanding stats update)
   if (linkedInvoice && linkedInvoice.status !== "cancelled") {
@@ -929,41 +949,39 @@ export async function cancelOrder(orderId: string, userId: string) {
     orderWithItems.status === "delivered" ||
     orderWithItems.paymentStatus === "paid";
 
-  if (orderWithItems.status !== "cancelled") {
-    const allocationItems = orderWithItems.items.map((item) => ({
-      productId: item.productId,
-      warehouseId: item.warehouseId ?? null,
-      quantity: item.quantity,
-    }));
+  const allocationItems = orderWithItems.items.map((item) => ({
+    productId: item.productId,
+    warehouseId: item.warehouseId ?? null,
+    quantity: item.quantity,
+  }));
 
-    if (wasConfirmedOrPaid) {
-      // Fulfilled stock (incl. after first partial pay) → restore product + allocations
-      for (const item of orderWithItems.items) {
-        await prisma.product.update({
-          where: { id: item.productId },
-          data: {
-            quantity: { increment: item.quantity },
-          },
-        });
-      }
-      try {
-        await syncRestoreConfirmedOrderAllocations(allocationItems);
-      } catch (error) {
-        logger.warn("Failed to restore allocation stock on cancelOrder", {
-          orderId,
-          error,
-        });
-      }
-    } else if (wasPending) {
-      // Still reserved only (unpaid pending) → release reservation
-      try {
-        await releasePendingOrderLines(allocationItems);
-      } catch (error) {
-        logger.warn("Failed to release reservation on cancelOrder", {
-          orderId,
-          error,
-        });
-      }
+  if (wasConfirmedOrPaid) {
+    // Fulfilled stock (incl. after first partial pay) → restore product + allocations
+    for (const item of orderWithItems.items) {
+      await prisma.product.update({
+        where: { id: item.productId },
+        data: {
+          quantity: { increment: item.quantity },
+        },
+      });
+    }
+    try {
+      await syncRestoreConfirmedOrderAllocations(allocationItems);
+    } catch (error) {
+      logger.warn("Failed to restore allocation stock on cancelOrder", {
+        orderId,
+        error,
+      });
+    }
+  } else if (wasPending) {
+    // Still reserved only (unpaid pending) → release reservation
+    try {
+      await releasePendingOrderLines(allocationItems);
+    } catch (error) {
+      logger.warn("Failed to release reservation on cancelOrder", {
+        orderId,
+        error,
+      });
     }
   }
 
