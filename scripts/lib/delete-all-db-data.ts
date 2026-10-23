@@ -1,9 +1,10 @@
 /**
  * Shared MongoDB wipe — dependency-safe delete order for all Prisma models.
- * Used by delete-all-data.ts and reset-demo-db.ts.
+ * Used by delete-all-data.ts, reset-demo-db.ts and prisma/seed.ts.
  */
 
 import type { PrismaClient } from "@prisma/client";
+import { confirmDestructiveDbAction } from "./confirm-destructive-db-action";
 
 type DeleteStep = {
   label: string;
@@ -14,6 +15,11 @@ type DeleteStep = {
 export async function deleteAllDbData(
   prisma: PrismaClient,
 ): Promise<Record<string, number>> {
+  // ISS-0026 — every caller of this function wipes the entire database;
+  // guarding here once covers all of them rather than relying on each
+  // entrypoint to remember to ask first.
+  await confirmDestructiveDbAction("delete ALL data");
+
   const steps: DeleteStep[] = [
     { label: "OrderItem", run: () => prisma.orderItem.deleteMany({}) },
     { label: "SupportTicketReply", run: () => prisma.supportTicketReply.deleteMany({}) },
