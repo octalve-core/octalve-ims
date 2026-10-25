@@ -1599,3 +1599,92 @@ rows:
       company's data) and the User Management page independently redirects
       non-admins away with no API call made -- this is a presentation gap
       (misleading labels, dead-end links), not an authorization bypass"
+  - id: FND-06
+    type: MODULE
+    kind: candidate-finding
+    ref: components/orders/OrderTableColumns.tsx -> DropdownMenuTrigger asChild
+    roles:
+      - admin
+    steps: S-013,S-014,S-015,S-016,S-017,S-018,S-019,S-020,S-023,S-024
+    status: confirmed
+    note: "ISS-0089: every sortable table-column header across the admin list
+      pages renders its sort trigger as a plain <div> (not a button) carrying
+      aria-haspopup/aria-expanded via DropdownMenuTrigger's asChild prop --
+      axe-core flags aria-allowed-attr (critical) because a <div> has no
+      implicit role that permits aria-expanded; confirmed live on
+      /admin/orders and the same duplicated pattern found by source read in
+      9 other *TableColumns.tsx files"
+    tiers:
+      - core
+      - pro
+      - premium
+  - id: FND-07
+    type: MODULE
+    kind: candidate-finding
+    ref: components/orders/OrderTable.tsx -> pagination buttons
+    roles:
+      - admin
+    steps: S-013,S-014,S-015,S-016,S-017,S-018,S-019,S-020,S-023,S-024
+    status: confirmed
+    note: "ISS-0090: first/previous/next/last pagination buttons on every
+      admin list table render an icon-only glyph with no aria-label, no
+      visually-hidden text and no title -- axe-core flags button-name
+      (critical); confirmed live on /admin/orders and the same duplicated
+      four-button block found by source read in every other list table"
+    tiers:
+      - core
+      - pro
+      - premium
+  - id: FND-08
+    type: MODULE
+    kind: candidate-finding
+    ref: components/layouts/AppSidebar.tsx -> GroupLabel
+    roles:
+      - admin
+      - supplier
+      - client
+    steps: S-010
+    status: confirmed
+    note: "ISS-0091: sidebar section labels (\"My Store\", \"Management\",
+      \"My Activity\", \"Settings\") render at text-white/35 on a near-black
+      background -- measured contrast 3.12:1, needs 4.5:1; present on every
+      authenticated page since the sidebar is shared app shell"
+    tiers:
+      - core
+      - pro
+      - premium
+  - id: FND-09
+    type: MODULE
+    kind: candidate-finding
+    ref: components/layouts/AppTopBar.tsx -> account menu trigger
+    roles:
+      - admin
+      - supplier
+      - client
+    steps: S-010
+    status: confirmed
+    note: "ISS-0092: the top-bar account-menu trigger's aria-label (\"Open
+      account menu\") replaces rather than supplements its own visible text
+      (the signed-in person's name/role) -- axe-core flags
+      label-content-name-mismatch; present on every authenticated page since
+      the top bar is shared app shell"
+    tiers:
+      - core
+      - pro
+      - premium
+  - id: FND-10
+    type: MODULE
+    kind: candidate-finding
+    ref: app/admin/dashboard-overall-insights -> chart panels
+    roles:
+      - admin
+    steps: S-011
+    status: confirmed
+    note: "ISS-0093: the Store Overview page's chart panels wrap each chart
+      in a <div aria-hidden=\"true\"> that still contains focusable elements
+      -- axe-core flags aria-hidden-focus (serious); exact chart component
+      not yet isolated"
+    tiers:
+      - core
+      - pro
+      - premium
