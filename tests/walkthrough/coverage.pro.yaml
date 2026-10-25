@@ -1,0 +1,1784 @@
+meta:
+  project: Octalve IMS
+  scope: PRO
+  source_commit: d7e6720
+  status_values:
+    - planned
+    - covered
+    - not-demonstrable[reason]
+  generated_from:
+    - app/**/page.tsx
+    - app/api/**/route.ts
+    - lib/navigation/*
+    - docs/user-flows-and-stories.md
+    - tools/annotate-tiers.mjs
+rows:
+  - id: P-001
+    type: MODULE
+    kind: page
+    ref: app/_not-found/page.tsx -> /_not-found
+    roles:
+      - anonymous
+    steps: ND-04
+    status: not-demonstrable[reachable only by typing a URL]
+  - id: P-002
+    type: MODULE
+    kind: page
+    ref: app/admin/activity-history/[id]/page.tsx -> /admin/activity-history/[id]
+    roles:
+      - admin
+    steps: S-114
+    status: planned
+  - id: P-003
+    type: MODULE
+    kind: page
+    ref: app/admin/activity-history/page.tsx -> /admin/activity-history
+    roles:
+      - admin
+    steps: S-024,S-060,S-114
+    status: planned
+  - id: P-004
+    type: MODULE
+    kind: page
+    ref: app/admin/categories/[id]/page.tsx -> /admin/categories/[id]
+    roles:
+      - admin
+    steps: S-051
+    status: planned
+    note: confirm which of /categories/[id] and /admin/categories/[id] the list
+      links to
+  - id: P-005
+    type: MODULE
+    kind: page
+    ref: app/admin/client-invoices/[id]/page.tsx -> /admin/client-invoices/[id]
+    roles:
+      - admin
+    steps: S-090
+    status: planned
+    note: redirect-only alias; reachable by a human only if some link or
+      notification points at it; else not-demonstrable
+  - id: P-006
+    type: MODULE
+    kind: page
+    ref: app/admin/client-invoices/page.tsx -> /admin/client-invoices
+    roles:
+      - admin
+    steps: S-090
+    status: planned
+    note: redirect-only alias; reachable by a human only if some link or
+      notification points at it; else not-demonstrable
+  - id: P-007
+    type: MODULE
+    kind: page
+    ref: app/admin/client-orders/[id]/page.tsx -> /admin/client-orders/[id]
+    roles:
+      - admin
+    steps: S-090
+    status: planned
+    note: redirect-only alias; reachable by a human only if some link or
+      notification points at it; else not-demonstrable
+  - id: P-008
+    type: MODULE
+    kind: page
+    ref: app/admin/client-orders/page.tsx -> /admin/client-orders
+    roles:
+      - admin
+    steps: S-090
+    status: planned
+    note: redirect-only alias; reachable by a human only if some link or
+      notification points at it; else not-demonstrable
+  - id: P-010
+    type: MODULE
+    kind: page
+    ref: app/admin/dashboard-overall-insights/page.tsx ->
+      /admin/dashboard-overall-insights
+    roles:
+      - admin
+      - retailer
+    steps: S-011,S-111
+    status: planned
+  - id: P-011
+    type: MODULE
+    kind: page
+    ref: app/admin/history/[id]/page.tsx -> /admin/history/[id]
+    roles:
+      - admin
+    steps: S-090
+    status: planned
+    note: redirect-only alias; reachable by a human only if some link or
+      notification points at it; else not-demonstrable
+  - id: P-012
+    type: MODULE
+    kind: page
+    ref: app/admin/history/page.tsx -> /admin/history
+    roles:
+      - admin
+    steps: S-090
+    status: planned
+    note: redirect-only alias; reachable by a human only if some link or
+      notification points at it; else not-demonstrable
+  - id: P-013
+    type: MODULE
+    kind: page
+    ref: app/admin/insights/page.tsx -> /admin/insights
+    roles:
+      - admin
+    steps: S-090
+    status: planned
+    note: redirect-only alias; reachable by a human only if some link or
+      notification points at it; else not-demonstrable
+  - id: P-014
+    type: MODULE
+    kind: page
+    ref: app/admin/invoices/[id]/page.tsx -> /admin/invoices/[id]
+    roles:
+      - admin
+    steps: S-094,S-095
+    status: planned
+  - id: P-015
+    type: MODULE
+    kind: page
+    ref: app/admin/invoices/page.tsx -> /admin/invoices
+    roles:
+      - admin
+    steps: S-014
+    status: planned
+  - id: P-017
+    type: MODULE
+    kind: page
+    ref: app/admin/orders/[id]/page.tsx -> /admin/orders/[id]
+    roles:
+      - admin
+    steps: S-091,S-092,S-093,S-096
+    status: planned
+  - id: P-018
+    type: MODULE
+    kind: page
+    ref: app/admin/orders/page.tsx -> /admin/orders
+    roles:
+      - admin
+    steps: S-013,S-091
+    status: planned
+  - id: P-019
+    type: MODULE
+    kind: page
+    ref: app/admin/page.tsx -> /admin
+    roles:
+      - admin
+    steps: S-090
+    status: planned
+    note: redirect-only alias; reachable by a human only if some link or
+      notification points at it; else not-demonstrable
+  - id: P-020
+    type: MODULE
+    kind: page
+    ref: app/admin/personal-invoices/[id]/page.tsx -> /admin/personal-invoices/[id]
+    roles:
+      - admin
+    steps: S-090
+    status: planned
+    note: redirect-only alias; reachable by a human only if some link or
+      notification points at it; else not-demonstrable
+  - id: P-021
+    type: MODULE
+    kind: page
+    ref: app/admin/personal-invoices/page.tsx -> /admin/personal-invoices
+    roles:
+      - admin
+    steps: S-090
+    status: planned
+    note: redirect-only alias; reachable by a human only if some link or
+      notification points at it; else not-demonstrable
+  - id: P-022
+    type: MODULE
+    kind: page
+    ref: app/admin/personal-orders/[id]/page.tsx -> /admin/personal-orders/[id]
+    roles:
+      - admin
+    steps: S-090
+    status: planned
+    note: redirect-only alias; reachable by a human only if some link or
+      notification points at it; else not-demonstrable
+  - id: P-023
+    type: MODULE
+    kind: page
+    ref: app/admin/personal-orders/page.tsx -> /admin/personal-orders
+    roles:
+      - admin
+    steps: S-090
+    status: planned
+    note: redirect-only alias; reachable by a human only if some link or
+      notification points at it; else not-demonstrable
+  - id: P-026
+    type: MODULE
+    kind: page
+    ref: app/admin/products/[id]/page.tsx -> /admin/products/[id]
+    roles:
+      - admin
+    steps: S-057,S-058,S-066
+    status: planned
+  - id: P-027
+    type: MODULE
+    kind: page
+    ref: app/admin/products/page.tsx -> /admin/products
+    roles:
+      - admin
+    steps: S-017,S-056,S-059,S-061
+    status: planned
+  - id: P-028
+    type: MODULE
+    kind: page
+    ref: app/admin/settings/email-preferences/page.tsx ->
+      /admin/settings/email-preferences
+    roles:
+      - admin
+    steps: S-030
+    status: planned
+  - id: P-029
+    type: MODULE
+    kind: page
+    ref: app/admin/settings/page.tsx -> /admin/settings
+    roles:
+      - admin
+    steps: S-033
+    status: planned
+    note: find the click path; if none exists this is a finding (feature with no
+      entry point)
+  - id: P-031
+    type: MODULE
+    kind: page
+    ref: app/admin/suppliers/[id]/page.tsx -> /admin/suppliers/[id]
+    roles:
+      - admin
+    steps: S-053
+    status: planned
+    note: confirm which detail route the list links to
+  - id: P-034
+    type: MODULE
+    kind: page
+    ref: app/admin/user-management/[id]/page.tsx -> /admin/user-management/[id]
+    roles:
+      - admin
+    steps: S-046
+    status: planned
+  - id: P-035
+    type: MODULE
+    kind: page
+    ref: app/admin/user-management/page.tsx -> /admin/user-management
+    roles:
+      - admin
+    steps: S-023,S-040,S-041,S-042,S-043,S-044,S-045,S-047
+    status: planned
+  - id: P-036
+    type: MODULE
+    kind: page
+    ref: app/admin/warehouses/[id]/page.tsx -> /admin/warehouses/[id]
+    roles:
+      - admin
+    steps: S-055,S-063,S-064,S-065
+    status: planned
+  - id: P-037
+    type: MODULE
+    kind: page
+    ref: app/admin/warehouses/page.tsx -> /admin/warehouses
+    roles:
+      - admin
+    steps: S-020,S-054
+    status: planned
+  - id: P-038
+    type: MODULE
+    kind: page
+    ref: app/api-docs/page.tsx -> /api-docs
+    roles:
+      - admin
+      - supplier
+      - client
+      - retailer
+    steps: S-031
+    status: planned
+  - id: P-039
+    type: MODULE
+    kind: page
+    ref: app/api-status/page.tsx -> /api-status
+    roles:
+      - admin
+      - supplier
+      - client
+      - retailer
+    steps: S-032
+    status: planned
+  - id: P-040
+    type: MODULE
+    kind: page
+    ref: app/business-insights/page.tsx -> /business-insights
+    roles:
+      - admin
+      - retailer
+    steps: S-012,S-112
+    status: planned
+  - id: P-041
+    type: MODULE
+    kind: page
+    ref: app/categories/[id]/page.tsx -> /categories/[id]
+    roles:
+      - admin
+    steps: S-051
+    status: planned
+  - id: P-042
+    type: MODULE
+    kind: page
+    ref: app/categories/page.tsx -> /categories
+    roles:
+      - admin
+    steps: S-018,S-050
+    status: planned
+  - id: P-044
+    type: MODULE
+    kind: page
+    ref: app/forgot-password/page.tsx -> /forgot-password
+    roles:
+      - anonymous
+    steps: S-005
+    status: planned
+  - id: P-045
+    type: MODULE
+    kind: page
+    ref: app/invoices/[id]/page.tsx -> /invoices/[id]
+    roles:
+      - supplier
+      - client
+    steps: S-100
+    status: planned
+  - id: P-046
+    type: MODULE
+    kind: page
+    ref: app/invoices/page.tsx -> /invoices
+    roles:
+      - supplier
+      - client
+    steps: S-074,S-100
+    status: planned
+  - id: P-047
+    type: MODULE
+    kind: page
+    ref: app/login/page.tsx -> /login
+    roles:
+      - anonymous
+    steps: S-001,S-002,S-003,S-004,S-070
+    status: planned
+  - id: P-048
+    type: MODULE
+    kind: page
+    ref: app/orders/[id]/page.tsx -> /orders/[id]
+    roles:
+      - supplier
+      - client
+    steps: S-084,S-100
+    status: planned
+  - id: P-049
+    type: MODULE
+    kind: page
+    ref: app/orders/page.tsx -> /orders
+    roles:
+      - supplier
+      - client
+    steps: S-074,S-083,S-084,S-085,S-086
+    status: planned
+  - id: P-050
+    type: MODULE
+    kind: page
+    ref: app/page.tsx -> /
+    roles:
+      - admin
+      - retailer
+    steps: S-010
+    status: planned
+    note: client and supplier are redirected to /client and /supplier
+  - id: P-051
+    type: MODULE
+    kind: page
+    ref: app/products/[id]/page.tsx -> /products/[id]
+    roles:
+      - supplier
+      - client
+    steps: S-082
+    status: planned
+  - id: P-052
+    type: MODULE
+    kind: page
+    ref: app/products/page.tsx -> /products
+    roles:
+      - supplier
+      - client
+      - admin
+    steps: S-073,S-082
+    status: planned
+  - id: P-053
+    type: MODULE
+    kind: page
+    ref: app/register/page.tsx -> /register
+    roles:
+      - anonymous
+    steps: S-006,S-007,S-008
+    status: planned
+  - id: P-054
+    type: MODULE
+    kind: page
+    ref: app/reset-password/page.tsx -> /reset-password
+    roles:
+      - anonymous
+    steps: ND-02
+    status: not-demonstrable[needs the emailed token; no email catcher exists]
+  - id: P-055
+    type: MODULE
+    kind: page
+    ref: app/settings/email-preferences/page.tsx -> /settings/email-preferences
+    roles:
+      - admin
+      - supplier
+      - client
+      - retailer
+    steps: S-030,S-103
+    status: planned
+  - id: P-057
+    type: MODULE
+    kind: page
+    ref: app/suppliers/[id]/page.tsx -> /suppliers/[id]
+    roles:
+      - admin
+    steps: S-053
+    status: planned
+  - id: P-058
+    type: MODULE
+    kind: page
+    ref: app/suppliers/page.tsx -> /suppliers
+    roles:
+      - admin
+    steps: S-019,S-052
+    status: planned
+  - id: P-061
+    type: MODULE
+    kind: page
+    ref: app/warehouses/[id]/page.tsx -> /warehouses/[id]
+    roles: []
+    steps: ND-14
+    status: not-demonstrable[same as /warehouses]
+  - id: P-062
+    type: MODULE
+    kind: page
+    ref: app/warehouses/page.tsx -> /warehouses
+    roles: []
+    steps: ND-14
+    status: not-demonstrable[no role has a nav link to it (admin uses
+      /admin/warehouses); URL navigation is forbidden]
+  - id: A-001
+    type: MODULE
+    kind: api
+    ref: app/api/admin/client-invoices/route.ts -> GET /api/admin/client-invoices
+    roles: []
+    steps: S-014
+    status: planned
+  - id: A-002
+    type: MODULE
+    kind: api
+    ref: app/api/admin/client-orders/route.ts -> GET /api/admin/client-orders
+    roles: []
+    steps: S-013
+    status: planned
+  - id: A-003
+    type: MODULE
+    kind: api
+    ref: app/api/admin/counts/route.ts -> GET /api/admin/counts
+    roles: []
+    steps: S-090
+    status: planned
+    note: sidebar badges
+  - id: A-005
+    type: MODULE
+    kind: api
+    ref: app/api/audit-logs/route.ts -> GET /api/audit-logs
+    roles: []
+    steps: S-114
+    status: planned
+  - id: A-006
+    type: MODULE
+    kind: api
+    ref: app/api/auth/change-password/route.ts -> POST /api/auth/change-password
+    roles: []
+    steps: FND-01
+    status: planned
+    note: "CANDIDATE FINDING (api with no screen): no client code references it:
+      there is no change-password screen"
+  - id: A-007
+    type: MODULE
+    kind: api
+    ref: app/api/auth/forgot-password/route.ts -> POST /api/auth/forgot-password
+    roles: []
+    steps: S-005
+    status: planned
+  - id: A-008
+    type: MODULE
+    kind: api
+    ref: app/api/auth/login/route.ts -> POST /api/auth/login
+    roles: []
+    steps: S-003,S-009
+    status: planned
+  - id: A-009
+    type: MODULE
+    kind: api
+    ref: app/api/auth/logout/route.ts -> POST /api/auth/logout
+    roles: []
+    steps: S-070
+    status: planned
+  - id: A-010
+    type: MODULE
+    kind: api
+    ref: app/api/auth/oauth/google/callback/route.ts -> GET
+      /api/auth/oauth/google/callback
+    roles: []
+    steps: ND-06
+    status: not-demonstrable[same]
+  - id: A-011
+    type: MODULE
+    kind: api
+    ref: app/api/auth/oauth/google/route.ts -> GET /api/auth/oauth/google
+    roles: []
+    steps: ND-06
+    status: not-demonstrable[needs Google OAuth credentials and Google's consent
+      screen]
+  - id: A-012
+    type: MODULE
+    kind: api
+    ref: app/api/auth/refresh/route.ts -> POST /api/auth/refresh
+    roles: []
+    steps: S-135
+    status: planned
+    note: "exercised by elapsed time (15-minute access token) and checked in the
+      timeline: at least one POST 200"
+  - id: A-013
+    type: MODULE
+    kind: api
+    ref: app/api/auth/register/route.ts -> POST /api/auth/register
+    roles: []
+    steps: S-008
+    status: planned
+  - id: A-014
+    type: MODULE
+    kind: api
+    ref: app/api/auth/reset-password/route.ts -> POST /api/auth/reset-password
+    roles: []
+    steps: ND-02
+    status: not-demonstrable[needs the emailed token]
+  - id: A-015
+    type: MODULE
+    kind: api
+    ref: app/api/auth/session/route.ts -> GET /api/auth/session
+    roles: []
+    steps: S-009,S-010
+    status: planned
+  - id: A-016
+    type: MODULE
+    kind: api
+    ref: app/api/auth/verify-email/route.ts -> POST /api/auth/verify-email
+    roles: []
+    steps: ND-05
+    status: not-demonstrable[reached from an emailed link; nothing in the app
+      creates a verification token]
+  - id: A-017
+    type: MODULE
+    kind: api
+    ref: app/api/categories/[id]/route.ts -> GET /api/categories/[id]
+    roles: []
+    steps: S-051
+    status: planned
+  - id: A-018
+    type: MODULE
+    kind: api
+    ref: app/api/categories/route.ts -> GET,POST,PUT,DELETE /api/categories
+    roles: []
+    steps: S-050
+    status: planned
+  - id: A-020
+    type: MODULE
+    kind: api
+    ref: app/api/dashboard/route.ts -> GET /api/dashboard
+    roles: []
+    steps: S-010,S-111
+    status: planned
+  - id: A-021
+    type: MODULE
+    kind: api
+    ref: app/api/email/queue/process/route.ts -> POST /api/email/queue/process
+    roles: []
+    steps: ND-07
+    status: not-demonstrable[QStash-signed webhook]
+  - id: A-023
+    type: MODULE
+    kind: api
+    ref: app/api/health/route.ts -> GET /api/health
+    roles: []
+    steps: S-032
+    status: planned
+  - id: A-024
+    type: MODULE
+    kind: api
+    ref: app/api/import-history/[id]/route.ts -> GET /api/import-history/[id]
+    roles: []
+    steps: S-060
+    status: planned
+  - id: A-025
+    type: MODULE
+    kind: api
+    ref: app/api/import-history/route.ts -> GET /api/import-history
+    roles: []
+    steps: S-060
+    status: planned
+  - id: A-026
+    type: MODULE
+    kind: api
+    ref: app/api/invoices/[id]/pdf/route.ts -> GET /api/invoices/[id]/pdf
+    roles: []
+    steps: S-094
+    status: planned
+  - id: A-027
+    type: MODULE
+    kind: api
+    ref: app/api/invoices/[id]/route.ts -> GET,PUT,DELETE /api/invoices/[id]
+    roles: []
+    steps: S-094,S-095
+    status: planned
+  - id: A-028
+    type: MODULE
+    kind: api
+    ref: app/api/invoices/[id]/send/route.ts -> POST /api/invoices/[id]/send
+    roles: []
+    steps: S-094
+    status: planned
+    note: "email not configured: the visible result is what is asserted"
+  - id: A-029
+    type: MODULE
+    kind: api
+    ref: app/api/invoices/reminders/route.ts -> POST,GET /api/invoices/reminders
+    roles: []
+    steps: ND-08
+    status: not-demonstrable[cron / internal-key endpoint; no screen by design]
+  - id: A-030
+    type: MODULE
+    kind: api
+    ref: app/api/invoices/route.ts -> GET,POST /api/invoices
+    roles: []
+    steps: S-094
+    status: planned
+  - id: A-031
+    type: MODULE
+    kind: api
+    ref: app/api/notifications/in-app/[id]/route.ts -> GET,PUT,DELETE
+      /api/notifications/in-app/[id]
+    roles: []
+    steps: S-102
+    status: planned
+  - id: A-032
+    type: MODULE
+    kind: api
+    ref: app/api/notifications/in-app/mark-all-read/route.ts -> PUT
+      /api/notifications/in-app/mark-all-read
+    roles: []
+    steps: S-102
+    status: planned
+  - id: A-033
+    type: MODULE
+    kind: api
+    ref: app/api/notifications/in-app/route.ts -> GET /api/notifications/in-app
+    roles: []
+    steps: S-028,S-088
+    status: planned
+  - id: A-034
+    type: MODULE
+    kind: api
+    ref: app/api/notifications/in-app/unread-count/route.ts -> GET
+      /api/notifications/in-app/unread-count
+    roles: []
+    steps: S-028
+    status: planned
+  - id: A-035
+    type: MODULE
+    kind: api
+    ref: app/api/notifications/route.ts -> POST,GET /api/notifications
+    roles: []
+    steps: ND-09
+    status: not-demonstrable[sends email through Brevo; not configured]
+  - id: A-036
+    type: MODULE
+    kind: api
+    ref: app/api/openapi/route.ts -> GET /api/openapi
+    roles: []
+    steps: S-031
+    status: planned
+  - id: A-037
+    type: MODULE
+    kind: api
+    ref: app/api/orders/[id]/route.ts -> GET,PUT,DELETE /api/orders/[id]
+    roles: []
+    steps: S-091,S-092,S-093,S-096
+    status: planned
+  - id: A-038
+    type: MODULE
+    kind: api
+    ref: app/api/orders/route.ts -> GET,POST /api/orders
+    roles: []
+    steps: S-084
+    status: planned
+  - id: A-039
+    type: MODULE
+    kind: api
+    ref: app/api/payments/checkout/route.ts -> POST /api/payments/checkout
+    roles: []
+    steps: ND-10
+    status: not-demonstrable[Stripe Checkout needs Stripe keys and Stripe's hosted
+      page]
+  - id: A-040
+    type: MODULE
+    kind: api
+    ref: app/api/payments/confirm-session/route.ts -> POST
+      /api/payments/confirm-session
+    roles: []
+    steps: ND-10
+    status: not-demonstrable[same]
+  - id: A-041
+    type: MODULE
+    kind: api
+    ref: app/api/payments/webhook/route.ts -> POST /api/payments/webhook
+    roles: []
+    steps: ND-11
+    status: not-demonstrable[Stripe-signed webhook]
+  - id: A-042
+    type: MODULE
+    kind: api
+    ref: app/api/performance/route.ts -> GET /api/performance
+    roles: []
+    steps: S-032
+    status: planned
+  - id: A-052
+    type: MODULE
+    kind: api
+    ref: app/api/products/[id]/route.ts -> GET /api/products/[id]
+    roles: []
+    steps: S-057
+    status: planned
+  - id: A-053
+    type: MODULE
+    kind: api
+    ref: app/api/products/image/route.ts -> POST,DELETE /api/products/image
+    roles: []
+    steps: S-062
+    status: planned
+    note: "ImageKit keys absent: visible outcome of the file chooser is what is
+      asserted"
+  - id: A-054
+    type: MODULE
+    kind: api
+    ref: app/api/products/qr-code/route.ts -> POST /api/products/qr-code
+    roles: []
+    steps: S-057
+    status: planned
+  - id: A-055
+    type: MODULE
+    kind: api
+    ref: app/api/products/route.ts -> GET,GET,POST,PUT,DELETE /api/products
+    roles: []
+    steps: S-056,S-058,S-066
+    status: planned
+  - id: A-056
+    type: MODULE
+    kind: api
+    ref: app/api/products-import/route.ts -> POST /api/products-import
+    roles: []
+    steps: S-059
+    status: planned
+  - id: A-061
+    type: MODULE
+    kind: api
+    ref: app/api/stock-allocations/[id]/route.ts -> PUT,DELETE
+      /api/stock-allocations/[id]
+    roles: []
+    steps: S-065
+    status: planned
+  - id: A-062
+    type: MODULE
+    kind: api
+    ref: app/api/stock-allocations/route.ts -> GET,POST /api/stock-allocations
+    roles: []
+    steps: S-063,S-065
+    status: planned
+  - id: A-063
+    type: MODULE
+    kind: api
+    ref: app/api/stock-transfers/route.ts -> POST /api/stock-transfers
+    roles: []
+    steps: S-064
+    status: planned
+  - id: A-065
+    type: MODULE
+    kind: api
+    ref: app/api/suppliers/[id]/route.ts -> GET /api/suppliers/[id]
+    roles: []
+    steps: S-053
+    status: planned
+  - id: A-066
+    type: MODULE
+    kind: api
+    ref: app/api/suppliers/route.ts -> GET,POST,PUT,DELETE /api/suppliers
+    roles: []
+    steps: S-052
+    status: planned
+  - id: A-072
+    type: MODULE
+    kind: api
+    ref: app/api/system-config/route.ts -> GET,PUT /api/system-config
+    roles: []
+    steps: S-033
+    status: planned
+  - id: A-073
+    type: MODULE
+    kind: api
+    ref: app/api/system-metrics/route.ts -> GET /api/system-metrics
+    roles: []
+    steps: S-032
+    status: planned
+  - id: A-074
+    type: MODULE
+    kind: api
+    ref: app/api/user/email-preferences/route.ts -> GET,PUT
+      /api/user/email-preferences
+    roles: []
+    steps: S-030
+    status: planned
+  - id: A-075
+    type: MODULE
+    kind: api
+    ref: app/api/users/[id]/route.ts -> GET,PUT,DELETE /api/users/[id]
+    roles: []
+    steps: S-046,S-047
+    status: planned
+  - id: A-076
+    type: MODULE
+    kind: api
+    ref: app/api/users/route.ts -> GET,POST /api/users
+    roles: []
+    steps: S-040,S-045
+    status: planned
+  - id: A-077
+    type: MODULE
+    kind: api
+    ref: app/api/warehouses/[id]/route.ts -> GET /api/warehouses/[id]
+    roles: []
+    steps: S-055
+    status: planned
+  - id: A-078
+    type: MODULE
+    kind: api
+    ref: app/api/warehouses/route.ts -> GET,POST,PUT,DELETE /api/warehouses
+    roles: []
+    steps: S-054
+    status: planned
+  - id: F-001
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-01
+    roles:
+      - anonymous
+    steps: S-009,S-041
+    status: planned
+    note: Sign in with email and password
+  - id: F-002
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-02
+    roles:
+      - anonymous
+    steps: ND-06
+    status: "not-demonstrable[Sign in with Google: see ND-06]"
+    note: Sign in with Google
+  - id: F-003
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-03
+    roles:
+      - anonymous
+    steps: S-009,S-071
+    status: planned
+    note: Keep me signed in checkbox (30 day vs 1 day refresh)
+  - id: F-004
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-04
+    roles:
+      - anonymous
+    steps: S-004,S-132
+    status: planned
+    note: Role-based demo account select on login
+  - id: F-005
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-05
+    roles:
+      - admin
+      - supplier
+      - client
+      - retailer
+    steps: S-070
+    status: planned
+    note: Logout confirmation dialog, cancel then confirm
+  - id: F-006
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-06
+    roles:
+      - anonymous
+    steps: S-008
+    status: planned
+    note: Self-registration (creates an admin)
+  - id: F-007
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-07
+    roles:
+      - admin
+    steps: S-010,S-111
+    status: planned
+    note: Dashboard with store-wide totals
+  - id: F-008
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-08
+    roles:
+      - admin
+      - supplier
+    steps: S-056,S-058,S-066,S-073
+    status: planned
+    note: Product create / edit / delete
+  - id: F-009
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-09
+    roles:
+      - admin
+    steps: S-059,S-061
+    status: planned
+    note: CSV import and export of products
+  - id: F-010
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-10
+    roles:
+      - admin
+    steps: S-058,S-111
+    status: planned
+    note: Low-stock and stock-out counts
+  - id: F-011
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-11
+    roles:
+      - admin
+    steps: S-091,S-092
+    status: planned
+    note: Review and confirm incoming orders
+  - id: F-012
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-12
+    roles:
+      - admin
+      - client
+    steps: S-084,S-092
+    status: planned
+    note: Allocate order stock across warehouses (auto / manual pick)
+  - id: F-013
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-13
+    roles:
+      - admin
+    steps: S-093
+    status: planned
+    note: Advance order status through the pipeline
+  - id: F-014
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-14
+    roles:
+      - admin
+    steps: S-096
+    status: planned
+    note: Cancel or refund an order
+  - id: F-015
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-15
+    roles:
+      - admin
+    steps: S-094,S-095,S-096
+    status: planned
+    note: "Invoices from orders: draft / sent / paid / overdue / cancelled"
+  - id: F-016
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-16
+    roles:
+      - admin
+    steps: S-054,S-063,S-064,S-065
+    status: planned
+    note: Warehouses and stock transfers
+  - id: F-017
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-17
+    roles:
+      - admin
+    steps: S-090
+    status: planned
+    note: Sidebar with live count badges
+  - id: F-018
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-18
+    roles:
+      - admin
+    steps: S-041,S-042,S-043,S-044
+    status: planned
+    note: Create users and assign roles
+  - id: F-019
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-19
+    roles:
+      - admin
+    steps: S-047
+    status: planned
+    note: Delete a user with confirmation (suspend if the UI has it)
+  - id: F-023
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-23
+    roles:
+      - admin
+    steps: S-114
+    status: planned
+    note: Activity history (audit trail)
+  - id: F-024
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-24
+    roles:
+      - admin
+    steps: S-012,S-112
+    status: planned
+    note: Business insights analytics
+  - id: F-025
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-25
+    roles:
+      - admin
+      - supplier
+      - client
+    steps: S-030,S-103
+    status: planned
+    note: Personal email notification preferences
+  - id: F-026
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-26
+    roles:
+      - client
+    steps: S-082
+    status: planned
+    note: "Client: browse catalog with filters"
+  - id: F-027
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-27
+    roles:
+      - client
+    steps: S-083,S-084
+    status: planned
+    note: "Client: place order, blocked when stock is short"
+  - id: F-028
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-28
+    roles:
+      - client
+    steps: S-086,S-100
+    status: planned
+    note: "Client: track order status"
+  - id: F-029
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-29
+    roles:
+      - client
+    steps: S-100
+    status: planned
+    note: "Client: view and pay invoices"
+  - id: F-032
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-32
+    roles:
+      - client
+    steps: S-088,S-102
+    status: planned
+    note: "Client: notifications on status changes"
+  - id: F-034
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-34
+    roles:
+      - supplier
+    steps: S-073
+    status: planned
+    note: "Supplier: manage only own products"
+  - id: F-035
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-35
+    roles:
+      - supplier
+    steps: S-074,S-094
+    status: planned
+    note: "Supplier: orders that contain own products"
+  - id: F-036
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-36
+    roles:
+      - supplier
+    steps: S-074
+    status: planned
+    note: "Supplier: view-only invoices"
+  - id: F-039
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-39
+    roles:
+      - admin
+      - supplier
+      - client
+    steps: S-047,S-065,S-066,S-070
+    status: planned
+    note: Confirmation before every destructive action
+  - id: F-040
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-40
+    roles:
+      - admin
+    steps: S-047
+    status: planned
+    note: Dismiss a confirmation dialog by clicking outside
+  - id: F-041
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-41
+    roles:
+      - client
+      - admin
+    steps: S-102
+    status: planned
+    note: Dismiss individual notifications
+  - id: F-042
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-42
+    roles:
+      - admin
+    steps: S-027
+    status: planned
+    note: Light and dark mode toggle
+  - id: F-043
+    type: MODULE
+    kind: feature
+    ref: docs/user-flows-and-stories.md US-43
+    roles:
+      - admin
+    steps: S-026
+    status: planned
+    note: Global page search in the top bar
+  - id: F-044
+    type: MODULE
+    kind: feature
+    ref: found in code
+    roles:
+      - admin
+    steps: S-057
+    status: planned
+    note: Product QR code generation and copy
+  - id: F-045
+    type: MODULE
+    kind: feature
+    ref: found in code
+    roles:
+      - admin
+    steps: S-062
+    status: planned
+    note: Product image upload (ImageKit)
+  - id: F-046
+    type: MODULE
+    kind: feature
+    ref: found in code
+    roles:
+      - admin
+    steps: S-066,S-116
+    status: planned
+    note: Soft vs hard product delete by order history (409 / soft / hard)
+  - id: F-047
+    type: MODULE
+    kind: feature
+    ref: found in code
+    roles:
+      - admin
+    steps: S-095
+    status: planned
+    note: Partial payment on an invoice
+  - id: F-048
+    type: MODULE
+    kind: feature
+    ref: found in code
+    roles:
+      - admin
+    steps: S-094
+    status: planned
+    note: Invoice PDF download
+  - id: F-049
+    type: MODULE
+    kind: feature
+    ref: found in code
+    roles:
+      - admin
+      - supplier
+      - client
+    steps: S-087,S-097,S-102
+    status: planned
+    note: Support ticket chat replies
+  - id: F-050
+    type: MODULE
+    kind: feature
+    ref: found in code
+    roles:
+      - anonymous
+    steps: S-133
+    status: planned
+    note: Rate limiting on sign-in (429 message)
+  - id: F-051
+    type: MODULE
+    kind: feature
+    ref: found in code
+    roles:
+      - anonymous
+    steps: S-134
+    status: planned
+    note: Back button after sign-out must not reveal private pages
+  - id: F-052
+    type: MODULE
+    kind: feature
+    ref: found in code
+    roles:
+      - admin
+    steps: S-135
+    status: planned
+    note: Session survives access-token expiry (silent refresh)
+  - id: F-053
+    type: MODULE
+    kind: feature
+    ref: found in code
+    roles:
+      - admin
+    steps: S-033
+    status: planned
+    note: "Settings: system config / palette (admin)"
+  - id: F-054
+    type: MODULE
+    kind: feature
+    ref: found in code
+    roles:
+      - admin
+      - supplier
+      - client
+    steps: S-028,S-102
+    status: planned
+    note: Notification bell and per-notification delete
+  - id: F-056
+    type: MODULE
+    kind: feature
+    ref: found in code
+    roles:
+      - admin
+    steps: FND-03
+    status: planned
+    note: Business / Role / Permission models (RBAC) have no screen
+  - id: N-001
+    type: MODULE
+    kind: negative
+    ref: role boundary
+    roles:
+      - anonymous
+    steps: S-001
+    status: planned
+    note: "anonymous: a protected page sends the visitor to /login"
+  - id: N-002
+    type: MODULE
+    kind: negative
+    ref: role boundary
+    roles:
+      - supplier
+    steps: S-072
+    status: planned
+    note: supplier nav has only Supplier Portal / My Products / View Orders /
+      Related Invoices; no User Management, Business Insights, Warehouses,
+      Categories, Product Reviews
+  - id: N-003
+    type: MODULE
+    kind: negative
+    ref: role boundary
+    roles:
+      - client
+    steps: S-081
+    status: planned
+    note: client nav has only Client Portal / Browse Products / My Orders / My
+      Invoices
+  - id: N-004
+    type: MODULE
+    kind: negative
+    ref: role boundary
+    roles:
+      - retailer
+    steps: S-120,S-121
+    status: planned
+    note: "retailer: no admin-only controls (user management, create product) even
+      if it lands on the admin shell"
+  - id: N-005
+    type: MODULE
+    kind: negative
+    ref: role boundary
+    roles:
+      - client
+      - supplier
+    steps: S-073,S-084
+    status: planned
+    note: client and supplier lists show no create-user / admin actions
+  - id: N-006
+    type: MODULE
+    kind: negative
+    ref: role boundary
+    roles:
+      - supplier
+    steps: S-073,S-074
+    status: planned
+    note: supplier sees only own products and orders containing them
+  - id: N-007
+    type: MODULE
+    kind: negative
+    ref: role boundary
+    roles:
+      - client
+    steps: S-089
+    status: planned
+    note: a second client does not see the first client's orders or invoices
+  - id: N-008
+    type: MODULE
+    kind: negative
+    ref: role boundary
+    roles:
+      - client
+    steps: S-082
+    status: planned
+    note: client cannot edit stock or product catalog
+  - id: N-009
+    type: MODULE
+    kind: negative
+    ref: role boundary
+    roles:
+      - supplier
+    steps: S-074
+    status: planned
+    note: supplier cannot reach order fulfilment actions (confirm, ship, cancel)
+  - id: N-010
+    type: MODULE
+    kind: negative
+    ref: role boundary
+    roles:
+      - anonymous
+    steps: S-134
+    status: planned
+    note: after sign-out the browser Back button does not show private data
+  - id: V-001
+    type: MODULE
+    kind: validation
+    ref: form
+    roles: []
+    steps: S-002,S-003
+    status: planned
+    note: "login: empty submit, wrong password"
+  - id: V-002
+    type: MODULE
+    kind: validation
+    ref: form
+    roles: []
+    steps: S-007,S-136
+    status: planned
+    note: "register: empty, bad email, 5-char password, duplicate email"
+  - id: V-003
+    type: MODULE
+    kind: validation
+    ref: form
+    roles: []
+    steps: S-005
+    status: planned
+    note: "forgot password: empty and unknown email"
+  - id: V-004
+    type: MODULE
+    kind: validation
+    ref: form
+    roles: []
+    steps: S-040
+    status: planned
+    note: "create user: empty form"
+  - id: V-005
+    type: MODULE
+    kind: validation
+    ref: form
+    roles: []
+    steps: S-050
+    status: planned
+    note: "category: empty name"
+  - id: V-006
+    type: MODULE
+    kind: validation
+    ref: form
+    roles: []
+    steps: S-052
+    status: planned
+    note: "supplier: empty name"
+  - id: V-007
+    type: MODULE
+    kind: validation
+    ref: form
+    roles: []
+    steps: S-054
+    status: planned
+    note: "warehouse: empty name"
+  - id: V-008
+    type: MODULE
+    kind: validation
+    ref: form
+    roles: []
+    steps: S-056
+    status: planned
+    note: "product: missing category, negative price, duplicate SKU"
+  - id: V-009
+    type: MODULE
+    kind: validation
+    ref: form
+    roles: []
+    steps: S-059
+    status: planned
+    note: "product import: wrong file type and invalid rows"
+  - id: V-010
+    type: MODULE
+    kind: validation
+    ref: form
+    roles: []
+    steps: S-063
+    status: planned
+    note: "allocation: more than product quantity"
+  - id: V-011
+    type: MODULE
+    kind: validation
+    ref: form
+    roles: []
+    steps: S-064
+    status: planned
+    note: "transfer: more than available"
+  - id: V-012
+    type: MODULE
+    kind: validation
+    ref: form
+    roles: []
+    steps: S-083
+    status: planned
+    note: "order: no items, quantity above stock"
+  - id: V-013
+    type: MODULE
+    kind: validation
+    ref: form
+    roles: []
+    steps: S-094
+    status: planned
+    note: "invoice: order already invoiced"
+  - id: E-001
+    type: MODULE
+    kind: empty-state
+    ref: list
+    roles: []
+    steps: S-010
+    status: planned
+    note: dashboard with no data
+  - id: E-002
+    type: MODULE
+    kind: empty-state
+    ref: list
+    roles: []
+    steps: S-013
+    status: planned
+    note: orders
+  - id: E-003
+    type: MODULE
+    kind: empty-state
+    ref: list
+    roles: []
+    steps: S-014
+    status: planned
+    note: invoices
+  - id: E-006
+    type: MODULE
+    kind: empty-state
+    ref: list
+    roles: []
+    steps: S-017
+    status: planned
+    note: products
+  - id: E-007
+    type: MODULE
+    kind: empty-state
+    ref: list
+    roles: []
+    steps: S-018
+    status: planned
+    note: categories
+  - id: E-008
+    type: MODULE
+    kind: empty-state
+    ref: list
+    roles: []
+    steps: S-019
+    status: planned
+    note: suppliers
+  - id: E-009
+    type: MODULE
+    kind: empty-state
+    ref: list
+    roles: []
+    steps: S-020
+    status: planned
+    note: warehouses
+  - id: E-012
+    type: MODULE
+    kind: empty-state
+    ref: list
+    roles: []
+    steps: S-024
+    status: planned
+    note: activity history
+  - id: E-013
+    type: MODULE
+    kind: empty-state
+    ref: list
+    roles: []
+    steps: S-028
+    status: planned
+    note: notifications
+  - id: E-014
+    type: MODULE
+    kind: empty-state
+    ref: list
+    roles: []
+    steps: S-012
+    status: planned
+    note: business insights
+  - id: ND-02
+    type: MODULE
+    kind: not-demonstrable
+    ref: external
+    roles: []
+    steps: "-"
+    status: not-demonstrable[Brevo is not configured and the sender URL is
+      hard-coded, so no email can be caught. Decision D5.]
+    note: Reset-password form and emailed link
+  - id: ND-04
+    type: MODULE
+    kind: not-demonstrable
+    ref: external
+    roles: []
+    steps: "-"
+    status: not-demonstrable[Reachable only by typing a URL, which the human-only
+      rule forbids after the first load.]
+    note: The 404 page
+  - id: ND-05
+    type: MODULE
+    kind: not-demonstrable
+    ref: external
+    roles: []
+    steps: "-"
+    status: not-demonstrable[Nothing in the app creates a verification token; the
+      route has no screen.]
+    note: Email verification link
+  - id: ND-06
+    type: MODULE
+    kind: not-demonstrable
+    ref: external
+    roles: []
+    steps: "-"
+    status: not-demonstrable[Needs Google OAuth credentials and Google's own consent
+      screen.]
+    note: Google sign-in
+  - id: ND-07
+    type: MODULE
+    kind: not-demonstrable
+    ref: external
+    roles: []
+    steps: "-"
+    status: not-demonstrable[Signed server-to-server call; no screen.]
+    note: QStash email-queue webhook
+  - id: ND-08
+    type: MODULE
+    kind: not-demonstrable
+    ref: external
+    roles: []
+    steps: "-"
+    status: not-demonstrable[Internal-key endpoint with no screen by design.]
+    note: Invoice reminder cron endpoint
+  - id: ND-09
+    type: MODULE
+    kind: not-demonstrable
+    ref: external
+    roles: []
+    steps: "-"
+    status: not-demonstrable[No Brevo key; in-app notifications are demonstrated
+      instead.]
+    note: Email notifications (Brevo)
+  - id: ND-10
+    type: MODULE
+    kind: not-demonstrable
+    ref: external
+    roles: []
+    steps: "-"
+    status: not-demonstrable[Needs Stripe keys, the network and Stripe's hosted
+      page. Decision D6.]
+    note: Stripe checkout and payment confirmation
+  - id: ND-11
+    type: MODULE
+    kind: not-demonstrable
+    ref: external
+    roles: []
+    steps: "-"
+    status: not-demonstrable[Stripe-signed server-to-server call; no screen.]
+    note: Stripe webhook
+  - id: ND-12
+    type: MODULE
+    kind: not-demonstrable
+    ref: external
+    roles: []
+    steps: "-"
+    status: not-demonstrable[Needs a Shippo key and the network. Decision D6.]
+    note: Shippo rates, labels and tracking
+  - id: ND-13
+    type: MODULE
+    kind: not-demonstrable
+    ref: external
+    roles: []
+    steps: "-"
+    status: not-demonstrable[Server-to-server call; no screen.]
+    note: Shippo webhook
+  - id: ND-14
+    type: MODULE
+    kind: not-demonstrable
+    ref: external
+    roles: []
+    steps: "-"
+    status: not-demonstrable[No role has a link to them; reaching them needs URL
+      navigation.]
+    note: /warehouses and /warehouses/[id] for non-admin roles
+  - id: ND-15
+    type: MODULE
+    kind: not-demonstrable
+    ref: external
+    roles: []
+    steps: "-"
+    status: not-demonstrable[Needs days of real time; the clock may not be faked.]
+    note: "Waiting-time behaviour: invoice becoming overdue, 30-day refresh expiry,
+      60-minute reset-token expiry"
+  - id: ND-16
+    type: MODULE
+    kind: not-demonstrable
+    ref: external
+    roles: []
+    steps: "-"
+    status: not-demonstrable[Operational integrations with no user-visible screen
+      except the status page.]
+    note: Sentry, PostHog, QStash, Redis outage behaviour
+  - id: ND-17
+    type: MODULE
+    kind: not-demonstrable
+    ref: external
+    roles: []
+    steps: "-"
+    status: not-demonstrable[Forbidden by the human-only rule; covered by the static
+      review and API tests, not by this run.]
+    note: Direct-URL access control (a client opening an admin URL)
+  - id: FND-01
+    type: MODULE
+    kind: candidate-finding
+    ref: app/api/auth/change-password
+    roles:
+      - admin
+      - supplier
+      - client
+      - retailer
+    steps: S-030
+    status: planned
+    note: no change-password screen exists; confirm during the run, then escalate
+      (needs a product decision on where it lives)
+  - id: FND-03
+    type: MODULE
+    kind: candidate-finding
+    ref: prisma/schema/tenancy.prisma Business/Role/Permission
+    roles:
+      - admin
+    steps: S-023
+    status: planned
+    note: RBAC tables have no screen to create businesses, roles or permissions;
+      confirm and escalate
+  - id: FND-04
+    type: MODULE
+    kind: candidate-finding
+    ref: app/api/auth/register/route.ts -> app/login/page.tsx
+    roles:
+      - anonymous
+    steps: S-008,S-008b,S-008c
+    status: confirmed
+    note: "ISS-0087, root-caused: register sets real session cookies (the person is
+      actually signed in) while the UI says \"redirecting to login page\"; the
+      client-side transition into /login's now-authenticated-redirect renders a
+      fully blank page instead of completing it. A hard reload (S-008b) does
+      complete it -- landing on / already signed in, with no acknowledgment --
+      so a real sign-out (S-008c) is needed before the journey can continue as a
+      different person"
+  - id: FND-05
+    type: MODULE
+    kind: candidate-finding
+    ref: lib/navigation/role-nav-config.ts -> app/page.tsx
+    roles:
+      - user
+    steps: S-008b
+    status: confirmed
+    note: "ISS-0088: a self-registered user-role account (the only outcome /register
+      can produce, since ISS-0001) gets the admin nav and home dashboard
+      verbatim (\"Store Owner\" label, User Management/Business
+      Insights/Supplier Portal/Client Portal all visible). Checked for a real
+      leak and found none: the dashboard's stats are scoped to the viewer's own
+      userId (real zeros for a fresh account, not another user's or the
+      company's data) and the User Management page independently redirects
+      non-admins away with no API call made -- this is a presentation gap
+      (misleading labels, dead-end links), not an authorization bypass"
