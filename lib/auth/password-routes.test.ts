@@ -124,6 +124,11 @@ async function signedIn(sub = "u1") {
 }
 
 beforeEach(() => {
+  // Pins jwt.ts's getSecret() to the same value signedIn() signs test tokens with — without
+  // this, a CI/CD environment that happens to export its own JWT_SECRET (ours does) makes
+  // getSecret() use that real value instead of its dev fallback, so the manufactured session
+  // never verifies and change-password's tests see 401s instead of their real expectations.
+  vi.stubEnv("JWT_SECRET", "dev_octalve_ims_jwt_secret_only_for_local_testing");
   vi.clearAllMocks();
   h.cookieJar.clear();
   h.cookieWrites.length = 0;

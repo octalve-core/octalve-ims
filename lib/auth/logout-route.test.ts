@@ -45,6 +45,11 @@ const request = () =>
   });
 
 beforeEach(() => {
+  // Pins jwt.ts's getSecret() to the same value this file signs test tokens with — without
+  // this, a CI/CD environment that happens to export its own JWT_SECRET (ours does) makes
+  // getSecret() use that real value instead of its dev fallback, so every token here fails to
+  // verify. Previously relied on JWT_SECRET being unset, which only held locally by accident.
+  vi.stubEnv("JWT_SECRET", "dev_octalve_ims_jwt_secret_only_for_local_testing");
   cookieJar.clear();
   cookieDeletes.length = 0;
   vi.clearAllMocks();
