@@ -1,7 +1,7 @@
 # 0004: Auth hardening ported from Proplity
 
 - **Period / Focus:** 2026-10-26 (a comparison of IMS's auth with Proplity's current auth, then the fixes)
-- **Status:** In Progress (code done, tested and gated; PR open, decisions (b), (c) and (d) built; decision (e) and the remaining "still open" items not yet asked)
+- **Status:** In Progress (all five decisions (a)-(e) settled and built/recorded 2026-10-26; PR open; the three "still open" items (Redis limiter, verify-email rate limit, access-token `jti`) not yet asked)
 - **Priority:** High
 - **Assignee:** Agent (Claude), for the maintainer
 - **Target Branch / PR:** `fix/auth-hardening-from-proplity` (off local `dev`) / [PR #29](https://github.com/octalve-core/octalve-ims/pull/29)
@@ -15,7 +15,7 @@
 
 ## 1. Objective
 
-Bring the IMS auth routes up to the standard Proplity reached after the August port, closing the register rows ISS-0027, 0028, 0029, 0032 and 0033 (and the parts of them that were fixable without a model decision), each with a test that failed on the old code. Decision (a) (`User.status`, closing part of ISS-0102 which this task also opened), decision (b) (minimum password length, 6 to 8), decision (c) (register's 409 enumeration, ISS-0032) and decision (d) (login's wrong-password redirect, ISS-0030) were approved and implemented in the same branch on 2026-10-26; decision (e) and the three remaining "still open" items are to be asked next, one at a time.
+Bring the IMS auth routes up to the standard Proplity reached after the August port, closing the register rows ISS-0027, 0028, 0029, 0032 and 0033 (and the parts of them that were fixable without a model decision), each with a test that failed on the old code. Decision (a) (`User.status`, closing part of ISS-0102 which this task also opened), decision (b) (minimum password length, 6 to 8), decision (c) (register's 409 enumeration, ISS-0032), decision (d) (login's wrong-password redirect, ISS-0030) and decision (e) (trusted-proxy assumption confirmed, no code change) were all settled on 2026-10-26; the three remaining "still open" items are to be asked next, one at a time.
 
 ## 2. Context & Related Docs
 - [`../auth-system-port-plan.md`](../auth-system-port-plan.md): what was ported in August; its new "Hardening after the port" section lists what was ported afterwards and why.
@@ -85,6 +85,10 @@ Bring the IMS auth routes up to the standard Proplity reached after the August p
 - [x] 4 new tests, 2 per file (new `utils/axiosInstance.test.ts` and new `lib/api/client.test.ts`), each using a custom axios adapter (no real network) to assert: a 401 from an `/auth/*` URL never calls `refreshAccessToken`, while a 401 from an ordinary protected route still does — both shown failing against the old `/auth/refresh`-only exemption first
 - [x] `utils/axiosInstance.test.ts` added to `tier-manifest.json`'s `shared` bucket (a loose file directly under `utils/`, which the manifest checker requires individually listed; `lib/api/client.test.ts` needed no entry — `lib/api` is classified as a whole folder)
 
+### Decision (e): trusted-proxy assumption (2026-10-26, confirmed, no code change)
+- [x] Asked the maintainer whether the app runs behind exactly one trusted reverse proxy (Vercel) in every environment — `getClientIp()` (`lib/auth/rate-limit-db.ts`) and the CORS/origin checks both trust the last `X-Forwarded-For` hop, which is only correct with exactly one hop in front
+- [x] **Answer: yes, Vercel only, as of today — but the maintainer is not certain that stays true.** No code change; this confirms the assumption ADR 0008 already states, it doesn't add new trusted-hop configuration (that would be speculative for a topology that may never exist). Recorded in `open-items.md` section 2, with a note to re-check if the deployment topology changes (a CDN/WAF/load balancer added in front of Vercel)
+
 ---
 
 ## 4. Unified Verification & Quality Gates
@@ -106,7 +110,8 @@ Run 2026-10-26; re-run after Module E, again after Module F, again after Module 
 - **Decision (b) approved and built 2026-10-26:** minimum password length raised 6 to 8 across register, reset, change-password, admin user-creation, and the verify-email set-password branch. See Module F.
 - **Decision (c) approved and built 2026-10-26:** register no longer answers 409 for an existing email; both branches return the same response and the existing account's owner is emailed instead. See Module G.
 - **Decision (d) approved and built 2026-10-26:** the refresh interceptor's `/auth/*` exemption (previously `/auth/refresh` only) stops a wrong login password from triggering a refresh attempt and hard redirect. See Module H.
-- **Still needs a decision (open-items), not yet asked this session:** confirm exactly one trusted proxy (decision e).
+- **Decision (e) confirmed 2026-10-26:** Vercel only, everywhere, as of today; the maintainer flagged uncertainty about the future, so this needs rechecking if the deployment topology changes. No code change.
+- **All five decisions now settled.** The three remaining "still open" items (Redis limiter fails open on ordinary routes, `verify-email` has no rate limit, access tokens have no `jti`) have not been asked yet this session.
 - **Deviation from Proplity:** forgot-password lowercases the email for the limiter key and defers the whole real-user branch to `after()`; Proplity awaits the mail for a real account.
 - The ordering rule was followed: the five test files were written and shown failing against the old routes (refresh 7 of 9, login 7 of 9, logout 1 of 5, password routes 9 of 10) before the routes were changed.
 
