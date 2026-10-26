@@ -48,3 +48,31 @@ export async function verifyToken(
     return null;
   }
 }
+
+/**
+ * Signature-valid but possibly expired, for the one place an expired access token still has to say
+ * whose session to clean up: logout (ISS-0033). jose's expiry error carries the decoded payload;
+ * the signature was already checked before expiry was evaluated, so the claims identify the user
+ * but must never be used for authorization. Any other failure (bad signature, wrong algorithm,
+ * malformed) returns null. Checked by `code`, not `instanceof`: Next can bundle jose into more
+ * than one module instance across the route and library boundary, which breaks `instanceof`.
+ */
+export async function verifyTokenAllowExpired(
+  token: string
+): Promise<AccessTokenPayload | null> {
+  try {
+    const { payload } = await jwtVerify(token, getSecret());
+    return payload as unknown as AccessTokenPayload;
+  } catch (err) {
+    if (
+      err &&
+      typeof err === "object" &&
+      "code" in err &&
+      err.code === "ERR_JWT_EXPIRED" &&
+      "payload" in err
+    ) {
+      return err.payload as unknown as AccessTokenPayload;
+    }
+    return null;
+  }
+}

@@ -48,6 +48,9 @@ model User {
   /// (see docs/auth-system-port-plan.md). Core's 2 fixed roles read this;
   /// Pro+ custom-role permission checks use roleRelation/roleId instead.
   role               String? // user | admin | supplier | client | retailer
+  /// ACTIVE | SUSPENDED | PENDING_VERIFICATION — see lib/auth/account-status.ts. Plain string,
+  /// matching `role`'s convention above rather than a Postgres enum.
+  status             String              @default("ACTIVE")
   roleId             String?
   businessId         String?
   emailPreferences   Json?

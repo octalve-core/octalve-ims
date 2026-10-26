@@ -146,3 +146,23 @@ Add: `jose` (^6.x). Confirm already present: `bcryptjs` (Stockly already uses `b
 4. CSRF: send a mutating auth request with a mismatched `Origin` header → expect `403`, except `verify-email` which must succeed despite the mismatch.
 5. Rate limit: 6 rapid failed logins for the same `<ip>:<email>` → 6th attempt blocked.
 6. Confirm the existing ~150 inline `session.role === "..."` call sites across octalve-ims still work post-port — the JWT/session shape (`{sub, role}` → hydrated session object) needs to stay backward-compatible with what those call sites expect, or this becomes a much bigger rewrite than intended. Grep for every current consumer of `session_id` cookie name before deleting it, to make sure nothing is missed.
+
+---
+
+## Hardening after the port (2026-10-26, task 0004, ADR 0008)
+
+The port above copied Proplity as it stood on 2026-08-23. Proplity then changed (its `docs/auth-review-2026-09-30.md` and `docs/security-audit-2026-10-21.md`). This section lists what was brought across afterwards, so the next comparison starts here and not from August.
+
+| Proplity has | IMS now | Where |
+|---|---|---|
+| Postgres sliding-window limiter, `reserveAttempt` / `releaseAttempt`, advisory lock, fails closed | Ported; used by login, refresh, register, forgot, reset and change-password (the Redis presets stay for ordinary API routes) | `lib/auth/rate-limit-db.ts` |
+| Login limited per address+email and per account, both released on success | Ported | `app/api/auth/login/route.ts` |
+| Refresh budget of 30/5 min, nothing spent by a visitor with no cookie | Ported | `app/api/auth/refresh/route.ts` |
+| Refresh keeps the session's expiry; 5-second grace window with an atomic claim (ADR-0016) | Ported | `app/api/auth/refresh/route.ts`, `lib/auth/refresh-grace.ts` |
+| Logout works with an expired access token (`verifyTokenAllowExpired`, `getExpiredSession`) | Ported | `lib/auth/jwt.ts`, `lib/auth/session.ts`, `app/api/auth/logout/route.ts` |
+| Dummy bcrypt hash so login time does not show which emails exist | Ported | `app/api/auth/login/route.ts` |
+| Forgot-password answers the same either way; limited per address+email | Ported, and the real-user work runs in `after()` | `app/api/auth/forgot-password/route.ts` |
+| Last `X-Forwarded-For` hop as the client address | Ported (also used by the Redis presets); `x-user-id` is no longer trusted | `lib/auth/rate-limit-db.ts`, `lib/api/rate-limit.ts` |
+| `SUSPENDED` / `PENDING_VERIFICATION` refused at login and refresh | Ported 2026-10-26 (decision a): `User.status`, migration `20261026020000_add_user_status`; refresh also revokes the token family on SUSPENDED. Self-registration now starts PENDING_VERIFICATION and emails a verification link (OAuth and admin-created users start ACTIVE). **Gap (ISS-0102):** no admin UI/API sets SUSPENDED yet | `prisma/schema/tenancy.prisma`, `lib/auth/account-status.ts`, `app/api/auth/{login,refresh,register,verify-email}/route.ts` |
+| Minimum password 8 | **Not ported**: still 6 (open-items) | `lib/validations/auth.ts` |
+| `jti` or token version so access tokens die on logout | Proplity does not have it either (15-minute window); neither project | n/a |

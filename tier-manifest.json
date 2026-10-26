@@ -370,7 +370,7 @@
   ],
 
   "shared": [
-    "app/login", "app/register", "app/forgot-password", "app/reset-password",
+    "app/login", "app/register", "app/forgot-password", "app/reset-password", "app/verify-email",
     "app/settings", "app/_not-found", "app/fonts",
     "app/api-docs", "app/api-status",
     "app/api/auth", "app/api/health", "app/api/openapi", "app/api/user", "app/api/users",
@@ -379,6 +379,7 @@
     "components/Pages/ApiDocsPage.tsx", "components/Pages/ApiStatusPage.tsx",
     "components/Pages/LoginPage.tsx", "components/Pages/RegisterPage.tsx",
     "components/Pages/ForgotPasswordPage.tsx", "components/Pages/ResetPasswordPage.tsx",
+    "components/Pages/VerifyEmailPage.tsx",
     "components/Pages/EmailPreferencesPage.tsx", "components/Pages/HomePage.tsx",
 
     "lib/api", "lib/auth", "lib/auth-server.ts", "lib/cache", "lib/date", "lib/email",
@@ -430,7 +431,7 @@
     "components/admin/UserManagementTable.tsx", "components/admin/UserRoleFilter.tsx",
 
     "contexts/auth-context.tsx", "contexts/shell-ssr-context.tsx", "contexts/index.ts",
-    "utils/auth.ts", "utils/auth.client.ts", "utils/axiosInstance.ts",
+    "utils/auth.ts", "utils/auth.client.ts", "utils/axiosInstance.ts", "utils/axiosInstance.test.ts",
     "types/api.ts", "types/auth.ts", "types/user-management.ts", "types/index.ts",
     "types/dashboard.ts",
 

@@ -36,6 +36,26 @@ describe("registerBodySchema", () => {
       }).success,
     ).toBe(false);
   });
+
+  it("rejects a password shorter than 8 characters", () => {
+    expect(
+      registerBodySchema.safeParse({
+        name: "Test",
+        email: "test@example.com",
+        password: "1234567",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("accepts a password exactly 8 characters long", () => {
+    expect(
+      registerBodySchema.safeParse({
+        name: "Test",
+        email: "test@example.com",
+        password: "12345678",
+      }).success,
+    ).toBe(true);
+  });
 });
 
 describe("forgotPasswordSchema", () => {
@@ -91,11 +111,18 @@ describe("resetPasswordSchema", () => {
     ).toBe(false);
   });
 
-  it("rejects a password shorter than 6 characters", () => {
+  it("rejects a password shorter than 8 characters", () => {
     expect(
-      resetPasswordSchema.safeParse({ token: "a".repeat(64), password: "12345" })
+      resetPasswordSchema.safeParse({ token: "a".repeat(64), password: "1234567" })
         .success,
     ).toBe(false);
+  });
+
+  it("accepts a password exactly 8 characters long", () => {
+    expect(
+      resetPasswordSchema.safeParse({ token: "a".repeat(64), password: "12345678" })
+        .success,
+    ).toBe(true);
   });
 
   it("rejects a password longer than 100 characters", () => {

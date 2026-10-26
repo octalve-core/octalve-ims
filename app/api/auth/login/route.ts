@@ -21,7 +21,21 @@ import { prisma } from "@/prisma/client";
 import { validateCSRF } from "@/lib/auth/csrf";
 import { signAccessToken } from "@/lib/auth/jwt";
 import { setAuthCookies, REFRESH_DAYS } from "@/lib/auth/cookies";
-import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
+import {
+  ACCOUNT_MAX_ATTEMPTS,
+  getClientIp,
+  releaseAttempt,
+  reserveAttempt,
+  tooManyAttempts,
+} from "@/lib/auth/rate-limit-db";
+import { ACCOUNT_STATUS } from "@/lib/auth/account-status";
+
+// A fixed bcrypt hash (cost 12, matching real password hashes) that no password produces. It is
+// compared against whenever there is no real hash to compare (unknown email, or an account with
+// no password), so the time taken does not tell an attacker which emails have accounts
+// (ISS-0032). bcrypt's run time is set by its cost factor, not by the input.
+const DUMMY_PASSWORD_HASH =
+  "$2b$12$Ap7iynbmTBWuWC3S1WvT..O4K2cs/uJW2VBW265CJTYPUsltUghEq";
 
 /**
  * POST /api/auth/login
@@ -67,27 +81,63 @@ export async function POST(request: NextRequest) {
         ? (body as { rememberMe: boolean }).rememberMe
         : true;
 
-    const rateLimited = await withRateLimit(
-      request,
-      defaultRateLimits.auth,
-      `${email}`
+    // Two budgets, both taken before the slow password check (ISS-0027). Per address and email,
+    // so one person's guesses on one account do not lock the address out of others; and per
+    // account across every address, so a distributed guesser does not get a fresh allowance from
+    // each one. The account budget is the larger, so a victim is not easily locked out by a
+    // stranger's bad guesses. Both are handed back on success: only failures count.
+    const normalizedEmail = email.toLowerCase();
+    const byAddress = await reserveAttempt(`login:${getClientIp(request)}:${normalizedEmail}`);
+    if (!byAddress.allowed) {
+      return NextResponse.json(tooManyAttempts(byAddress), {
+        status: 429,
+        headers: responseHeaders,
+      });
+    }
+    const byAccount = await reserveAttempt(
+      `login-account/${normalizedEmail}`,
+      ACCOUNT_MAX_ATTEMPTS,
     );
-    if (rateLimited) return rateLimited;
+    if (!byAccount.allowed) {
+      await releaseAttempt(byAddress.attemptId);
+      return NextResponse.json(tooManyAttempts(byAccount), {
+        status: 429,
+        headers: responseHeaders,
+      });
+    }
 
     const user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user || !user.password) {
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      user?.password ?? DUMMY_PASSWORD_HASH,
+    );
+    if (!user || !user.password || !isPasswordValid) {
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401, headers: responseHeaders },
       );
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
+    await releaseAttempt(byAddress.attemptId);
+    await releaseAttempt(byAccount.attemptId);
+
+    // Decision (a): checked only after the real password has been confirmed correct, so a
+    // guesser learns nothing about account status until they already have the password — the
+    // same enumeration-avoidance invariant as the credential check above (ISS-0032).
+    if (user.status === ACCOUNT_STATUS.SUSPENDED) {
       return NextResponse.json(
-        { error: "Invalid email or password" },
-        { status: 401, headers: responseHeaders },
+        { error: "This account has been suspended. Contact an administrator for help." },
+        { status: 403, headers: responseHeaders },
+      );
+    }
+    if (user.status === ACCOUNT_STATUS.PENDING_VERIFICATION) {
+      return NextResponse.json(
+        {
+          error:
+            "Please verify your email before signing in. Check your inbox for the verification link.",
+        },
+        { status: 403, headers: responseHeaders },
       );
     }
 

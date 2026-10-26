@@ -20,7 +20,7 @@ export const updateUserAdminSchema = z.object({
 export const createUserAdminSchema = z.object({
   email: z.string().email("Valid email is required"),
   name: z.string().min(1, "Name is required").max(200),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
   username: z.string().min(3).max(50).optional(),
   role: userRoleEnum.nullable().optional(),
 });

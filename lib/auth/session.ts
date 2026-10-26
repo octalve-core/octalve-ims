@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { verifyToken, type AccessTokenPayload } from "./jwt";
+import { verifyToken, verifyTokenAllowExpired, type AccessTokenPayload } from "./jwt";
 
 /**
  * Lightweight, DB-free session read — decodes the `access_token` JWT only
@@ -18,4 +18,16 @@ export async function getServerSession(): Promise<AccessTokenPayload | null> {
   const token = cookieStore.get("access_token")?.value;
   if (!token) return null;
   return verifyToken(token);
+}
+
+/**
+ * Like getServerSession, but also accepts an access token that has expired (the signature must
+ * still be valid). For logout only: an idle tab past 15 minutes must still revoke its refresh
+ * tokens (ISS-0033). Never use it to authorize anything.
+ */
+export async function getExpiredSession(): Promise<AccessTokenPayload | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("access_token")?.value;
+  if (!token) return null;
+  return verifyTokenAllowExpired(token);
 }

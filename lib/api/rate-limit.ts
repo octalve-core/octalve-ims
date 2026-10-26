@@ -26,6 +26,18 @@ export interface ApiRateLimitConfig {
 }
 
 /**
+ * The bucket key for a caller: their address. Never a client-sent header such as `x-user-id`
+ * (ISS-0027): anything the client can set, the client can rotate to get a fresh allowance, or set
+ * to a victim's id to use theirs up. Routes that want a per-user limit pass the session's user id
+ * as `overrideIdentifier` to `withRateLimit`.
+ */
+function clientAddressKey(request: NextRequest): string {
+  const raw = request.headers.get("x-forwarded-for") ?? request.headers.get("x-real-ip");
+  const hops = raw ? raw.split(",").map((h) => h.trim()).filter(Boolean) : [];
+  return `ip:${hops[hops.length - 1] ?? "unknown"}`;
+}
+
+/**
  * Default rate limit configurations
  */
 export const defaultRateLimits = {
@@ -36,12 +48,7 @@ export const defaultRateLimits = {
   standard: {
     limit: 600,
     window: 60,
-    getIdentifier: (request: NextRequest) => {
-      // Try to get user ID from session, fallback to IP
-      const userId = request.headers.get("x-user-id");
-      if (userId) return `user:${userId}`;
-      return `ip:${request.headers.get("x-real-ip") || request.headers.get("x-forwarded-for") || "unknown"}`;
-    },
+    getIdentifier: (request: NextRequest) => clientAddressKey(request),
   },
   /**
    * Strict rate limit (10 requests per minute)
@@ -49,22 +56,18 @@ export const defaultRateLimits = {
   strict: {
     limit: 10,
     window: 60,
-    getIdentifier: (request: NextRequest) => {
-      const userId = request.headers.get("x-user-id");
-      if (userId) return `user:${userId}`;
-      return `ip:${request.headers.get("x-real-ip") || request.headers.get("x-forwarded-for") || "unknown"}`;
-    },
+    getIdentifier: (request: NextRequest) => clientAddressKey(request),
   },
   /**
-   * Auth rate limit (5 requests per minute)
+   * Auth rate limit (5 requests per minute). Kept for the less sensitive auth routes; the
+   * credential-guessing routes (login, refresh, register, forgot/reset/change password) use the
+   * database-backed lib/auth/rate-limit-db.ts instead, because this one is Redis-only and allows
+   * every request when Redis is missing.
    */
   auth: {
     limit: 5,
     window: 60,
-    getIdentifier: (request: NextRequest) => {
-      // Use IP for auth endpoints to prevent brute force
-      return `ip:${request.headers.get("x-real-ip") || request.headers.get("x-forwarded-for") || "unknown"}`;
-    },
+    getIdentifier: (request: NextRequest) => clientAddressKey(request),
   },
 } as const;
 
