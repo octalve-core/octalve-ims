@@ -1,10 +1,10 @@
 # 0004: Auth hardening ported from Proplity
 
 - **Period / Focus:** 2026-10-26 (a comparison of IMS's auth with Proplity's current auth, then the fixes)
-- **Status:** In Progress (code done, tested and gated; waiting for review, push and merge)
+- **Status:** In Progress (code done, tested and gated; PR open, decisions (b) through (e) and the remaining "still open" items not yet asked)
 - **Priority:** High
 - **Assignee:** Agent (Claude), for the maintainer
-- **Target Branch / PR:** `fix/auth-hardening-from-proplity` (off local `dev`) / no PR yet
+- **Target Branch / PR:** `fix/auth-hardening-from-proplity` (off local `dev`) / [PR #29](https://github.com/octalve-core/octalve-ims/pull/29)
 - **Started:** 2026-10-26
 - **Ended:** —
 - **Duration:** —
@@ -15,7 +15,7 @@
 
 ## 1. Objective
 
-Bring the IMS auth routes up to the standard Proplity reached after the August port, closing the register rows ISS-0027, 0028, 0029, 0032 and 0033 (and the parts of them that were fixable without a model decision), each with a test that failed on the old code.
+Bring the IMS auth routes up to the standard Proplity reached after the August port, closing the register rows ISS-0027, 0028, 0029, 0032 and 0033 (and the parts of them that were fixable without a model decision), each with a test that failed on the old code. Decision (a) (`User.status`, closing part of ISS-0102 which this task also opened) was approved and implemented in the same branch on 2026-10-26; decisions (b) through (e) and the three remaining "still open" items are to be asked next, one at a time.
 
 ## 2. Context & Related Docs
 - [`../auth-system-port-plan.md`](../auth-system-port-plan.md): what was ported in August; its new "Hardening after the port" section lists what was ported afterwards and why.
@@ -53,14 +53,26 @@ Bring the IMS auth routes up to the standard Proplity reached after the August p
 - [x] Register rows updated; this task; ADR 0008; port plan section; open-items; HANDOVER
 - [x] Tests: 56 in `lib/auth/` (47 new across five files)
 
+### Module E: User.status / email verification (decision a, 2026-10-26)
+- [x] `User.status` (plain string, matching this schema's convention for `role`: no Prisma enums anywhere else) — ACTIVE / SUSPENDED / PENDING_VERIFICATION (`lib/auth/account-status.ts`), migration `20261026020000_add_user_status`, default ACTIVE so no existing row changes behavior
+- [x] Login refuses SUSPENDED and PENDING_VERIFICATION, checked only after the real password is confirmed (same enumeration-avoidance ordering as ISS-0032)
+- [x] Refresh refuses both too, and additionally revokes the whole refresh-token family — a session opened while ACTIVE stops working the moment it's suspended, not just at the next login
+- [x] Self-registration now creates PENDING_VERIFICATION and issues no session (no refresh token, no cookies); sends a verification email via `after()` (`generateVerificationEmail`, mirrors `generatePasswordResetEmail`)
+- [x] `verify-email` route now activates the account (ACTIVE), scoped to exclude SUSPENDED so a stale/live token can never undo a suspension; works on both its existing branches (self-registration confirmation with no password, and the pre-existing set-a-password/invite branch)
+- [x] New frontend page `/verify-email` (`components/Pages/VerifyEmailPage.tsx`) consumes the emailed token; `RegisterPage.tsx` copy updated to say "check your email"
+- [x] OAuth sign-ups (`oauth/google/callback/route.ts`) and admin-created users (`prisma/user-admin.ts`) take the schema default (ACTIVE) unchanged — neither needed a code change
+- [x] 14 tests in `login-route.test.ts` (4), `refresh-route.test.ts` (4) and `password-routes.test.ts` (6: 2 for register, 4 for verify-email), each shown failing against the old routes first
+- **Gap opened, out of scope for this decision, logged as ISS-0102:** nothing gives an admin a way to ever set a user's status to SUSPENDED — `updateUserAdminSchema` / `PUT /api/users/[id]` has no `status` field. The enforcement is real but currently unreachable without a follow-up "suspend/reactivate user" admin feature.
+
 ---
 
 ## 4. Unified Verification & Quality Gates
-Run 2026-10-26.
+Run 2026-10-26; re-run after Module E.
 - [x] `pnpm typecheck` clean (0 errors; the first run caught three `noUncheckedIndexedAccess` errors in `refresh-route.test.ts`, fixed)
 - [x] `eslint` on the touched files: 0 errors, 2 warnings, both already there (`window.location.href` in `hooks/use-auth-refresh.ts`, a tier-boundary import in `lib/auth/unique-username.ts`)
 - [x] `pnpm check:manifest` OK
-- [x] `vitest` full run, database-writing test excluded: 968 passed, 0 failed, 150 files
+- [x] `vitest` full run, database-writing test excluded: 983 passed, 0 failed, 150 files (re-run after Module E; also required adding `VerifyEmailPage.tsx` to `invalidate-coverage.test.ts`'s pre-auth-page allowlist, same as `ResetPasswordPage.tsx`)
+- [x] Migration applied cleanly against the local walkthrough database (`octalve_ims_test`) end to end, never against the hosted Neon one
 - [ ] `pnpm build` not run (never has been, see HANDOVER)
 - [x] Tier exports not re-run: no file moved between tiers; every new file is under `lib/auth` (already `shared`)
 
@@ -69,11 +81,13 @@ Run 2026-10-26.
 ## 5. Notes, Findings & Deviations
 - **Found by comparing IMS with Proplity's current auth** (read-only, 2026-10-26). Proplity's own review findings (docs/auth-review-2026-09-30.md) were fixed there; IMS had the August port without them.
 - **ADR 0004 said rate limiting was database-backed (`LoginAttempt`); it was not.** The table existed and nothing wrote to it; all limiting was the Redis presets. This task makes the ADR's sentence true for the auth routes.
-- **Not fixed, needs a decision (open-items):** IMS has no user `status`, so there is nothing to suspend and no email-verified gate on login or refresh (Proplity checks `SUSPENDED` / `PENDING_VERIFICATION`). Minimum password is 6 (Proplity 8). A wrong password on login still triggers the refresh interceptor and a hard redirect (ISS-0030). Register answers 409 "already exists" (ISS-0032).
+- **Decision (a) approved and built 2026-10-26:** `User.status` added, self-registration requires email verification. See Module E. Opened a new gap, logged as ISS-0102: nothing yet lets an admin set SUSPENDED.
+- **Still needs a decision (open-items), not yet asked this session:** minimum password is 6 (Proplity 8, decision b). A wrong password on login still triggers the refresh interceptor and a hard redirect (ISS-0030, decision d). Register answers 409 "already exists" (ISS-0032, decision c). Confirm exactly one trusted proxy (decision e).
 - **Deviation from Proplity:** forgot-password lowercases the email for the limiter key and defers the whole real-user branch to `after()`; Proplity awaits the mail for a real account.
 - The ordering rule was followed: the five test files were written and shown failing against the old routes (refresh 7 of 9, login 7 of 9, logout 1 of 5, password routes 9 of 10) before the routes were changed.
 
 ## 6. Output & Deliverables
 - **Commits:** on `fix/auth-hardening-from-proplity`
-- **PR:** none yet
+- **PR:** [#29](https://github.com/octalve-core/octalve-ims/pull/29), into `dev`
 - **Docs:** `docs/issues/README.md`, `docs/tasks/0004-…`, `docs/tasks/current-tasks.md`, `docs/adr/0008-…`, `docs/adr/README.md`, `docs/auth-system-port-plan.md`, `docs/open-items.md`, `docs/HANDOVER.md`
+- **Decision (a) additions (2026-10-26):** `prisma/schema/tenancy.prisma`, `prisma/migrations/20261026020000_add_user_status/`, `lib/auth/account-status.ts`, `lib/email/templates.ts` (`generateVerificationEmail`), `app/api/auth/register/route.ts`, `app/api/auth/login/route.ts`, `app/api/auth/refresh/route.ts`, `app/api/auth/verify-email/route.ts`, `app/verify-email/page.tsx`, `components/Pages/VerifyEmailPage.tsx`, `components/Pages/RegisterPage.tsx` (copy), `tier-manifest.json`, `lib/react-query/invalidate-coverage.test.ts` (allowlist)

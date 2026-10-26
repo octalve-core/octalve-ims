@@ -32,6 +32,7 @@ import {
   reserveAttempt,
   tooManyAttempts,
 } from "@/lib/auth/rate-limit-db";
+import { ACCOUNT_STATUS } from "@/lib/auth/account-status";
 
 function hashToken(raw: string): string {
   return crypto.createHash("sha256").update(raw).digest("hex");
@@ -119,6 +120,23 @@ export async function POST(request: NextRequest) {
     });
 
     if (!currentToken || currentToken.user.role === undefined) {
+      clearAuthCookies(cookieStore);
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Decision (a): a session opened while ACTIVE must stop working the moment an admin
+    // suspends the account — not just block the next login. PENDING_VERIFICATION is checked
+    // defensively too, though register issues no session for it in practice. Revokes the
+    // whole family, same as a detected-theft reuse, so every tab this account held is signed
+    // out, not just this one request.
+    if (
+      currentToken.user.status === ACCOUNT_STATUS.SUSPENDED ||
+      currentToken.user.status === ACCOUNT_STATUS.PENDING_VERIFICATION
+    ) {
+      await prisma.refreshToken.updateMany({
+        where: { familyId: currentToken.familyId },
+        data: { revokedAt: new Date() },
+      });
       clearAuthCookies(cookieStore);
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }

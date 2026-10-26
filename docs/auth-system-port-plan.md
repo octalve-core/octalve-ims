@@ -163,6 +163,6 @@ The port above copied Proplity as it stood on 2026-08-23. Proplity then changed 
 | Dummy bcrypt hash so login time does not show which emails exist | Ported | `app/api/auth/login/route.ts` |
 | Forgot-password answers the same either way; limited per address+email | Ported, and the real-user work runs in `after()` | `app/api/auth/forgot-password/route.ts` |
 | Last `X-Forwarded-For` hop as the client address | Ported (also used by the Redis presets); `x-user-id` is no longer trusted | `lib/auth/rate-limit-db.ts`, `lib/api/rate-limit.ts` |
-| `SUSPENDED` / `PENDING_VERIFICATION` refused at login and refresh | **Not ported**: IMS has no user status (open-items) | n/a |
+| `SUSPENDED` / `PENDING_VERIFICATION` refused at login and refresh | Ported 2026-10-26 (decision a): `User.status`, migration `20261026020000_add_user_status`; refresh also revokes the token family on SUSPENDED. Self-registration now starts PENDING_VERIFICATION and emails a verification link (OAuth and admin-created users start ACTIVE). **Gap (ISS-0102):** no admin UI/API sets SUSPENDED yet | `prisma/schema/tenancy.prisma`, `lib/auth/account-status.ts`, `app/api/auth/{login,refresh,register,verify-email}/route.ts` |
 | Minimum password 8 | **Not ported**: still 6 (open-items) | `lib/validations/auth.ts` |
 | `jti` or token version so access tokens die on logout | Proplity does not have it either (15-minute window); neither project | n/a |

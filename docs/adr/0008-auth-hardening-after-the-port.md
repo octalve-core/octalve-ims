@@ -30,3 +30,7 @@ Backfilled: no, written with the change (task 0004)
 - A 5-second window in which a stolen, just-rotated token can be replayed once. Accepted, same as Proplity's ADR-0016.
 - Access tokens still have no `jti`, so they work until they expire after logout or a password change (ISS-0033, second half).
 - **Revisit if:** the app is put behind more than one trusted proxy; user suspension or email verification is added (the refresh and login checks Proplity has would then be ported).
+
+## Addendum (2026-10-26): user status and email verification
+
+The maintainer approved decision (a) the same day: add `User.status` and require email verification for self-registration. Login and refresh both now refuse `SUSPENDED` and `PENDING_VERIFICATION`; refresh additionally revokes the whole refresh-token family on either, so a session opened while `ACTIVE` stops working the moment it is suspended, not just at the next login attempt. Self-registration creates `PENDING_VERIFICATION` and issues no session; the pre-existing but previously-dead `VerificationToken` table and `verify-email` route are now wired up (self-registration creates the token and emails the link; the route activates the account). OAuth sign-ups and admin-created accounts start `ACTIVE`, skipping the gate — the provider or the admin already vouches for the email. This opened a new, deliberately out-of-scope gap: no admin UI or API sets `SUSPENDED` (logged as ISS-0102).

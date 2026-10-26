@@ -35,6 +35,7 @@ vi.mock("@/lib/auth/rate-limit-db", async (orig) => ({
 }));
 
 import { POST } from "@/app/api/auth/login/route";
+import { ACCOUNT_STATUS } from "@/lib/auth/account-status";
 
 function request(body: unknown, ip = "203.0.113.7") {
   return new NextRequest("http://localhost/api/auth/login", {
@@ -63,7 +64,14 @@ beforeEach(async () => {
   release.mockResolvedValue(undefined);
 });
 
-const user = () => ({ id: "u1", email: "a@b.com", name: "A", role: "user", password: realHash });
+const user = () => ({
+  id: "u1",
+  email: "a@b.com",
+  name: "A",
+  role: "user",
+  password: realHash,
+  status: ACCOUNT_STATUS.ACTIVE,
+});
 
 describe("login throttling (ISS-0027)", () => {
   it("counts per address and email, and across all addresses for the account", async () => {
@@ -135,6 +143,37 @@ describe("login timing (ISS-0032)", () => {
     const wrong = await POST(request({ email: "a@b.com", password: "x" }));
     expect(unknown.status).toBe(wrong.status);
     expect(await unknown.json()).toEqual(await wrong.json());
+  });
+});
+
+describe("account status (decision a)", () => {
+  it("refuses a SUSPENDED account after a correct password, and issues no session", async () => {
+    findUnique.mockResolvedValue({ ...user(), status: ACCOUNT_STATUS.SUSPENDED });
+    const res = await POST(request({ email: "a@b.com", password: "correct-horse" }));
+    expect(res.status).toBe(403);
+    expect(createToken).not.toHaveBeenCalled();
+    expect(cookieWrites).toEqual([]);
+  });
+
+  it("refuses a PENDING_VERIFICATION account after a correct password, and issues no session", async () => {
+    findUnique.mockResolvedValue({ ...user(), status: ACCOUNT_STATUS.PENDING_VERIFICATION });
+    const res = await POST(request({ email: "a@b.com", password: "correct-horse" }));
+    expect(res.status).toBe(403);
+    expect(createToken).not.toHaveBeenCalled();
+    expect(cookieWrites).toEqual([]);
+  });
+
+  it("still hands back both rate-limit slots when a correct password is blocked by status", async () => {
+    findUnique.mockResolvedValue({ ...user(), status: ACCOUNT_STATUS.SUSPENDED });
+    await POST(request({ email: "a@b.com", password: "correct-horse" }));
+    expect(release).toHaveBeenCalledWith("att:login:203.0.113.7:a@b.com");
+    expect(release).toHaveBeenCalledWith("att:login-account/a@b.com");
+  });
+
+  it("logs in an ACTIVE account normally", async () => {
+    findUnique.mockResolvedValue(user());
+    const res = await POST(request({ email: "a@b.com", password: "correct-horse" }));
+    expect(res.status).toBe(200);
   });
 });
 

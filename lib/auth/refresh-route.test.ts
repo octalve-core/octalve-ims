@@ -16,7 +16,7 @@ type Token = {
   revokedAt: Date | null;
   replacedBy: string | null;
   expiresAt: Date;
-  user: { id: string; role: string | null };
+  user: { id: string; role: string | null; status: string };
 };
 
 const { cookieJar, cookieWrites, cookieDeletes, db, reserve, release } = vi.hoisted(() => ({
@@ -55,6 +55,7 @@ vi.mock("@/lib/auth/rate-limit-db", async (orig) => ({
 }));
 
 import { POST } from "@/app/api/auth/refresh/route";
+import { ACCOUNT_STATUS } from "@/lib/auth/account-status";
 
 const hash = (raw: string) => crypto.createHash("sha256").update(raw).digest("hex");
 const DAY = 24 * 60 * 60 * 1000;
@@ -75,7 +76,7 @@ function tokenRow(over: Partial<Token> = {}): Token {
     revokedAt: null,
     replacedBy: null,
     expiresAt: new Date(Date.now() + 25 * DAY),
-    user: { id: "u1", role: "user" },
+    user: { id: "u1", role: "user", status: ACCOUNT_STATUS.ACTIVE },
     ...over,
   };
 }
@@ -172,6 +173,50 @@ describe("refresh: a token used twice (ISS-0028)", () => {
       data: { revokedAt: expect.any(Date) },
     });
     expect(cookieDeletes.sort()).toEqual(["access_token", "refresh_token"]);
+  });
+});
+
+describe("refresh: account status (decision a)", () => {
+  it("refuses a SUSPENDED account, revokes the whole family, and clears cookies", async () => {
+    const suspended = tokenRow({ user: { id: "u1", role: "user", status: ACCOUNT_STATUS.SUSPENDED } });
+    db.updateMany.mockResolvedValueOnce({ count: 1 });
+    db.findUnique.mockResolvedValueOnce(suspended);
+
+    const res = await POST(request());
+    expect(res.status).toBe(403);
+    expect(db.create).not.toHaveBeenCalled();
+    expect(cookieDeletes.sort()).toEqual(["access_token", "refresh_token"]);
+    expect(db.updateMany).toHaveBeenLastCalledWith({
+      where: { familyId: "fam" },
+      data: { revokedAt: expect.any(Date) },
+    });
+  });
+
+  it("refuses a PENDING_VERIFICATION account the same way, defensively", async () => {
+    const pending = tokenRow({
+      user: { id: "u1", role: "user", status: ACCOUNT_STATUS.PENDING_VERIFICATION },
+    });
+    db.updateMany.mockResolvedValueOnce({ count: 1 });
+    db.findUnique.mockResolvedValueOnce(pending);
+
+    const res = await POST(request());
+    expect(res.status).toBe(403);
+    expect(db.create).not.toHaveBeenCalled();
+  });
+
+  it("does not spend the refresh rate-limit budget when blocked by status", async () => {
+    const suspended = tokenRow({ user: { id: "u1", role: "user", status: ACCOUNT_STATUS.SUSPENDED } });
+    db.updateMany.mockResolvedValueOnce({ count: 1 });
+    db.findUnique.mockResolvedValueOnce(suspended);
+    await POST(request());
+    expect(release).not.toHaveBeenCalled();
+  });
+
+  it("still refreshes an ACTIVE account normally", async () => {
+    db.updateMany.mockResolvedValueOnce({ count: 1 });
+    db.findUnique.mockResolvedValueOnce(tokenRow());
+    const res = await POST(request());
+    expect(res.status).toBe(200);
   });
 });
 

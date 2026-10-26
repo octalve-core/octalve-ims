@@ -28,6 +28,7 @@ import {
   reserveAttempt,
   tooManyAttempts,
 } from "@/lib/auth/rate-limit-db";
+import { ACCOUNT_STATUS } from "@/lib/auth/account-status";
 
 // A fixed bcrypt hash (cost 12, matching real password hashes) that no password produces. It is
 // compared against whenever there is no real hash to compare (unknown email, or an account with
@@ -120,6 +121,25 @@ export async function POST(request: NextRequest) {
 
     await releaseAttempt(byAddress.attemptId);
     await releaseAttempt(byAccount.attemptId);
+
+    // Decision (a): checked only after the real password has been confirmed correct, so a
+    // guesser learns nothing about account status until they already have the password — the
+    // same enumeration-avoidance invariant as the credential check above (ISS-0032).
+    if (user.status === ACCOUNT_STATUS.SUSPENDED) {
+      return NextResponse.json(
+        { error: "This account has been suspended. Contact an administrator for help." },
+        { status: 403, headers: responseHeaders },
+      );
+    }
+    if (user.status === ACCOUNT_STATUS.PENDING_VERIFICATION) {
+      return NextResponse.json(
+        {
+          error:
+            "Please verify your email before signing in. Check your inbox for the verification link.",
+        },
+        { status: 403, headers: responseHeaders },
+      );
+    }
 
     const userRole = user.role ?? "user";
 

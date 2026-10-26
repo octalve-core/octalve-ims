@@ -73,7 +73,7 @@ export default function RegisterPage() {
       if (response.status === 201) {
         toast({
           title: "Account Created Successfully! 🎉",
-          description: `Welcome, ${name}! Your account has been created. Redirecting to login page...`,
+          description: `Welcome, ${name}! Check your email to verify your account, then sign in. Redirecting to the login page...`,
         });
 
         setName("");

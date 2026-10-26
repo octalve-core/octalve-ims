@@ -13,14 +13,19 @@ import { NextRequest } from "next/server";
 
 const h = vi.hoisted(() => ({
   cookieJar: new Map<string, string>(),
+  cookieWrites: [] as { name: string }[],
   scheduled: [] as (() => Promise<unknown> | unknown)[],
   userFindUnique: vi.fn(),
   userFindFirst: vi.fn(),
   userCreate: vi.fn(),
   userUpdate: vi.fn(),
+  userUpdateMany: vi.fn(),
   resetUpsert: vi.fn(),
   resetDeleteMany: vi.fn(),
   resetFindUnique: vi.fn(),
+  verificationUpsert: vi.fn(),
+  verificationFindUnique: vi.fn(),
+  verificationDelete: vi.fn(),
   tokenUpdateMany: vi.fn(),
   tokenCreate: vi.fn(),
   sendEmail: vi.fn(),
@@ -36,13 +41,14 @@ vi.mock("next/server", async (orig) => ({
 vi.mock("next/headers", () => ({
   cookies: async () => ({
     get: (n: string) => (h.cookieJar.has(n) ? { value: h.cookieJar.get(n) } : undefined),
-    set: vi.fn(),
+    set: (name: string) => h.cookieWrites.push({ name }),
     delete: vi.fn(),
   }),
 }));
 vi.mock("@/prisma/client", () => {
   const tx = {
     passwordResetToken: { findUnique: h.resetFindUnique, deleteMany: h.resetDeleteMany },
+    verificationToken: { findUnique: h.verificationFindUnique, delete: h.verificationDelete },
     user: { update: h.userUpdate },
     refreshToken: { updateMany: h.tokenUpdateMany },
   };
@@ -53,11 +59,17 @@ vi.mock("@/prisma/client", () => {
         findFirst: h.userFindFirst,
         create: h.userCreate,
         update: h.userUpdate,
+        updateMany: h.userUpdateMany,
       },
       passwordResetToken: {
         upsert: h.resetUpsert,
         findUnique: h.resetFindUnique,
         deleteMany: h.resetDeleteMany,
+      },
+      verificationToken: {
+        upsert: h.verificationUpsert,
+        findUnique: h.verificationFindUnique,
+        delete: h.verificationDelete,
       },
       refreshToken: { create: h.tokenCreate, updateMany: h.tokenUpdateMany },
       $transaction: async (arg: unknown) =>
@@ -83,6 +95,8 @@ import { POST as forgot } from "@/app/api/auth/forgot-password/route";
 import { POST as reset } from "@/app/api/auth/reset-password/route";
 import { POST as change } from "@/app/api/auth/change-password/route";
 import { POST as register } from "@/app/api/auth/register/route";
+import { POST as verifyEmail } from "@/app/api/auth/verify-email/route";
+import { ACCOUNT_STATUS } from "@/lib/auth/account-status";
 
 function req(path: string, body: unknown, ip = "203.0.113.7") {
   return new NextRequest(`http://localhost/api/auth/${path}`, {
@@ -112,6 +126,7 @@ async function signedIn(sub = "u1") {
 beforeEach(() => {
   vi.clearAllMocks();
   h.cookieJar.clear();
+  h.cookieWrites.length = 0;
   h.scheduled.length = 0;
   h.reserve.mockImplementation(async (id: string) => ({
     allowed: true,
@@ -121,8 +136,10 @@ beforeEach(() => {
   h.release.mockResolvedValue(undefined);
   h.sendEmail.mockResolvedValue({ success: true });
   h.resetUpsert.mockResolvedValue({});
+  h.verificationUpsert.mockResolvedValue({});
   h.tokenUpdateMany.mockResolvedValue({ count: 1 });
   h.userUpdate.mockResolvedValue({});
+  h.userUpdateMany.mockResolvedValue({ count: 1 });
 });
 
 describe("forgot-password", () => {
@@ -260,5 +277,97 @@ describe("register", () => {
       req("register", { name: "Ada", email: "ada@b.com", password: "a-good-password" }),
     );
     expect(limited.status).toBe(429);
+  });
+
+  describe("email verification (decision a)", () => {
+    it("creates the account PENDING_VERIFICATION and issues no session", async () => {
+      h.userFindUnique.mockResolvedValue(null);
+      h.userFindFirst.mockResolvedValue(null);
+      h.userCreate.mockResolvedValue({ id: "u1", name: "Ada", email: "ada@b.com" });
+      const res = await register(
+        req("register", { name: "Ada", email: "ada@b.com", password: "a-good-password" }),
+      );
+      expect(res.status).toBe(201);
+      expect(h.userCreate.mock.calls[0]![0].data.status).toBe(ACCOUNT_STATUS.PENDING_VERIFICATION);
+      expect(h.tokenCreate).not.toHaveBeenCalled();
+      expect(h.cookieWrites).toEqual([]);
+    });
+
+    it("schedules a verification token and email after the response, not before", async () => {
+      h.userFindUnique.mockResolvedValue(null);
+      h.userFindFirst.mockResolvedValue(null);
+      h.userCreate.mockResolvedValue({ id: "u1", name: "Ada", email: "ada@b.com" });
+      await register(req("register", { name: "Ada", email: "ada@b.com", password: "a-good-password" }));
+      expect(h.verificationUpsert).not.toHaveBeenCalled();
+      expect(h.sendEmail).not.toHaveBeenCalled();
+      expect(h.scheduled).toHaveLength(1);
+      await h.scheduled[0]!();
+      expect(h.verificationUpsert).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: "u1" } }),
+      );
+      expect(h.sendEmail).toHaveBeenCalledTimes(1);
+    });
+  });
+});
+
+describe("verify-email", () => {
+  const body = (over: Record<string, unknown> = {}) => ({ token: "raw-token", ...over });
+  const record = (over: Record<string, unknown> = {}) =>
+    h.verificationFindUnique.mockResolvedValue({
+      id: "v1",
+      userId: "u1",
+      expiresAt: new Date(Date.now() + 60_000),
+      ...over,
+    });
+
+  it("activates a PENDING_VERIFICATION account when the token confirms email only, no password", async () => {
+    record();
+    const res = await verifyEmail(req("verify-email", body()));
+    expect(res.status).toBe(200);
+    expect(h.userUpdateMany).toHaveBeenCalledWith({
+      where: { id: "u1", status: { not: ACCOUNT_STATUS.SUSPENDED } },
+      data: { status: ACCOUNT_STATUS.ACTIVE },
+    });
+    expect(h.verificationDelete).toHaveBeenCalledWith({ where: { id: "v1" } });
+  });
+
+  it("also activates the account on the set-a-password branch (invite/activation flow)", async () => {
+    record();
+    const res = await verifyEmail(req("verify-email", body({ password: "a-new-password" })));
+    expect(res.status).toBe(200);
+    expect(h.userUpdateMany).toHaveBeenCalledWith({
+      where: { id: "u1", status: { not: ACCOUNT_STATUS.SUSPENDED } },
+      data: { status: ACCOUNT_STATUS.ACTIVE },
+    });
+    expect(h.userUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "u1" }, data: { password: expect.any(String) } }),
+    );
+  });
+
+  it("never reactivates a SUSPENDED account just because it still held a live token", async () => {
+    record();
+    h.userUpdateMany.mockResolvedValue({ count: 0 }); // the `status: { not: SUSPENDED }` guard excluded it
+    const res = await verifyEmail(req("verify-email", body()));
+    expect(res.status).toBe(200);
+    expect(h.userUpdateMany).toHaveBeenCalledWith({
+      where: { id: "u1", status: { not: ACCOUNT_STATUS.SUSPENDED } },
+      data: { status: ACCOUNT_STATUS.ACTIVE },
+    });
+  });
+
+  it("refuses an unknown or expired token and changes nothing", async () => {
+    h.verificationFindUnique.mockResolvedValue(null);
+    const res = await verifyEmail(req("verify-email", body()));
+    expect(res.status).toBe(400);
+    expect(h.userUpdateMany).not.toHaveBeenCalled();
+
+    h.verificationFindUnique.mockResolvedValue({
+      id: "v1",
+      userId: "u1",
+      expiresAt: new Date(Date.now() - 1),
+    });
+    const expired = await verifyEmail(req("verify-email", body()));
+    expect(expired.status).toBe(400);
+    expect(h.userUpdateMany).not.toHaveBeenCalled();
   });
 });

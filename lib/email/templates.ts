@@ -465,3 +465,95 @@ This is an automated email from Octalve IMS. Please do not reply to this email.
     textContent,
   };
 }
+
+export function generateVerificationEmail(data: {
+  verifyUrl: string;
+  userName?: string;
+  expiresInMinutes: number;
+}): EmailContent {
+  const { verifyUrl, userName, expiresInMinutes } = data;
+  const subject = "Verify your Octalve IMS email";
+  const greeting = userName ? `Hi ${userName},` : "Hi,";
+  const expiresInHours = Math.round(expiresInMinutes / 60);
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="x-apple-disable-message-reformatting">
+    <title>Verify your email</title>
+    <!--[if mso]>
+    <style type="text/css">
+      body, table, td {font-family: Arial, sans-serif !important;}
+    </style>
+    <![endif]-->
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
+      <tr>
+        <td align="center" style="padding: 20px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <tr>
+              <td style="padding: 30px;">
+                <h1 style="color: #0064E0; margin: 0 0 20px 0; font-size: 24px; font-weight: 600; line-height: 1.2;">Verify your email</h1>
+
+                <p style="font-size: 16px; line-height: 1.6; color: #333333; margin: 0 0 20px 0;">${greeting}</p>
+                <p style="font-size: 16px; line-height: 1.6; color: #333333; margin: 0 0 24px 0;">
+                  Thanks for creating an Octalve IMS account. Click the button below to verify your email and sign in. This link expires in ${expiresInHours} hours.
+                </p>
+
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                  <tr>
+                    <td align="center" style="padding: 10px 0 26px 0;">
+                      <a href="${verifyUrl}" style="display: inline-block; background-color: #0064E0; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 32px; border-radius: 999px;">Verify Email</a>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="font-size: 14px; line-height: 1.6; color: #666666; margin: 0 0 8px 0;">
+                  If the button doesn't work, copy and paste this link into your browser:
+                </p>
+                <p style="font-size: 13px; line-height: 1.6; color: #0064E0; word-break: break-all; margin: 0 0 24px 0;">${verifyUrl}</p>
+
+                <p style="font-size: 14px; line-height: 1.6; color: #666666; margin: 0;">
+                  If you didn't create this account, you can safely ignore this email.
+                </p>
+
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+                <p style="font-size: 12px; color: #999; margin: 0;">
+                  This is an automated email from Octalve IMS. Please do not reply to this email.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+  `.trim();
+
+  const textContent = `
+${greeting}
+
+Thanks for creating an Octalve IMS account.
+This link expires in ${expiresInHours} hours.
+
+Verify your email: ${verifyUrl}
+
+If you didn't create this account, you can safely ignore this email.
+
+---
+This is an automated email from Octalve IMS. Please do not reply to this email.
+  `.trim();
+
+  return {
+    subject,
+    htmlContent,
+    textContent,
+  };
+}
