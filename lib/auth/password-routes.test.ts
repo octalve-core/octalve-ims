@@ -320,6 +320,35 @@ describe("register", () => {
       expect(h.sendEmail).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe("existing email (decision c, ISS-0032)", () => {
+    it("responds exactly like a fresh signup instead of 409, and creates no second account", async () => {
+      h.userFindUnique.mockResolvedValue(null);
+      h.userFindFirst.mockResolvedValue(null);
+      const freshRes = await register(
+        req("register", { name: "Someone Else", email: "new@b.com", password: "a-good-password" }),
+      );
+      h.userCreate.mockClear();
+      h.userFindUnique.mockResolvedValue({ id: "existing-1", name: "Ada", email: "ada@b.com" });
+      const existingRes = await register(
+        req("register", { name: "Ada", email: "ada@b.com", password: "a-good-password" }),
+      );
+      expect(existingRes.status).toBe(freshRes.status);
+      expect(await existingRes.json()).toEqual(await freshRes.json());
+      expect(h.userCreate).not.toHaveBeenCalled();
+    });
+
+    it("emails the existing address instead of creating a verification token, deferred to after()", async () => {
+      h.userFindUnique.mockResolvedValue({ id: "existing-1", name: "Ada", email: "ada@b.com" });
+      await register(req("register", { name: "Ada", email: "ada@b.com", password: "a-good-password" }));
+      expect(h.sendEmail).not.toHaveBeenCalled();
+      expect(h.scheduled).toHaveLength(1);
+      await h.scheduled[0]!();
+      expect(h.verificationUpsert).not.toHaveBeenCalled();
+      expect(h.sendEmail).toHaveBeenCalledTimes(1);
+      expect(h.sendEmail.mock.calls[0]![0].to.email).toBe("ada@b.com");
+    });
+  });
 });
 
 describe("verify-email", () => {

@@ -16,9 +16,17 @@ import { validateCSRF } from "@/lib/auth/csrf";
 import { getClientIp, reserveAttempt, tooManyAttempts } from "@/lib/auth/rate-limit-db";
 import { ACCOUNT_STATUS } from "@/lib/auth/account-status";
 import { isBrevoConfigured, sendEmailViaBrevo } from "@/lib/email/brevo";
-import { generateVerificationEmail } from "@/lib/email/templates";
+import { generateAccountExistsEmail, generateVerificationEmail } from "@/lib/email/templates";
 
 const VERIFY_TOKEN_TTL_MINUTES = 24 * 60;
+
+// ISS-0032: register used to answer 409 when the email already had an account, letting a
+// visitor enumerate which emails are registered. Both branches now return this exact body
+// (decision c) — the real difference (verification link vs. a notice) is sent by email, not
+// by the response.
+const REGISTER_RESPONSE_BODY = {
+  message: "We've sent an email to the address you provided with the next step.",
+};
 
 /**
  * Creates (or replaces) the account's verification token and emails the link. Deferred to
@@ -68,6 +76,42 @@ async function sendVerificationEmail(
 }
 
 /**
+ * Notifies an already-registered address instead of creating a second account (decision c).
+ * Deferred to `after()`, same as `sendVerificationEmail`.
+ */
+async function notifyExistingAccount(
+  user: { name: string; email: string },
+  origin: string,
+) {
+  try {
+    if (!isBrevoConfigured()) {
+      logger.warn("Brevo email service is not configured, cannot send the account-exists notice");
+      return;
+    }
+
+    const emailContent = generateAccountExistsEmail({
+      loginUrl: `${origin}/login`,
+      forgotPasswordUrl: `${origin}/forgot-password`,
+      userName: user.name,
+    });
+
+    const result = await sendEmailViaBrevo({
+      to: { email: user.email, name: user.name },
+      subject: emailContent.subject,
+      htmlContent: emailContent.htmlContent,
+      textContent: emailContent.textContent,
+      tags: ["account-exists-notice"],
+    });
+
+    if (!result.success) {
+      logger.error("Failed to send account-exists notice", { error: result.error });
+    }
+  } catch (error) {
+    logger.error("Account-exists notice error:", error);
+  }
+}
+
+/**
  * POST /api/auth/register
  * Register a new user
  */
@@ -101,13 +145,16 @@ export async function POST(request: NextRequest) {
     }
 
     const { name, email, password } = validationResult.data;
+    const origin = request.nextUrl.origin;
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return NextResponse.json(
-        { error: "A user with this email already exists. Please sign in instead." },
-        { status: 409 }
-      );
+      // Hash the submitted password anyway so this branch costs about the same as the real
+      // one below — otherwise the response time itself would tell a visitor which emails
+      // already have accounts (ISS-0032), the same reasoning as login's dummy-hash compare.
+      await bcrypt.hash(password, 12);
+      after(() => notifyExistingAccount(existingUser, origin));
+      return NextResponse.json(REGISTER_RESPONSE_BODY, { status: 201 });
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -147,19 +194,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const origin = request.nextUrl.origin;
     after(() => sendVerificationEmail(createdUser, origin));
 
     await scheduleInvalidateAuthCaches();
-    return NextResponse.json(
-      {
-        id: createdUser.id,
-        name: createdUser.name,
-        email: createdUser.email,
-        status: createdUser.status,
-      },
-      { status: 201 }
-    );
+    return NextResponse.json(REGISTER_RESPONSE_BODY, { status: 201 });
   } catch (error) {
     logger.error("Registration error:", error);
 
