@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     if (
       typeof body.currentPassword !== "string" ||
       typeof body.newPassword !== "string" ||
-      body.newPassword.length < 6
+      body.newPassword.length < 8
     ) {
       return NextResponse.json(
         { error: "Invalid request body" },

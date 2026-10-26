@@ -263,6 +263,13 @@ describe("change-password", () => {
     expect(ok.status).toBe(200);
     expect(h.release).toHaveBeenCalledWith("att:change-password:u1");
   });
+
+  it("rejects a new password shorter than 8 characters (decision b)", async () => {
+    await signedIn("u1");
+    const res = await change(req("change-password", { ...body, newPassword: "1234567" }));
+    expect(res.status).toBe(400);
+    expect(h.userFindUnique).not.toHaveBeenCalled();
+  });
 });
 
 describe("register", () => {
