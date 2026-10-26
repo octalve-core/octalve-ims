@@ -70,13 +70,13 @@ One continuous journey. Every step is a human action (click, type with real key 
 | ID | Role | Human action | Expected visible result | Tag | Basis |
 |---|---|---|---|---|---|
 | S-040 | admin | User Management → Create User → submit empty | Validation messages | module | R |
-| S-041 | admin | Create Kemi Adeyemi with role Supplier | Success toast; Kemi listed with a Supplier badge | module | R |
-| S-042 | admin | Create Chidi Eze and Bisi Lawal with role Client | Both listed with Client badges | module | R |
+| S-041 | admin | Create Kemi Adeyemi with role Supplier | **Amended (ISS-0095, confirmed live, not guessed):** leaving Username blank (it carries no "*" and no required styling) silently blocks submission — the schema's `.optional()` only permits `undefined`, not the form's own `""` default, so it fails `min(3)` and shows Zod's raw message instead of creating the user; giving Kemi a username then succeeds with the expected toast and Supplier badge | module | R |
+| S-042 | admin | Create Chidi Eze and Bisi Lawal with role Client | Both given a username up front to avoid re-hitting ISS-0095 (documented at S-041); both listed with Client badges | module | R |
 | S-043 | admin | Create Tunde Bello with role Retailer | Listed with Retailer badge | module | R |
 | S-044 | admin | Create Ngozi Obi with role User | Listed with User badge | module | R |
 | S-045 | admin | Filter by role Client, clear filter, search "Kemi" | List filters and resets correctly | module | R |
-| S-046 | admin | Open Chidi's detail page; click Edit, change nothing, cancel; open and close the delete dialog without confirming | Detail shows overview; dialogs cancel cleanly | module | A |
-| S-047 | admin | Delete Ngozi: click Delete, dismiss by clicking outside the dialog, click Delete again, confirm; then navigate away and back | Dialog dismisses on outside click; user removed; still gone after returning | module | R |
+| S-046 | admin | Open Chidi's detail page; click into the Name field without changing it; try the "Delete User" button | **Amended (ISS-0094, confirmed live, not guessed):** there is no Edit/Cancel toggle — the Name field is always directly editable (no Save button appears until it's actually changed, so "change nothing" needs no explicit cancel); the "Delete User" button is disabled when viewing anyone but yourself, so its confirmation dialog cannot be opened here at all | module | R |
+| S-047 | admin | Try to delete Ngozi from the list: open her row's Actions menu | **Amended (ISS-0094, confirmed live, not guessed):** the row's "Delete User" menu item is disabled unconditionally for every user, by design (`canDelete = false` in source) — there is no UI path for an admin to delete another user at all; Ngozi stays listed because nothing in the UI can ever remove her, not because a dialog was cancelled | module | R |
 
 ## Chapter D — Catalog and stock (admin)
 
