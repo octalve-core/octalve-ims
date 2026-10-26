@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { refreshAccessToken } from "@/lib/auth/refresh-client";
 
 /**
  * Proactive silent refresh, ported from Proplity — see
@@ -22,8 +23,10 @@ export function useAuthRefresh(isAuthenticated: boolean): void {
 
     const performSilentRefresh = async () => {
       try {
-        const res = await fetch("/api/auth/refresh", { method: "POST" });
-        if (res.ok) return;
+        // The shared single-flight helper, not a bare fetch: if a request in this tab already hit
+        // a 401 and is refreshing, this timer joins that call instead of racing it with the same
+        // refresh token (ISS-0028).
+        if (await refreshAccessToken()) return;
 
         const check = await fetch("/api/auth/session");
         if (!check.ok && typeof window !== "undefined") {

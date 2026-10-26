@@ -19,6 +19,11 @@ Updated 2026-10-21 (end of session). When an item is done, tick it here and link
 - [ ] **Where should change-password live?** The API exists with no screen (ISS-0084).
 - [ ] **Core export type errors.** 17 accepted type errors in Core, 1 in Pro (`development-history/ims_progress.md`). If `next build` type-checks, a Core build fails and so does the Core walkthrough. Fix them, or decide to tolerate them in the export's build configuration.
 
+- [ ] **User status (suspend, unverified) on login and refresh.** Proplity refuses a `SUSPENDED` or `PENDING_VERIFICATION` account at login and at refresh. IMS's `User` has no `status` field, so there is nothing to suspend and an admin cannot lock an account short of deleting it. Adding it is a schema change (a migration) and a product decision (does self-registration require email verification? `VerificationToken` exists but nothing creates one, ISS-0007). Found by the auth comparison in task 0004.
+- [ ] **Minimum password length.** IMS accepts 6 characters (register, reset, change, user management); Proplity requires 8. Raising it also changes the form hints and the demo and seed accounts' passwords. Task 0004 left it alone.
+- [ ] **Register tells a visitor that an email already has an account (409).** It is the usable behaviour and also an enumeration oracle (ISS-0032). The alternatives are a generic response plus an email to the owner of the address, or accepting it. Login and forgot-password were fixed in task 0004; register was not.
+- [ ] **Wrong password on the login form still triggers the refresh interceptor and a hard redirect** (ISS-0030). Small fix in `utils/axiosInstance.ts` and `lib/api/client.ts` (exempt `/auth/*`); not done in task 0004 because it is client behaviour, not part of the server hardening.
+
 ## 2. Facts only the maintainer can check
 
 - [ ] Do `test@admin.com` and the other demo accounts exist in the hosted Neon database? (ISS-0025)
@@ -27,6 +32,7 @@ Updated 2026-10-21 (end of session). When an item is done, tick it here and link
 - [ ] GitHub: does the `production` environment exist with required reviewers; is branch protection on (now that `dev` was fast-forwarded by a direct push, check whether `dev` is protected); which Vercel "Production Branch" is set; are `VERCEL_*` secrets repo-level? (ISS-0059, ISS-0060)
 - [ ] Which `DATABASE_URL` line in `.env` is effective (three lines; the last, local, probably wins). Print only the host name to check.
 - [ ] Are the stray `next start` processes on ports 3130, 3132, 3211 and 3297 yours? They were not started by this work.
+- [ ] Is the app behind exactly one trusted proxy in every deployed environment (Vercel only)? `getClientIp` in `lib/auth/rate-limit-db.ts` takes the LAST `X-Forwarded-For` hop; behind a second proxy it would pick the wrong address and every user behind it would share one login budget (task 0004, ADR 0008).
 - [ ] Did CI run green on `dev` after the push to `d7e6720`? (`ci.yml` triggers on pushes to `dev`; it was not checked.)
 
 ## 3. Walkthrough (task 0002), paused before Phase 0b and Phase 1

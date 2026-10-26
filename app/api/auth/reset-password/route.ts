@@ -18,7 +18,7 @@ import { logger } from "@/lib/logger";
 import { prisma } from "@/prisma/client";
 import { scheduleInvalidateAuthCaches } from "@/lib/cache";
 import { clearAuthCookies } from "@/lib/auth/cookies";
-import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
+import { getClientIp, reserveAttempt, tooManyAttempts } from "@/lib/auth/rate-limit-db";
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,8 +35,12 @@ export async function POST(request: NextRequest) {
     }
     const { token, password } = validationResult.data;
 
-    const rateLimited = await withRateLimit(request, defaultRateLimits.auth);
-    if (rateLimited) return rateLimited;
+    // Every attempt counts, good or bad: a reset link is a one-shot secret, so there is nothing
+    // to hand back (ISS-0027).
+    const reservation = await reserveAttempt(`reset:${getClientIp(request)}`);
+    if (!reservation.allowed) {
+      return NextResponse.json(tooManyAttempts(reservation), { status: 429 });
+    }
 
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
     const record = await prisma.passwordResetToken.findUnique({
@@ -52,17 +56,29 @@ export async function POST(request: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    await prisma.$transaction([
-      prisma.user.update({
+    // The token is claimed by deleting it, and the password changes only for the request whose
+    // delete removed a row: of two requests holding the same link at once, one wins.
+    const claimed = await prisma.$transaction(async (tx) => {
+      const consumed = await tx.passwordResetToken.deleteMany({
+        where: { id: record.id, expiresAt: { gt: new Date() } },
+      });
+      if (consumed.count === 0) return false;
+      await tx.user.update({
         where: { id: record.userId },
         data: { password: passwordHash },
-      }),
-      prisma.passwordResetToken.delete({ where: { id: record.id } }),
-      prisma.refreshToken.updateMany({
+      });
+      await tx.refreshToken.updateMany({
         where: { userId: record.userId, revokedAt: null },
         data: { revokedAt: new Date() },
-      }),
-    ]);
+      });
+      return true;
+    });
+    if (!claimed) {
+      return NextResponse.json(
+        { error: "This reset link is invalid or has expired." },
+        { status: 400 },
+      );
+    }
 
     const cookieStore = await cookies();
     clearAuthCookies(cookieStore);

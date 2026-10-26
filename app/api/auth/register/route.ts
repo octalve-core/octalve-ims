@@ -1,9 +1,8 @@
 /**
  * Register API Route Handler
  * Auth mechanics ported from Proplity — see docs/auth-system-port-plan.md.
- * Rate limiting reuses the existing Redis-backed lib/api/rate-limit.ts
- * (same 5/60s "auth" preset Proplity used) rather than porting a second,
- * DB-backed limiter alongside it.
+ * Rate limiting uses the database-backed lib/auth/rate-limit-db.ts (ISS-0027); the Redis limiter
+ * in lib/api/rate-limit.ts allows everything when Redis is missing, which is wrong for auth.
  */
 
 import crypto from "node:crypto";
@@ -17,7 +16,7 @@ import { prisma } from "@/prisma/client";
 import { validateCSRF } from "@/lib/auth/csrf";
 import { signAccessToken } from "@/lib/auth/jwt";
 import { setAuthCookies, REFRESH_DAYS } from "@/lib/auth/cookies";
-import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
+import { getClientIp, reserveAttempt, tooManyAttempts } from "@/lib/auth/rate-limit-db";
 
 /**
  * POST /api/auth/register
@@ -28,8 +27,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const rateLimited = await withRateLimit(request, defaultRateLimits.auth);
-  if (rateLimited) return rateLimited;
+  // Per address; every registration counts (ISS-0027). Uses the database limiter, which cannot
+  // switch itself off when Redis is missing.
+  const reservation = await reserveAttempt(`register:${getClientIp(request)}`);
+  if (!reservation.allowed) {
+    return NextResponse.json(tooManyAttempts(reservation), { status: 429 });
+  }
 
   try {
     const body = await request.json();
@@ -131,11 +134,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     logger.error("Registration error:", error);
 
-    const message =
-      error instanceof Error ? error.message : "An unknown error occurred";
-
+    // The cause is logged above; the caller gets no database or library error text (ISS-0032).
     return NextResponse.json(
-      { error: `Registration failed: ${message}` },
+      { error: "Registration failed. Please try again." },
       { status: 500 }
     );
   }

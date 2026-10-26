@@ -1,5 +1,7 @@
 # Octalve IMS — Project Status & Handover
 
+> **Auth hardening added 2026-10-26** (task 0004, branch `fix/auth-hardening-from-proplity`, not pushed): see section 0, item 9, and section 5.
+>
 > **Last updated:** 2026-10-21, end of the session that did: docs restructure, first full bug scan, walkthrough Phase 0, `dev` branch sync, local walkthrough database, commercial licence.
 > **Repository:** `octalve-core/octalve-ims` · **Working branch: `dev`** (local `dev` tracks `origin/dev`; `dev`, `main` and `origin/main` are all at `d7e6720` after the sync described in section 3).
 > **Scope:** inventory, order and warehouse management for admin, supplier, client and retailer roles, sold as three packages (tiers): Core, Pro and Premium.
@@ -18,6 +20,7 @@ Nothing below has been started unless it is ticked.
 5. [x] **Phase 1 guardrails** — built and checked 2026-10-23 (`tsc`, `eslint`, `check:manifest`, `vitest` all green; see `tests/walkthrough/README.md`'s status line for the file list). Devdependency approval D8 given. **Phase 2 audit-and-fix loop**, per package — [ ] not started: no journey step exists yet under `tests/walkthrough/steps/`, and Phase 1 guardrail code has not yet been run against a live build (stage.ts's drop/recreate/build/start lifecycle is unit-guard-tested only, not exercised end to end).
 6. [ ] **Decide the scan fix order** with the owner (open-items section 1), then fix in batches, each with a failing test first.
 7. [ ] **Push the local commits** on `dev` when the owner is happy (section 3 says what is pushed and what is not).
+9. [~] **Auth hardening from Proplity** (task 0004, ADR 0008 Proposed): code and tests done on `fix/auth-hardening-from-proplity` (off local `dev`); register rows ISS-0027, 0028, 0029, 0032, 0033 updated. Left for the maintainer: review and push the branch; the four decisions it surfaced in [`open-items.md`](open-items.md) section 1 (user status, minimum password, register's 409, the login interceptor); confirm the app is behind exactly one trusted proxy.
 8. [ ] **Promote `main` → `prod` only deliberately** (section 3, last paragraph).
 
 ---
@@ -82,6 +85,7 @@ Key decisions, each with its reason and what enforces it, are in `docs/adr/`: on
 | `eslint .` | 8 errors (`react-hooks/set-state-in-effect`), 210 warnings (197 tier-boundary). Not re-run |
 | `pnpm build` | **never run** |
 | Tier build progress | Phases 0 to 20 done; Phase 21 in progress; Core export has 17 type errors (accepted debt), Pro 1 (`development-history/ims_progress.md`) |
+| Auth hardening (2026-10-26, branch `fix/auth-hardening-from-proplity`) | 47 new tests in `lib/auth/` (56 in the folder), each written first and shown failing against the old routes. Full `vitest` run (database-writing test excluded): **968 passed, 0 failed, 150 files** (the ISS-0057 time bomb did not fail on that date). `tsc --noEmit` clean, `eslint` 0 errors on the touched files, `check:manifest` OK. `pnpm build` not run |
 | Bug scan | 85 issues in [`issues/README.md`](issues/README.md): 2 P0, 24 P1, 43 P2, 16 P3. **None is fixed.** ISS-0069 (licence) is now fixed pending legal review. About 15 of the high-severity rows were re-read by hand; the rest are reviewer claims |
 | Walkthrough | Phase 0 and 0b complete (255-row matrix with a per-tier `tiers:` field, 100-step storyboard amended for the ISS-0001 fix). Phase 1 guardrail code built and checked (preflight, stage/run-manifest, guarded nav, guard test, observers, overlay, timeline, fixtures — found ISS-0086 while building the import fixture). Phase 1 end-to-end run and Phase 2 not started. Nothing has been run or recorded |
 

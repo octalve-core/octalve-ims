@@ -15,6 +15,7 @@ import { scheduleInvalidateAuthCaches } from "@/lib/cache";
 import { validateCSRF } from "@/lib/auth/csrf";
 import { getServerSession } from "@/lib/auth/session";
 import { clearAuthCookies } from "@/lib/auth/cookies";
+import { releaseAttempt, reserveAttempt, tooManyAttempts } from "@/lib/auth/rate-limit-db";
 
 export async function POST(request: NextRequest) {
   if (!validateCSRF(request)) {
@@ -24,6 +25,13 @@ export async function POST(request: NextRequest) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Guesses at the current password are limited per signed-in user, so a stolen session cannot be
+  // used to try passwords without end (ISS-0027). Handed back on success: only failures count.
+  const reservation = await reserveAttempt(`change-password:${session.sub}`);
+  if (!reservation.allowed) {
+    return NextResponse.json(tooManyAttempts(reservation), { status: 429 });
   }
 
   try {
@@ -55,6 +63,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    await releaseAttempt(reservation.attemptId);
     const newHash = await bcrypt.hash(body.newPassword, 12);
 
     await prisma.$transaction([
