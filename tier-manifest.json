@@ -431,7 +431,7 @@
     "components/admin/UserManagementTable.tsx", "components/admin/UserRoleFilter.tsx",
 
     "contexts/auth-context.tsx", "contexts/shell-ssr-context.tsx", "contexts/index.ts",
-    "utils/auth.ts", "utils/auth.client.ts", "utils/axiosInstance.ts",
+    "utils/auth.ts", "utils/auth.client.ts", "utils/axiosInstance.ts", "utils/axiosInstance.test.ts",
     "types/api.ts", "types/auth.ts", "types/user-management.ts", "types/index.ts",
     "types/dashboard.ts",
 

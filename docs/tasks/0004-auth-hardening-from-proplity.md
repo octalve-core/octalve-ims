@@ -1,7 +1,7 @@
 # 0004: Auth hardening ported from Proplity
 
 - **Period / Focus:** 2026-10-26 (a comparison of IMS's auth with Proplity's current auth, then the fixes)
-- **Status:** In Progress (code done, tested and gated; PR open, decisions (b) and (c) built; decisions (d) and (e) and the remaining "still open" items not yet asked)
+- **Status:** In Progress (code done, tested and gated; PR open, decisions (b), (c) and (d) built; decision (e) and the remaining "still open" items not yet asked)
 - **Priority:** High
 - **Assignee:** Agent (Claude), for the maintainer
 - **Target Branch / PR:** `fix/auth-hardening-from-proplity` (off local `dev`) / [PR #29](https://github.com/octalve-core/octalve-ims/pull/29)
@@ -15,7 +15,7 @@
 
 ## 1. Objective
 
-Bring the IMS auth routes up to the standard Proplity reached after the August port, closing the register rows ISS-0027, 0028, 0029, 0032 and 0033 (and the parts of them that were fixable without a model decision), each with a test that failed on the old code. Decision (a) (`User.status`, closing part of ISS-0102 which this task also opened), decision (b) (minimum password length, 6 to 8) and decision (c) (register's 409 enumeration, ISS-0032) were approved and implemented in the same branch on 2026-10-26; decisions (d) and (e) and the three remaining "still open" items are to be asked next, one at a time.
+Bring the IMS auth routes up to the standard Proplity reached after the August port, closing the register rows ISS-0027, 0028, 0029, 0032 and 0033 (and the parts of them that were fixable without a model decision), each with a test that failed on the old code. Decision (a) (`User.status`, closing part of ISS-0102 which this task also opened), decision (b) (minimum password length, 6 to 8), decision (c) (register's 409 enumeration, ISS-0032) and decision (d) (login's wrong-password redirect, ISS-0030) were approved and implemented in the same branch on 2026-10-26; decision (e) and the three remaining "still open" items are to be asked next, one at a time.
 
 ## 2. Context & Related Docs
 - [`../auth-system-port-plan.md`](../auth-system-port-plan.md): what was ported in August; its new "Hardening after the port" section lists what was ported afterwards and why.
@@ -79,14 +79,20 @@ Bring the IMS auth routes up to the standard Proplity reached after the August p
 - [x] The email-exists branch creates no second account and no verification token; instead it emails the existing address a notice (`generateAccountExistsEmail`, new, in `lib/email/templates.ts`) with a sign-in link and a forgot-password link, deferred to `after()` like the verification email
 - [x] 2 new tests in `lib/auth/password-routes.test.ts`: the two branches' responses are asserted byte-identical, and the notice email is asserted to fire (with no verification token created) for the email-exists branch
 
+### Module H: Login's wrong-password redirect (decision d, ISS-0030, 2026-10-26)
+- [x] `utils/axiosInstance.ts` and `lib/api/client.ts`: the response interceptor's exemption, previously only `/auth/refresh`, now covers any `/auth/*` URL (login, register, refresh, ...) — these routes answer their own 401s directly and must never trigger the refresh-then-redirect flow meant for an expired session on a protected route
+- [x] A wrong password on login (`POST /api/auth/login` → 401) no longer fires a pointless refresh attempt and hard redirect before the real "Invalid email or password" error reaches the login form
+- [x] 4 new tests, 2 per file (new `utils/axiosInstance.test.ts` and new `lib/api/client.test.ts`), each using a custom axios adapter (no real network) to assert: a 401 from an `/auth/*` URL never calls `refreshAccessToken`, while a 401 from an ordinary protected route still does — both shown failing against the old `/auth/refresh`-only exemption first
+- [x] `utils/axiosInstance.test.ts` added to `tier-manifest.json`'s `shared` bucket (a loose file directly under `utils/`, which the manifest checker requires individually listed; `lib/api/client.test.ts` needed no entry — `lib/api` is classified as a whole folder)
+
 ---
 
 ## 4. Unified Verification & Quality Gates
-Run 2026-10-26; re-run after Module E, again after Module F, again after Module G.
-- [x] `pnpm typecheck` clean (0 errors; the first run caught three `noUncheckedIndexedAccess` errors in `refresh-route.test.ts`, fixed)
-- [x] `eslint` on the touched files: 0 errors, 2 warnings, both already there (`window.location.href` in `hooks/use-auth-refresh.ts`, a tier-boundary import in `lib/auth/unique-username.ts`)
-- [x] `pnpm check:manifest` OK
-- [x] `vitest` full run, database-writing test excluded: 991 passed, 0 failed, 151 files (after Module G; was 989/151 after Module F, 983/150 after Module E; also required adding `VerifyEmailPage.tsx` to `invalidate-coverage.test.ts`'s pre-auth-page allowlist, same as `ResetPasswordPage.tsx`). One full-suite run showed 2 failures in the new Module G tests that did not reproduce on 5 subsequent runs (isolated and full-suite); treated as sandbox resource-contention flakiness, not a logic defect — see the task's running notes if it recurs.
+Run 2026-10-26; re-run after Module E, again after Module F, again after Module G, again after Module H.
+- [x] `pnpm typecheck` clean (0 errors; the first run caught three `noUncheckedIndexedAccess` errors in `refresh-route.test.ts`, fixed; Module H's test files initially failed on a custom-adapter type mismatch, fixed by typing the adapter param as `InternalAxiosRequestConfig`)
+- [x] `eslint` on the touched files: 0 errors, 2 pre-existing `window.location.href` warnings (already there before this task, in `utils/axiosInstance.ts` and `lib/api/client.ts` — exactly the two files Module H's redirect-exemption touches, not new)
+- [x] `pnpm check:manifest` OK (after adding `utils/axiosInstance.test.ts` to the `shared` bucket)
+- [x] `vitest` full run, database-writing test excluded: 995 passed, 0 failed, 153 files (after Module H; was 991/151 after Module G, 989/151 after Module F, 983/150 after Module E; also required adding `VerifyEmailPage.tsx` to `invalidate-coverage.test.ts`'s pre-auth-page allowlist, same as `ResetPasswordPage.tsx`). Module G's "existing email" tests have shown 2 flaky failures twice across roughly a dozen full-suite runs this session, never in isolation (5+ isolated runs, always green, including under `--pool=forks`); treated as sandbox resource-contention flakiness, not a logic defect. Worth a closer look if it starts failing in CI.
 - [x] Migration applied cleanly against the local walkthrough database (`octalve_ims_test`) end to end, never against the hosted Neon one
 - [ ] `pnpm build` not run (never has been, see HANDOVER)
 - [x] Tier exports not re-run: no file moved between tiers; every new file is under `lib/auth` (already `shared`)
@@ -99,7 +105,8 @@ Run 2026-10-26; re-run after Module E, again after Module F, again after Module 
 - **Decision (a) approved and built 2026-10-26:** `User.status` added, self-registration requires email verification. See Module E. Opened a new gap, logged as ISS-0102: nothing yet lets an admin set SUSPENDED.
 - **Decision (b) approved and built 2026-10-26:** minimum password length raised 6 to 8 across register, reset, change-password, admin user-creation, and the verify-email set-password branch. See Module F.
 - **Decision (c) approved and built 2026-10-26:** register no longer answers 409 for an existing email; both branches return the same response and the existing account's owner is emailed instead. See Module G.
-- **Still needs a decision (open-items), not yet asked this session:** a wrong password on login still triggers the refresh interceptor and a hard redirect (ISS-0030, decision d). Confirm exactly one trusted proxy (decision e).
+- **Decision (d) approved and built 2026-10-26:** the refresh interceptor's `/auth/*` exemption (previously `/auth/refresh` only) stops a wrong login password from triggering a refresh attempt and hard redirect. See Module H.
+- **Still needs a decision (open-items), not yet asked this session:** confirm exactly one trusted proxy (decision e).
 - **Deviation from Proplity:** forgot-password lowercases the email for the limiter key and defers the whole real-user branch to `after()`; Proplity awaits the mail for a real account.
 - The ordering rule was followed: the five test files were written and shown failing against the old routes (refresh 7 of 9, login 7 of 9, logout 1 of 5, password routes 9 of 10) before the routes were changed.
 
@@ -110,3 +117,4 @@ Run 2026-10-26; re-run after Module E, again after Module F, again after Module 
 - **Decision (a) additions (2026-10-26):** `prisma/schema/tenancy.prisma`, `prisma/migrations/20261026020000_add_user_status/`, `lib/auth/account-status.ts`, `lib/email/templates.ts` (`generateVerificationEmail`), `app/api/auth/register/route.ts`, `app/api/auth/login/route.ts`, `app/api/auth/refresh/route.ts`, `app/api/auth/verify-email/route.ts`, `app/verify-email/page.tsx`, `components/Pages/VerifyEmailPage.tsx`, `components/Pages/RegisterPage.tsx` (copy), `tier-manifest.json`, `lib/react-query/invalidate-coverage.test.ts` (allowlist)
 - **Decision (b) additions (2026-10-26):** `lib/validations/auth.ts`, `lib/validations/user-management.ts`, `app/api/auth/change-password/route.ts`, `app/api/auth/verify-email/route.ts`, `lib/api/openapi-spec.ts`, `components/Pages/ApiDocsPage.tsx`, `lib/validations/user-management.test.ts` (new), `lib/validations/auth-api.test.ts`, `lib/auth/password-routes.test.ts`
 - **Decision (c) additions (2026-10-26):** `app/api/auth/register/route.ts`, `lib/email/templates.ts` (`generateAccountExistsEmail`), `lib/auth/password-routes.test.ts`
+- **Decision (d) additions (2026-10-26):** `utils/axiosInstance.ts`, `lib/api/client.ts`, `utils/axiosInstance.test.ts` (new), `lib/api/client.test.ts` (new), `tier-manifest.json`
