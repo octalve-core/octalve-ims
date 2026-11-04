@@ -79,7 +79,7 @@ export default function ApiDocsPage() {
               name: "password",
               type: "string",
               required: true,
-              description: "User's password (min 6 characters)",
+              description: "User's password (min 8 characters)",
             },
           ],
           response: {

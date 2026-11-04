@@ -48,6 +48,17 @@ export interface UnifiedRedisClient {
     max: number | string
   ): Promise<number>;
   zremrangebyrank(key: string, start: number, stop: number): Promise<number>;
+  /**
+   * Runs a Lua script server-side as a single atomic operation — no other command (from this
+   * client or any other) can interleave between the script's own Redis calls. Used by
+   * lib/cache/rate-limit.ts so a burst of concurrent requests can't all read "under the
+   * limit" before any of them records its own request.
+   */
+  eval<T = unknown>(
+    script: string,
+    keys: string[],
+    args: (string | number)[]
+  ): Promise<T>;
 }
 
 class UpstashAdapter implements UnifiedRedisClient {
@@ -155,6 +166,14 @@ class UpstashAdapter implements UnifiedRedisClient {
     stop: number
   ): Promise<number> {
     return this.client.zremrangebyrank(key, start, stop);
+  }
+
+  async eval<T = unknown>(
+    script: string,
+    keys: string[],
+    args: (string | number)[]
+  ): Promise<T> {
+    return this.client.eval(script, keys, args) as Promise<T>;
   }
 }
 
@@ -298,6 +317,19 @@ class IORedisAdapter implements UnifiedRedisClient {
     stop: number
   ): Promise<number> {
     return this.client.zremrangebyrank(key, start, stop);
+  }
+
+  async eval<T = unknown>(
+    script: string,
+    keys: string[],
+    args: (string | number)[]
+  ): Promise<T> {
+    return this.client.eval(
+      script,
+      keys.length,
+      ...keys,
+      ...args
+    ) as unknown as Promise<T>;
   }
 }
 

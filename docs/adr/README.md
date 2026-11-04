@@ -32,3 +32,4 @@ Plans and phase records link to the ADR instead of re-arguing the reason.
 | [0005](0005-tenant-isolation-by-row-level-security-with-a-transaction-local-setting.md) | Tenant isolation is Postgres row-level security keyed by a transaction-local setting | Proposed (backfilled; prototype, not wired in) |
 | [0006](0006-dev-main-prod-branches-with-manual-production-migrate-and-deploy.md) | `dev` development, `main` staging, `prod` production; production migrated and deployed by hand | Proposed (backfilled) |
 | [0007](0007-commercial-licence-with-upstream-mit-notice-kept.md) | Octalve IMS is commercial software; the upstream MIT notice is kept in `NOTICE` | Proposed (owner's instruction 2026-10-21; legal review pending) |
+| [0008](0008-auth-hardening-after-the-port.md) | Auth hardening after the port: a database limiter for credential routes, a refresh grace window, inherited session length | Proposed (drafted 2026-10-26 with task 0004) |

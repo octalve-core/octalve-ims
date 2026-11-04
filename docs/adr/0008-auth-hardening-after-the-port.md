@@ -1,0 +1,52 @@
+# 0008: Auth hardening after the port: a database limiter for credential routes, a refresh grace window, inherited session length
+
+Status: Proposed
+Decided by: not yet (drafted by an agent after comparing IMS with Proplity; acceptance by the maintainer needed) · Date: 2026-10-26
+Recorded: 2026-10-26
+Backfilled: no, written with the change (task 0004)
+
+## Context
+
+[ADR 0004](0004-auth-is-a-port-of-proplity-with-rotating-refresh-tokens.md) adopted Proplity's auth design in August. It says rate limiting is database-backed; in the code it was the Redis presets, which allow every request when Redis is absent or errors, check and record in separate calls, and keyed login by email alone. Proplity kept improving after the port (its September auth review and October security sweep): refresh rotation inherits the session's expiry and has a short grace window, logout works with an expired access token, login compares against a dummy hash, the limiter is in Postgres under an advisory lock. IMS had none of these (register ISS-0027, 0028, 0029, 0032, 0033).
+
+## Decision
+
+- The routes that guess credentials or send mail (login, refresh, register, forgot-password, reset-password, change-password) use `lib/auth/rate-limit-db.ts`: a sliding window in the existing `LoginAttempt` table under `pg_advisory_xact_lock`, failing closed because it is the database, handing a slot back on success. Ordinary API routes keep the Redis limiter (`lib/api/rate-limit.ts`), which now keys on the address only, never a client-sent header.
+- The client address is the last `X-Forwarded-For` hop. This assumes exactly one trusted proxy (Vercel); behind more, it must be revisited.
+- Refresh rotation keeps the old token's expiry and sets the cookie's lifetime to what is left; there is no sliding extension.
+- A refresh token rotated under 5 seconds ago may be exchanged once more (atomic claim of its successor); later replays still revoke the whole family.
+- Logout identifies the user from an expired but correctly signed access token. Nothing else may use that.
+- Login and forgot-password do the same work and give the same answer whether or not the email has an account.
+
+## Alternatives Considered
+
+- **Make the Redis limiter fail closed on auth presets.** Rejected: local and test environments have no Redis, and a Redis outage would then lock everyone out of login.
+- **Keep sliding expiry (a fresh 7 days on each refresh).** Rejected: "keep me signed in" off or on both ended at 7 days, and a stolen rotating token lived forever.
+- **Per-IP login limit only.** Rejected: a shared office address would lock out its own staff; the per-account budget catches distributed guessing instead.
+
+## Consequences
+
+- Every login attempt writes a row to Postgres and takes a lock; `LoginAttempt` is pruned per identifier on each reservation. If this becomes a cost, move the auth limiter to Redis with an atomic script and fail closed only on those routes.
+- A 5-second window in which a stolen, just-rotated token can be replayed once. Accepted, same as Proplity's ADR-0016.
+- Access tokens still have no `jti`, so they work until they expire after logout or a password change (ISS-0033, second half).
+- **Revisit if:** the app is put behind more than one trusted proxy; user suspension or email verification is added (the refresh and login checks Proplity has would then be ported).
+
+## Addendum (2026-10-26): user status and email verification
+
+The maintainer approved decision (a) the same day: add `User.status` and require email verification for self-registration. Login and refresh both now refuse `SUSPENDED` and `PENDING_VERIFICATION`; refresh additionally revokes the whole refresh-token family on either, so a session opened while `ACTIVE` stops working the moment it is suspended, not just at the next login attempt. Self-registration creates `PENDING_VERIFICATION` and issues no session; the pre-existing but previously-dead `VerificationToken` table and `verify-email` route are now wired up (self-registration creates the token and emails the link; the route activates the account). OAuth sign-ups and admin-created accounts start `ACTIVE`, skipping the gate — the provider or the admin already vouches for the email. This opened a new, deliberately out-of-scope gap: no admin UI or API sets `SUSPENDED` (logged as ISS-0102).
+
+## Addendum (2026-10-26): decisions (b) through (e)
+
+The maintainer approved three more decisions the same day. (b) The minimum password length is now 8, not 6, everywhere it's enforced (register, reset, change-password, admin user-creation, and the verify-email set-password branch). (c) Register no longer answers 409 for an email that already has an account (ISS-0032) — both branches return the same generic response, a dummy `bcrypt.hash` keeps the timing equal, and the existing account's owner is emailed a notice instead of a second account being created. (d) The response interceptors in `utils/axiosInstance.ts` and `lib/api/client.ts` exempted only `/auth/refresh` from the refresh-then-redirect flow; a wrong login password (a 401 from `/auth/login`) was treated like an expired session. The exemption now covers any `/auth/*` URL (ISS-0030).
+
+(e) Asked and answered, no code change: the maintainer confirmed the app runs behind exactly one trusted proxy (Vercel) in every environment today, but flagged uncertainty about whether that stays true. The "Revisit if" clause below already covers this — it is restated, not changed.
+
+## Addendum (2026-11-04): the Redis limiter's atomicity
+
+One of the "still open" items named in the first addendum has been fixed. `lib/cache/rate-limit.ts`'s `checkRateLimit` used to prune, count and (conditionally) record in separate round trips — concurrent requests could all read "under the limit" before any of them recorded its own entry, so a burst could race past the configured limit. It's now a single Lua script (a new `eval()` on `UnifiedRedisClient`, `lib/cache/redis.ts`), making the whole prune-count-record sequence atomic. The fail-open behavior on a missing or erroring Redis is unchanged — the "Make the Redis limiter fail closed" alternative above is still rejected for the reason given there.
+
+## Addendum (2026-11-04): verify-email's rate limit and access-token revocation
+
+The other two "still open" items are also fixed. `verify-email` had no rate limit at all; it now uses the same per-address, every-attempt-counts `lib/auth/rate-limit-db.ts` limiter as `reset-password` (it has no email or session to key on, only a token).
+
+Access tokens carry no `jti`, so a device's already-issued token kept working for up to its full 15 minutes after logout or a password change — logout/change-password/reset-password already revoke *every* refresh token for the user, but that only stopped a device getting a *new* access token. Every access token now carries a `jti` (identity, for audit and a future per-token list to key on), and `User.tokensRevokedAt` is the actual revocation mechanism: a per-user cutoff, set by the same three routes alongside their existing refresh-token revocation, checked against the token's `iat` in `utils/auth.ts`'s `getSessionFromRequest`. A per-user cutoff was chosen over a per-jti denylist because it matches the "log out everywhere" blast radius those three routes already give refresh tokens — a denylist keyed on the one token present at the revoking request would be narrower than that. `jti`'s whole-second `iat` resolution means a re-login within the same second as a revocation elsewhere could see one spurious 401; accepted as bounded and narrow, same spirit as this ADR's 5-second refresh-replay window above. The deliberately DB-free `lib/auth/session.ts` path is unchanged — adding this check there would defeat the reason it exists.

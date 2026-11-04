@@ -47,6 +47,40 @@ export interface RateLimitResult {
 }
 
 /**
+ * Prune-count-record as one atomic server-side script, not three separate round trips. The
+ * old check-then-record version (ZREMRANGEBYSCORE, then ZCARD, then conditionally ZADD) let a
+ * burst of concurrent requests all read "under the limit" before any of them recorded its own
+ * entry, so the burst could race past the configured limit. A Lua script is the Redis-native
+ * way to make a multi-step read-then-write atomic without a separate lock.
+ *
+ * Returns [allowed (1/0), current count after this check, oldest entry's score (0 if none/not
+ * needed)] — a plain array, since Lua-to-JS reply conversion doesn't carry field names.
+ */
+const RATE_LIMIT_SCRIPT = `
+local key = KEYS[1]
+local window_ms = tonumber(ARGV[1])
+local limit = tonumber(ARGV[2])
+local now = tonumber(ARGV[3])
+local member = ARGV[4]
+
+redis.call('ZREMRANGEBYSCORE', key, 0, now - window_ms)
+local current = redis.call('ZCARD', key)
+
+if current >= limit then
+  local oldest = redis.call('ZRANGE', key, 0, 0, 'WITHSCORES')
+  local oldest_score = 0
+  if oldest[2] then
+    oldest_score = tonumber(oldest[2])
+  end
+  return {0, current, oldest_score}
+end
+
+redis.call('ZADD', key, now, member)
+redis.call('EXPIRE', key, math.ceil(window_ms / 1000))
+return {1, current + 1, 0}
+`;
+
+/**
  * Check rate limit using sliding window algorithm
  *
  * @param config - Rate limit configuration
@@ -70,24 +104,18 @@ export async function checkRateLimit(
   try {
     const key = `rate-limit:${config.identifier}`;
     const now = Date.now();
-    const windowStart = now - config.window * 1000;
+    const windowMs = config.window * 1000;
+    const member = `${now}-${Math.random()}`;
 
-    // Use sorted set for sliding window
-    // Remove old entries outside the window
-    await redis.zremrangebyscore(key, 0, windowStart);
+    const [allowedFlag, current, oldestScore] = await redis.eval<
+      [number, number, number]
+    >(RATE_LIMIT_SCRIPT, [key], [String(windowMs), String(config.limit), String(now), member]);
 
-    // Count current entries in the window
-    const current = await redis.zcard(key);
-
-    if (current >= config.limit) {
-      // Rate limit exceeded
-      const oldestEntry = await redis.zrange(key, 0, 0, {
-        withScores: true,
-      }) as Array<{ member: string; score: number }>;
-      const resetTime = oldestEntry.length > 0 && oldestEntry[0]
-        ? Math.ceil((oldestEntry[0].score + config.window * 1000 - now) / 1000)
-        : config.window;
-
+    if (allowedFlag === 0) {
+      const resetTime =
+        oldestScore > 0
+          ? Math.ceil((oldestScore + windowMs - now) / 1000)
+          : config.window;
       return {
         allowed: false,
         current,
@@ -96,14 +124,9 @@ export async function checkRateLimit(
       };
     }
 
-    // Add current request to the window
-    await redis.zadd(key, { score: now, member: `${now}-${Math.random()}` });
-    // Set expiration for the key (cleanup after window expires)
-    await redis.expire(key, config.window);
-
     return {
       allowed: true,
-      current: current + 1,
+      current,
       limit: config.limit,
       reset: config.window,
     };

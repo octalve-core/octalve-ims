@@ -33,6 +33,7 @@ const COMPONENT_FETCH_CRUD_ALLOWLIST = new Set([
   "components/Pages/ApiDocsPage.tsx",
   "components/Pages/ForgotPasswordPage.tsx",
   "components/Pages/ResetPasswordPage.tsx",
+  "components/Pages/VerifyEmailPage.tsx",
 ]);
 
 /** Domains with query sub-keys beyond list/detail — invalidate-all must use *.all */

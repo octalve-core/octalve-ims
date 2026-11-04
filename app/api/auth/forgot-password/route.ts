@@ -7,16 +7,19 @@
  * sharing that table would let a reset request silently clobber a
  * still-pending invite link for the same user. Always responds with a
  * generic success message regardless of whether the email is registered,
- * to avoid leaking which emails have accounts.
+ * to avoid leaking which emails have accounts. Everything that differs between a
+ * real and an unknown email (the lookup, the token, the awaited mail) runs after
+ * the response is sent, so neither the body nor the time taken tells them apart
+ * (ISS-0032).
  */
 
 import crypto from "node:crypto";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { forgotPasswordSchema } from "@/lib/validations";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/prisma/client";
 import { validateCSRF } from "@/lib/auth/csrf";
-import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
+import { getClientIp, reserveAttempt, tooManyAttempts } from "@/lib/auth/rate-limit-db";
 import { isBrevoConfigured } from "@/lib/email/brevo";
 import { sendEmailViaBrevo } from "@/lib/email/brevo";
 import { generatePasswordResetEmail } from "@/lib/email/templates";
@@ -29,52 +32,24 @@ const GENERIC_SUCCESS = {
     "If an account exists for that email, a password reset link has been sent.",
 };
 
-export async function POST(request: NextRequest) {
-  if (!validateCSRF(request)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
+async function sendResetLink(email: string, origin: string) {
   try {
-    const body = await request.json();
-    const validationResult = forgotPasswordSchema.safeParse(body);
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: "Invalid request body" },
-        { status: 400 },
-      );
-    }
-    const { email } = validationResult.data;
-
-    const rateLimited = await withRateLimit(
-      request,
-      defaultRateLimits.auth,
-      `forgot-password:${email}`,
-    );
-    if (rateLimited) return rateLimited;
-
     const user = await prisma.user.findUnique({ where: { email } });
 
     // Only a user with a password can reset one (OAuth-only accounts have
-    // no password to reset) — still return the generic response either way.
-    if (!user || !user.password) {
-      logger.info("Forgot-password request for unknown/passwordless email", {
-        email,
-      });
-      return NextResponse.json(GENERIC_SUCCESS);
-    }
+    // no password to reset). The email address is deliberately not logged.
+    if (!user || !user.password) return;
 
     if (!isBrevoConfigured()) {
       logger.warn(
         "Brevo email service is not configured, cannot send password reset email",
       );
-      return NextResponse.json(GENERIC_SUCCESS);
+      return;
     }
 
     const rawToken = crypto.randomBytes(32).toString("hex");
     const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
-    const expiresAt = new Date(
-      Date.now() + RESET_TOKEN_TTL_MINUTES * 60 * 1000,
-    );
+    const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MINUTES * 60 * 1000);
 
     await prisma.passwordResetToken.upsert({
       where: { userId: user.id },
@@ -82,7 +57,7 @@ export async function POST(request: NextRequest) {
       update: { tokenHash, expiresAt },
     });
 
-    const resetUrl = `${request.nextUrl.origin}/reset-password?token=${rawToken}`;
+    const resetUrl = `${origin}/reset-password?token=${rawToken}`;
     const emailContent = generatePasswordResetEmail({
       resetUrl,
       userName: user.name ?? undefined,
@@ -103,6 +78,41 @@ export async function POST(request: NextRequest) {
         error: result.error,
       });
     }
+  } catch (error) {
+    logger.error("Forgot password error:", error);
+  }
+}
+
+export async function POST(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  try {
+    const body = await request.json();
+    const validationResult = forgotPasswordSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 },
+      );
+    }
+    const email = validationResult.data.email.toLowerCase();
+
+    // Every request counts (nothing is handed back), in two budgets: per address and email, and per
+    // email across all addresses over an hour, so one inbox cannot be flooded from many places and
+    // one address cannot ask for many different people's links (ISS-0027).
+    const byAddress = await reserveAttempt(`forgot:${getClientIp(request)}:${email}`);
+    if (!byAddress.allowed) {
+      return NextResponse.json(tooManyAttempts(byAddress), { status: 429 });
+    }
+    const byEmail = await reserveAttempt(`forgot-account/${email}`, 5, 60 * 60 * 1000);
+    if (!byEmail.allowed) {
+      return NextResponse.json(tooManyAttempts(byEmail), { status: 429 });
+    }
+
+    const origin = request.nextUrl.origin;
+    after(() => sendResetLink(email, origin));
 
     return NextResponse.json(GENERIC_SUCCESS);
   } catch (error) {
