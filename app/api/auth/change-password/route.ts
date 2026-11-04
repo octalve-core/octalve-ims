@@ -67,7 +67,13 @@ export async function POST(request: NextRequest) {
     const newHash = await bcrypt.hash(body.newPassword, 12);
 
     await prisma.$transaction([
-      prisma.user.update({ where: { id: user.id }, data: { password: newHash } }),
+      // tokensRevokedAt stops an already-issued access token from working for the rest of its
+      // own 15-minute lifetime, same as the refreshToken revocation below does for refresh
+      // tokens (still-open item, task 0004 — see utils/auth.ts's getSessionFromRequest).
+      prisma.user.update({
+        where: { id: user.id },
+        data: { password: newHash, tokensRevokedAt: new Date() },
+      }),
       prisma.refreshToken.updateMany({
         where: { userId: user.id, revokedAt: null },
         data: { revokedAt: new Date() },

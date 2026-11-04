@@ -63,9 +63,12 @@ export async function POST(request: NextRequest) {
         where: { id: record.id, expiresAt: { gt: new Date() } },
       });
       if (consumed.count === 0) return false;
+      // tokensRevokedAt stops an already-issued access token from working for the rest of its
+      // own 15-minute lifetime, same as the refreshToken revocation below does for refresh
+      // tokens (still-open item, task 0004 — see utils/auth.ts's getSessionFromRequest).
       await tx.user.update({
         where: { id: record.userId },
-        data: { password: passwordHash },
+        data: { password: passwordHash, tokensRevokedAt: new Date() },
       });
       await tx.refreshToken.updateMany({
         where: { userId: record.userId, revokedAt: null },

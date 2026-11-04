@@ -44,6 +44,18 @@ export async function POST(request: NextRequest) {
         .catch((error) => {
           logger.error("Failed to revoke refresh tokens on logout:", error);
         });
+
+      // Revoking refresh tokens stops a device from getting a NEW access token; this stops an
+      // access token it already holds from working for the rest of its own 15-minute lifetime
+      // (still-open item, task 0004 — see utils/auth.ts's getSessionFromRequest).
+      await prisma.user
+        .update({
+          where: { id: session.sub },
+          data: { tokensRevokedAt: new Date() },
+        })
+        .catch((error) => {
+          logger.error("Failed to revoke access tokens on logout:", error);
+        });
     }
 
     const cookieStore = await cookies();

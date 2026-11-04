@@ -8,10 +8,11 @@ import { NextRequest } from "next/server";
  * refresh token stayed usable in the database for up to 30 days.
  */
 
-const { cookieJar, cookieDeletes, updateMany } = vi.hoisted(() => ({
+const { cookieJar, cookieDeletes, updateMany, userUpdate } = vi.hoisted(() => ({
   cookieJar: new Map<string, string>(),
   cookieDeletes: [] as string[],
   updateMany: vi.fn(),
+  userUpdate: vi.fn(),
 }));
 
 vi.mock("next/headers", () => ({
@@ -22,7 +23,9 @@ vi.mock("next/headers", () => ({
       cookieDeletes.push(typeof o === "string" ? o : o.name),
   }),
 }));
-vi.mock("@/prisma/client", () => ({ prisma: { refreshToken: { updateMany } } }));
+vi.mock("@/prisma/client", () => ({
+  prisma: { refreshToken: { updateMany }, user: { update: userUpdate } },
+}));
 vi.mock("@/lib/logger", () => ({ logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 
 import { POST } from "@/app/api/auth/logout/route";
@@ -54,6 +57,7 @@ beforeEach(() => {
   cookieDeletes.length = 0;
   vi.clearAllMocks();
   updateMany.mockResolvedValue({ count: 1 });
+  userUpdate.mockResolvedValue({});
 });
 
 describe("logout revokes the refresh tokens", () => {
@@ -64,6 +68,15 @@ describe("logout revokes the refresh tokens", () => {
     expect(updateMany).toHaveBeenCalledWith({
       where: { userId: "u1", revokedAt: null },
       data: { revokedAt: expect.any(Date) },
+    });
+  });
+
+  it("revokes the user's already-issued access tokens too, not just refresh tokens (still-open item)", async () => {
+    cookieJar.set("access_token", await accessToken({ expiresInSeconds: 600 }));
+    await POST(request());
+    expect(userUpdate).toHaveBeenCalledWith({
+      where: { id: "u1" },
+      data: { tokensRevokedAt: expect.any(Date) },
     });
   });
 

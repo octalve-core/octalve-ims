@@ -224,6 +224,17 @@ describe("reset-password", () => {
     });
   });
 
+  it("revokes the user's already-issued access tokens too, not just refresh tokens (still-open item)", async () => {
+    record();
+    h.resetDeleteMany.mockResolvedValueOnce({ count: 1 });
+    const res = await reset(req("reset-password", body));
+    expect(res.status).toBe(200);
+    expect(h.userUpdate).toHaveBeenCalledWith({
+      where: { id: "u1" },
+      data: { password: expect.any(String), tokensRevokedAt: expect.any(Date) },
+    });
+  });
+
   it("refuses an unknown or expired token", async () => {
     h.resetFindUnique.mockResolvedValue(null);
     expect((await reset(req("reset-password", body))).status).toBe(400);
@@ -269,6 +280,18 @@ describe("change-password", () => {
     const res = await change(req("change-password", { ...body, newPassword: "1234567" }));
     expect(res.status).toBe(400);
     expect(h.userFindUnique).not.toHaveBeenCalled();
+  });
+
+  it("revokes the user's already-issued access tokens too, not just refresh tokens (still-open item)", async () => {
+    await signedIn("u1");
+    const hash = await bcrypt.hash("old-password", 4);
+    h.userFindUnique.mockResolvedValue({ id: "u1", password: hash });
+    const res = await change(req("change-password", body));
+    expect(res.status).toBe(200);
+    expect(h.userUpdate).toHaveBeenCalledWith({
+      where: { id: "u1" },
+      data: { password: expect.any(String), tokensRevokedAt: expect.any(Date) },
+    });
   });
 });
 

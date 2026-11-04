@@ -41,6 +41,30 @@ export const getSessionFromRequest = async (request: {
   }
 
   const user = await prisma.user.findUnique({ where: { id: decoded.sub } });
+  if (!user) {
+    return null;
+  }
+
+  // Still-open item, task 0004: logout/change-password/reset-password already revoke every
+  // refresh token ("log out everywhere"), but that only stopped a device from getting a NEW
+  // access token — the one it already held kept working until its own 15-minute expiry. A
+  // token issued (`iat`, seconds) before that moment is rejected here, no matter how much of
+  // its own lifetime is left. This call site already fetches the User row for every one of
+  // its ~150 callers, so the check costs nothing extra.
+  //
+  // `iat` only has whole-second resolution (JWT spec), so a token issued in the very same
+  // second as the revocation can look "before or equal to" the cutoff even if it was actually
+  // signed a moment after — a re-login racing a logout on another device, within the same
+  // second, could see one spurious 401 and need one retry. Accepted as bounded and narrow,
+  // same as the 5-second refresh-replay window in ADR 0008.
+  if (
+    user.tokensRevokedAt &&
+    typeof decoded.iat === "number" &&
+    decoded.iat * 1000 <= user.tokensRevokedAt.getTime()
+  ) {
+    return null;
+  }
+
   return user;
 };
 
