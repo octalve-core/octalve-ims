@@ -19,6 +19,7 @@ import { IoMdArrowDown, IoMdArrowUp } from "react-icons/io";
 import { cn } from "@/lib/utils";
 import { UserRoleBadge } from "@/lib/ui/semantic-badges";
 import { AvatarInlineLink, ClientDate } from "@/components/shared";
+import { isProtectedEmail } from "@/lib/auth/protected-emails";
 import type { UserForAdmin } from "@/types";
 
 type SortableHeaderProps = {
@@ -62,12 +63,6 @@ function SortableHeader({ column, label }: SortableHeaderProps) {
     </DropdownMenu>
   );
 }
-
-const PROTECTED_EMAILS = [
-  "test@admin.com",
-  "test@supplier.com",
-  "test@client.com",
-];
 
 /** Derive display username from email when username is empty (e.g. Gmail login) */
 function getDisplayUsername(user: UserForAdmin): string {
@@ -153,9 +148,7 @@ export function createUserManagementColumns(
         const u = row.original;
         const href = `${base}/${u.id}`;
         const isOwner = currentUserId != null && currentUserId === u.id;
-        const isProtected = PROTECTED_EMAILS.includes(
-          (u.email ?? "").toLowerCase(),
-        );
+        const isProtected = isProtectedEmail(u.email);
         const canEdit = isOwner && !isProtected;
         const canDelete = false; // Disabled for all in list; only owner on detail page per requirements
         return (

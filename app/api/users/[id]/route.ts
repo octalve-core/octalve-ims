@@ -16,6 +16,7 @@ import {
 import { updateUserAdminSchema } from "@/lib/validations";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 import { createAuditLog } from "@/prisma/audit-log";
+import { isProtectedEmail } from "@/lib/auth/protected-emails";
 import type { UpdateUserAdminInput } from "@/types";
 import {
   getUserDetailForPage,
@@ -105,9 +106,30 @@ export async function PUT(
     }
 
     const data = parsed.data;
+
+    // ISS-0102 — a status change (and only a status change) is refused for your own account or
+    // a protected demo account (lib/auth/protected-emails.ts), same accounts DELETE already
+    // refuses for yourself and the UI already locks role/name edits for. Role/name on these
+    // accounts are unaffected by this check.
+    if (data.status !== undefined) {
+      if (id === session.id) {
+        return NextResponse.json(
+          { error: "Cannot change your own status" },
+          { status: 400 },
+        );
+      }
+      if (isProtectedEmail(existing.email)) {
+        return NextResponse.json(
+          { error: "Cannot change this account's status" },
+          { status: 400 },
+        );
+      }
+    }
+
     const updatePayload: UpdateUserAdminInput = {};
     if (data.role !== undefined) updatePayload.role = data.role;
     if (data.name !== undefined) updatePayload.name = data.name;
+    if (data.status !== undefined) updatePayload.status = data.status;
 
     const updated = await updateUserAdmin(id, updatePayload);
 
