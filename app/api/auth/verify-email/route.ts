@@ -13,6 +13,7 @@ import { prisma } from "@/prisma/client";
 import { logger } from "@/lib/logger";
 import { scheduleInvalidateAuthCaches } from "@/lib/cache";
 import { ACCOUNT_STATUS } from "@/lib/auth/account-status";
+import { getClientIp, reserveAttempt, tooManyAttempts } from "@/lib/auth/rate-limit-db";
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,6 +32,15 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+    }
+
+    // This route had no budget at all (still-open item from task 0004): unlike the other
+    // emailed-link routes, nothing here keys on an email or session, so it's per address,
+    // same as reset-password. Every attempt counts, good or bad — the token is a one-shot
+    // secret, so there is nothing to hand back on success.
+    const reservation = await reserveAttempt(`verify-email:${getClientIp(request)}`);
+    if (!reservation.allowed) {
+      return NextResponse.json(tooManyAttempts(reservation), { status: 429 });
     }
 
     const tokenHash = crypto.createHash("sha256").update(body.token).digest("hex");

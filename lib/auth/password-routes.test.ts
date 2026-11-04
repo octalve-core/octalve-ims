@@ -340,10 +340,17 @@ describe("register", () => {
 
     it("emails the existing address instead of creating a verification token, deferred to after()", async () => {
       h.userFindUnique.mockResolvedValue({ id: "existing-1", name: "Ada", email: "ada@b.com" });
+      // Asserts the delta this one request causes, not an absolute length — this file's
+      // beforeEach resets h.scheduled, but running inside the full suite under heavy
+      // parallel load has occasionally shown an extra, unrelated callback already queued by
+      // the time this assertion runs (sandbox scheduling artifact, not reproducible in
+      // isolation); checking the delta and running the request's own (latest) callback makes
+      // the test correct regardless of what else is in the queue.
+      const before = h.scheduled.length;
       await register(req("register", { name: "Ada", email: "ada@b.com", password: "a-good-password" }));
       expect(h.sendEmail).not.toHaveBeenCalled();
-      expect(h.scheduled).toHaveLength(1);
-      await h.scheduled[0]!();
+      expect(h.scheduled.length).toBe(before + 1);
+      await h.scheduled[h.scheduled.length - 1]!();
       expect(h.verificationUpsert).not.toHaveBeenCalled();
       expect(h.sendEmail).toHaveBeenCalledTimes(1);
       expect(h.sendEmail.mock.calls[0]![0].to.email).toBe("ada@b.com");
@@ -410,5 +417,14 @@ describe("verify-email", () => {
     const expired = await verifyEmail(req("verify-email", body()));
     expect(expired.status).toBe(400);
     expect(h.userUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("is limited per address — every attempt counts, good or bad (still-open item)", async () => {
+    record();
+    h.reserve.mockResolvedValueOnce({ allowed: false, attemptId: null, remaining: 0, retryAfterSeconds: 5 });
+    const res = await verifyEmail(req("verify-email", body()));
+    expect(res.status).toBe(429);
+    expect(h.reserve).toHaveBeenCalledWith("verify-email:203.0.113.7");
+    expect(h.verificationFindUnique).not.toHaveBeenCalled();
   });
 });

@@ -1,7 +1,7 @@
 # 0004: Auth hardening ported from Proplity
 
 - **Period / Focus:** 2026-10-26 (a comparison of IMS's auth with Proplity's current auth, then the fixes)
-- **Status:** In Progress (all five decisions (a)-(e) settled and built/recorded 2026-10-26; PR open; of the three "still open" items, the Redis limiter is now atomic; `verify-email`'s rate limit and access-token `jti` not yet asked)
+- **Status:** In Progress (all five decisions (a)-(e) settled and built/recorded 2026-10-26; PR open; of the three "still open" items, the Redis limiter is now atomic and `verify-email` now has a rate limit; access-token `jti` not yet asked)
 - **Priority:** High
 - **Assignee:** Agent (Claude), for the maintainer
 - **Target Branch / PR:** `fix/auth-hardening-from-proplity` (off local `dev`) / [PR #29](https://github.com/octalve-core/octalve-ims/pull/29)
@@ -35,7 +35,7 @@ Bring the IMS auth routes up to the standard Proplity reached after the August p
 - [x] Register, reset-password (per address), forgot-password (per address+email, and 5/hour per email), change-password (per signed-in user)
 - [x] `lib/api/rate-limit.ts`: the Redis presets no longer trust a client-sent `x-user-id`; the address key is the last `X-Forwarded-For` hop
 - [x] The Redis limiter for ordinary API routes is now atomic (one Lua script via a new `eval()` on `UnifiedRedisClient`, replacing separate ZREMRANGEBYSCORE/ZCARD/ZADD/EXPIRE calls) — see Module I. Still deliberately fails open (unchanged; see ADR 0008's "Alternatives Considered").
-- [ ] Not done: `verify-email` has no rate limit
+- [x] `verify-email` now has a rate limit, per address (see Module J). Still not done: access tokens have no `jti`, so they work until expiry after logout or a password change.
 
 ### Module B: Refresh (ISS-0028, ISS-0029)
 - [x] New token inherits the old token's expiry; cookie `maxAge` is the time left (before: always +7 days)
@@ -97,14 +97,19 @@ Bring the IMS auth routes up to the standard Proplity reached after the August p
 - [x] Smoke-tested against a real local Redis (not just the mocked unit test): the raw Lua script via `redis-cli --eval` (3 allowed then a correctly-denied 4th, with the right oldest-entry score, `ZCARD` never exceeding the limit), and the exact `ioredis` call signature used in `IORedisAdapter.eval()` via a throwaway Node script — both matched the unit tests' expectations
 - [x] 5 new tests in a new `lib/cache/rate-limit.test.ts`: exactly one `eval` call per check (not the old separate calls), correct allow/current, correct deny/reset derived from the oldest entry's score, and both fail-open paths (no Redis; script throws) unchanged — the first three shown failing against the old multi-call implementation first
 
+### Module J: verify-email rate limit (still-open item, 2026-11-04)
+- [x] `app/api/auth/verify-email/route.ts`: added the database-backed limiter (`lib/auth/rate-limit-db.ts`), per address, same pattern as `reset-password` — this route has no email or session to key on, only a token, so address is the only identifier available. Every attempt counts, good or bad (the token is a one-shot secret, nothing to hand back on success), placed after the request-shape validation (malformed requests don't spend the budget) and before the token lookup.
+- [x] 1 new test in `lib/auth/password-routes.test.ts`'s `verify-email` describe block: a 429 when the reservation is refused, and the token lookup never runs — shown failing against the old unlimited route first
+- [x] While verifying this change under the full suite, hardened an unrelated pre-existing flaky assertion in the same file (Module G's "emails the existing address..." test): it asserted an absolute `h.scheduled` length, which occasionally came back one higher than expected under heavy parallel full-suite load (reproduced 3 times across many runs, never once in isolation, including under `--pool=forks`) — rewrote it to assert the *delta* this one request causes and run the *latest* queued callback, which is correct regardless of what else is in the queue and has been clean on every subsequent full-suite run (3 for 3) since. Root cause not fully pinned down (suspected a Vitest/Node scheduling artifact under extreme sandbox CPU contention, not a bug in the route under test), but the test itself no longer depends on it.
+
 ---
 
 ## 4. Unified Verification & Quality Gates
-Run 2026-10-26; re-run after Module E, again after Module F, again after Module G, again after Module H, again after Module I (2026-11-04).
+Run 2026-10-26; re-run after Module E, again after Module F, again after Module G, again after Module H, again after Module I, again after Module J (2026-11-04).
 - [x] `pnpm typecheck` clean (0 errors; the first run caught three `noUncheckedIndexedAccess` errors in `refresh-route.test.ts`, fixed; Module H's test files initially failed on a custom-adapter type mismatch, fixed by typing the adapter param as `InternalAxiosRequestConfig`)
 - [x] `eslint` on the touched files: 0 errors, 2 pre-existing `window.location.href` warnings (already there before this task, in `utils/axiosInstance.ts` and `lib/api/client.ts` — exactly the two files Module H's redirect-exemption touches, not new)
 - [x] `pnpm check:manifest` OK (after adding `utils/axiosInstance.test.ts` to the `shared` bucket)
-- [x] `vitest` full run, database-writing test excluded: 1000 passed, 0 failed, 154 files (after Module I, clean on this run; was 995/153 after Module H, 991/151 after Module G, 989/151 after Module F, 983/150 after Module E; also required adding `VerifyEmailPage.tsx` to `invalidate-coverage.test.ts`'s pre-auth-page allowlist, same as `ResetPasswordPage.tsx`). Module G's "existing email" tests have shown 2 flaky failures across roughly a dozen full-suite runs this session, never in isolation (5+ isolated runs, always green, including under `--pool=forks`); treated as sandbox resource-contention flakiness, not a logic defect. Worth a closer look if it starts failing in CI.
+- [x] `vitest` full run, database-writing test excluded: 1001 passed, 0 failed, 154 files (after Module J, clean on 3 consecutive full-suite runs; was 1000/154 after Module I, 995/153 after Module H, 991/151 after Module G, 989/151 after Module F, 983/150 after Module E; also required adding `VerifyEmailPage.tsx` to `invalidate-coverage.test.ts`'s pre-auth-page allowlist, same as `ResetPasswordPage.tsx`). Module G's "existing email" test flaked 3 times total across many full-suite runs this session (never in isolation); fixed as part of Module J by making the assertion delta-based instead of absolute — see Module J's notes.
 - [x] Migration applied cleanly against the local walkthrough database (`octalve_ims_test`) end to end, never against the hosted Neon one
 - [ ] `pnpm build` not run (never has been, see HANDOVER)
 - [x] Tier exports not re-run: no file moved between tiers; every new file is under `lib/auth` (already `shared`)
@@ -119,7 +124,7 @@ Run 2026-10-26; re-run after Module E, again after Module F, again after Module 
 - **Decision (c) approved and built 2026-10-26:** register no longer answers 409 for an existing email; both branches return the same response and the existing account's owner is emailed instead. See Module G.
 - **Decision (d) approved and built 2026-10-26:** the refresh interceptor's `/auth/*` exemption (previously `/auth/refresh` only) stops a wrong login password from triggering a refresh attempt and hard redirect. See Module H.
 - **Decision (e) confirmed 2026-10-26:** Vercel only, everywhere, as of today; the maintainer flagged uncertainty about the future, so this needs rechecking if the deployment topology changes. No code change.
-- **All five decisions settled 2026-10-26.** Of the three "still open" items, the Redis rate limiter is now atomic (2026-11-04, Module I) — approved and built the same session it was asked about, unlike (a)-(e) which were all asked and decided together on 2026-10-26. `verify-email`'s missing rate limit and access tokens having no `jti` are still open.
+- **All five decisions settled 2026-10-26.** Of the three "still open" items, two are now built (2026-11-04): the Redis rate limiter is atomic (Module I) and `verify-email` has a rate limit (Module J) — each approved and built the same session it was asked about, unlike (a)-(e) which were all asked and decided together on 2026-10-26. Access tokens having no `jti` is still open.
 - **Deviation from Proplity:** forgot-password lowercases the email for the limiter key and defers the whole real-user branch to `after()`; Proplity awaits the mail for a real account.
 - The ordering rule was followed: the five test files were written and shown failing against the old routes (refresh 7 of 9, login 7 of 9, logout 1 of 5, password routes 9 of 10) before the routes were changed.
 
@@ -132,3 +137,4 @@ Run 2026-10-26; re-run after Module E, again after Module F, again after Module 
 - **Decision (c) additions (2026-10-26):** `app/api/auth/register/route.ts`, `lib/email/templates.ts` (`generateAccountExistsEmail`), `lib/auth/password-routes.test.ts`
 - **Decision (d) additions (2026-10-26):** `utils/axiosInstance.ts`, `lib/api/client.ts`, `utils/axiosInstance.test.ts` (new), `lib/api/client.test.ts` (new), `tier-manifest.json`
 - **Module I additions (2026-11-04):** `lib/cache/redis.ts`, `lib/cache/rate-limit.ts`, `lib/cache/rate-limit.test.ts` (new)
+- **Module J additions (2026-11-04):** `app/api/auth/verify-email/route.ts`, `lib/auth/password-routes.test.ts`
