@@ -1,5 +1,7 @@
 # AI Model Selection & Fallback Strategy
 
+> **Known drift (ISS-0083, checked 2026-11-06):** this doc was adapted from another product and large parts of it do not match this repo. The real implementation is `lib/ai/openrouter.ts`, `lib/ai/groq.ts`, and `app/api/ai/insights/route.ts` — **OpenRouter is primary, Groq is the fallback** (the opposite of what "Groq first" language below may suggest if read literally). There is no `src/lib/ai-provider.ts`, `/api/ai/assist` route, `ANTHROPIC_API_KEY`, or `consumeAiRateLimit` in this codebase — any section naming those describes a different project, not this one. Lines 328-498 below largely duplicate lines 1-325; treat the whole document as a general strategy reference, not a literal description of this repo's code.
+
 ## Purpose
 
 This project is designed to work with multiple LLM providers and should NEVER depend on a single model.

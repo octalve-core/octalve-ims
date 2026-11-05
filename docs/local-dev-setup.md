@@ -1,5 +1,7 @@
 # Local dev Postgres setup
 
+**This describes one specific developer's machine, not a general onboarding guide** — for the generic install path, see [README.md](../README.md)'s "Install & run" section. The role name, password, and "already set up for another project on this machine" details below are particular to this one environment.
+
 Postgres 16 is running natively on this machine (systemd, port 5432).
 
 ## What's actually configured
@@ -8,14 +10,14 @@ Using the existing `roji` role (already set up for another project on this machi
 
 Database: `octalve_ims`, created via `createdb -h localhost -U roji octalve_ims`.
 
-`.env`:
+`.env` (password redacted — this role's actual password is this machine's local secret, not a value to copy or rely on elsewhere):
 ```
-DATABASE_URL="postgresql://roji:roji@localhost:5432/octalve_ims"
+DATABASE_URL="postgresql://roji:<redacted>@localhost:5432/octalve_ims"
 JWT_SECRET="dev_octalve_ims_jwt_secret_change_in_production"
 NEXT_PUBLIC_API_URL="http://localhost:3000"
 ```
 
-Migration already applied: `prisma/migrations/20260823151908_init_postgres/`.
+Migrations applied: all of them, in order — see `prisma/migrations/` for the current list (8 as of 2026-11-06) rather than relying on a count here, since it only grows.
 
 ## Row-Level Security
 

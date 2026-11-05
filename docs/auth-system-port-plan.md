@@ -1,5 +1,7 @@
 # Auth System Port: Proplity → octalve-ims
 
+> **Status update (ISS-0083, 2026-11-06):** this plan has been executed. See `docs/tasks/0004-auth-hardening-from-proplity.md` for what was actually built (merged via PR #29 and #30) and where it diverged from this plan. Kept here as the historical rationale; personal machine paths below are provenance notes from when this was written, not setup instructions.
+
 Last Updated: 2026-08-23
 
 ---

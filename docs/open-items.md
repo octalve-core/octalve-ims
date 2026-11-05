@@ -57,8 +57,8 @@ Updated 2026-10-21 (end of session). When an item is done, tick it here and link
 
 - [ ] Push the local commits on `dev` (`git push origin dev`) after a look at `git log --oneline origin/dev..dev`.
 - [ ] Decide whether and when to promote `main` to `prod` (see `HANDOVER.md` section 3). `origin/prod` is at `baa1138`.
-- [ ] Repoint the `out/phases/...` citations in `tier-manifest.json` to `docs/development-history/phases/...`, then delete the originals in `out/` once the copies are checked (`diff -r` showed the 26 phase files identical).
+- [x] Repoint the `out/phases/...` citations in `tier-manifest.json` to `docs/development-history/phases/...` (done 2026-11-06, ISS-0083). Still open: delete the originals in `out/` once the copies are checked (`diff -r` showed the 26 phase files identical) — left alone since `out/` is gitignored/local-only and this is a destructive cleanup step, not a docs-drift fix.
 - [x] Pointer from `CLAUDE.md` to `docs/HANDOVER.md`, its Stack and schema-change lines corrected, and `AGENTS.md` added (2026-10-21).
-- [ ] Remaining MongoDB and `npm` statements: `docs/PROJECT_WALKTHROUGH.md` lines 31 and 50, `README.md:537`, `CLAUDE.md` line 76 and its `npm run` commands (ISS-0065, ISS-0066).
+- [x] Remaining MongoDB and `npm` statements fixed 2026-11-06 (ISS-0065, ISS-0066): `docs/PROJECT_WALKTHROUGH.md:31`'s diagram and `README.md`'s model list/install commands corrected. `docs/PROJECT_WALKTHROUGH.md:50` and `CLAUDE.md:78`'s "legacy MongoDB rows" notes are legitimate current-behavior explanations, not drift — left as-is. `CLAUDE.md`'s own historical `npm run` entries are covered by its existing top-of-file disclaimer (append-only changelog; trust the code over old entries), not rewritten line-by-line.
 - [ ] Fix the time-bomb test `lib/orders/invoice-event-date.test.ts` so CI can go green (ISS-0057); it is a one-file change.
 - [ ] Add a check that `NOTICE` and `LICENSE` exist and are in every export (nothing enforces it today; ADR 0007 says "review only").
