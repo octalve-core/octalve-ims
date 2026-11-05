@@ -21,5 +21,10 @@ export default defineConfig({
     video: "on",
     screenshot: "off", // the journey takes its own, captioned screenshots
     trace: "off",
+    // Without this, every click/fill lands instantly — correct for the test,
+    // but it makes the recorded video look like a bot teleporting between
+    // fields rather than a fast human operator. A small per-action pause is
+    // enough to read as deliberate without feeling slow.
+    launchOptions: { slowMo: 120 },
   },
 });
