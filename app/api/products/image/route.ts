@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import {
@@ -18,6 +19,10 @@ import { scheduleInvalidateProductCaches } from "@/lib/cache";
  * Upload a product image to ImageKit
  */
 export async function POST(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     // Rate limiting check
     const rateLimitResponse = await withRateLimit(
@@ -103,6 +108,10 @@ export async function POST(request: NextRequest) {
  * Delete a product image from ImageKit
  */
 export async function DELETE(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     // Rate limiting check
     const rateLimitResponse = await withRateLimit(

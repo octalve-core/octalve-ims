@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import {
@@ -211,6 +212,10 @@ export async function GET(request: NextRequest) {
  * Includes inventory validation and automatic stock checks
  */
 export async function POST(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     // Rate limiting check
     const rateLimitResponse = await withRateLimit(

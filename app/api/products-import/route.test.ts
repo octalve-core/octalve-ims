@@ -57,6 +57,7 @@ function request(): NextRequest {
   );
   return new NextRequest("http://localhost/api/products-import", {
     method: "POST",
+    headers: { origin: "http://localhost", host: "localhost" },
     body: formData,
   });
 }

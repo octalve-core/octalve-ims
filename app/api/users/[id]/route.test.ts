@@ -36,7 +36,7 @@ import { PUT } from "./route";
 function request(body: unknown) {
   return new NextRequest("http://localhost/api/users/target-1", {
     method: "PUT",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", origin: "http://localhost", host: "localhost" },
     body: JSON.stringify(body),
   });
 }

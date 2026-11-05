@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getWarehouseDeleteBlockers } from "@/lib/warehouses/warehouse-delete-guards";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
@@ -48,6 +49,10 @@ export async function GET(request: NextRequest) {
  * Create a new warehouse
  */
 export async function POST(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const session = await getSessionFromRequest(request);
     if (!session) {
@@ -112,6 +117,10 @@ export async function POST(request: NextRequest) {
  * Update an existing warehouse
  */
 export async function PUT(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const session = await getSessionFromRequest(request);
     if (!session) {
@@ -200,6 +209,10 @@ export async function PUT(request: NextRequest) {
  * Delete a warehouse
  */
 export async function DELETE(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const session = await getSessionFromRequest(request);
     if (!session) {

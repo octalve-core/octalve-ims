@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
@@ -22,6 +23,10 @@ import type { CheckoutSessionResponse } from "@/types";
  * Creates a Stripe Checkout session for an order or invoice
  */
 export async function POST(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const rateLimitResponse = await withRateLimit(
       request,

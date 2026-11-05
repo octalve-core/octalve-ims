@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/prisma/client";
@@ -72,6 +73,10 @@ export async function GET(request: NextRequest) {
  * Create a new supplier
  */
 export async function POST(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const session = await getSessionFromRequest(request);
     if (!session) {
@@ -140,6 +145,10 @@ export async function POST(request: NextRequest) {
  * Update an existing supplier
  */
 export async function PUT(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const session = await getSessionFromRequest(request);
     if (!session) {
@@ -233,6 +242,10 @@ export async function PUT(request: NextRequest) {
  * Delete a supplier
  */
 export async function DELETE(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const session = await getSessionFromRequest(request);
     if (!session) {

@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getApiUrl } from "@/lib/env";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
@@ -77,6 +78,10 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     // Rate limiting check
     const rateLimitResponse = await withRateLimit(
@@ -418,6 +423,10 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     // Rate limiting check
     const rateLimitResponse = await withRateLimit(

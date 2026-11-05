@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import {
@@ -176,6 +177,10 @@ export async function GET(request: NextRequest) {
  * Create a new product
  */
 export async function POST(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const session = await getSessionFromRequest(request);
     if (!session) {
@@ -357,6 +362,10 @@ export async function POST(request: NextRequest) {
  * Update an existing product
  */
 export async function PUT(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const session = await getSessionFromRequest(request);
     if (!session) {
@@ -703,6 +712,10 @@ export async function PUT(request: NextRequest) {
  * Hard-delete when no order history; soft-delete (archive) when only completed orders exist.
  */
 export async function DELETE(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const session = await getSessionFromRequest(request);
     if (!session) {

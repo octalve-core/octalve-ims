@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import { markAllNotificationsAsRead } from "@/prisma/notification";
@@ -15,6 +16,10 @@ import { scheduleInvalidateNotificationCaches } from "@/lib/cache";
  * Mark all notifications as read for the authenticated user
  */
 export async function PUT(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     // Rate limiting check
     const rateLimitResponse = await withRateLimit(

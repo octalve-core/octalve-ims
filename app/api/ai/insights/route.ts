@@ -3,7 +3,8 @@
  * POST /api/ai/insights — accepts summary of analytics, returns short AI recommendations
  */
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getSessionFromRequest } from "@/utils/auth";
 import { createChatCompletion, isLlmConfigured } from "@/lib/ai";
 import {
@@ -57,6 +58,10 @@ const LLM_NOT_CONFIGURED =
   "AI insights are not configured. Set OPENROUTER_API_KEY and/or GROQ_API_KEY in .env.";
 
 export async function POST(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const user = await getSessionFromRequest(request);
     if (!user) {
