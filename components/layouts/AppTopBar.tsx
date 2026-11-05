@@ -283,7 +283,11 @@ export default function AppTopBar({
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              aria-label="Open account menu"
+              aria-label={
+                isCheckingAuth
+                  ? "Open account menu"
+                  : `${user?.name || user?.email || "Account"} ${ROLE_LABELS[role] ?? "Member"} — account menu`
+              }
               className="flex h-auto items-center gap-2 rounded-2xl px-1.5 py-1 sm:pl-1 sm:pr-2.5"
             >
               <span className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary sm:h-9 sm:w-9">
@@ -310,6 +314,7 @@ export default function AppTopBar({
                   {isCheckingAuth ? "…" : user?.name || user?.email}
                 </span>
                 <span className="text-[11px] text-muted-foreground">
+                  {" "}
                   {ROLE_LABELS[role] ?? "Member"}
                 </span>
               </span>

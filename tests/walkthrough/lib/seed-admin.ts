@@ -45,3 +45,39 @@ export async function provisionFirstAdmin(databaseUrl: string): Promise<void> {
     await prisma.$disconnect();
   }
 }
+
+/**
+ * Marks a self-registered walkthrough account ACTIVE, out-of-band — the same "no UI path
+ * exists for this" reasoning as provisionFirstAdmin above, for a gap task 0004's decision (a)
+ * opened after Chapters A/B/C's bootstrap was written: self-registration now creates
+ * PENDING_VERIFICATION and issues no session, so the register-then-reload-and-land-on-"/"
+ * bootstrap every chapter replays (register Folake, sign out, sign in as the admin) no longer
+ * works unmodified — a fresh registrant is bounced back to /login, forever, with no session to
+ * reload into. The real UI path is clicking the emailed /verify-email link, which the
+ * walkthrough can't demonstrate (D5: no local email catcher) — same class of gap as "no UI
+ * path to become admin," so it gets the same answer: a harness-level Prisma write, done before
+ * the chapter's own timeline starts, not a journey step. Chapters A/B/C are equally affected
+ * if ever re-run; this fix lives here so all of them can use it.
+ */
+export async function activateSelfRegisteredWalkthroughUser(
+  databaseUrl: string,
+  email: string,
+): Promise<void> {
+  const url = new URL(databaseUrl);
+  const dbName = url.pathname.replace(/^\//, "");
+  if (dbName !== REQUIRED_DB_NAME) {
+    throw new Error(
+      `seed-admin.ts refuses to touch database "${dbName}" — only "${REQUIRED_DB_NAME}" may ever be touched here.`,
+    );
+  }
+
+  const prisma = new PrismaClient({ datasourceUrl: databaseUrl });
+  try {
+    await prisma.user.update({
+      where: { email },
+      data: { status: "ACTIVE" },
+    });
+  } finally {
+    await prisma.$disconnect();
+  }
+}

@@ -103,6 +103,22 @@ export const createProductSchema = createProductBodySchema.extend({
 });
 
 /**
+ * One row of a product CSV/Excel import (ISS-0086). Validates exactly what the import route's
+ * own column mapping produces — categoryName/supplierName strings, no categoryId/supplierId/
+ * userId — since those three are resolved from categoryName/supplierName and the session
+ * *after* this validation, not supplied by any import column. Previously the route validated
+ * against createProductSchema.extend({categoryName, supplierName}), which still required
+ * categoryId/supplierId/userId underneath; every row failed on those three before its own
+ * real fields (name/SKU/price/etc.) were ever checked.
+ */
+export const productImportRowSchema = createProductBodySchema
+  .omit({ categoryId: true, supplierId: true })
+  .extend({
+    categoryName: z.string().min(1, "Category is required"),
+    supplierName: z.string().min(1, "Supplier is required"),
+  });
+
+/**
  * API request body for PUT /api/products
  */
 export const updateProductBodySchema = z.object({

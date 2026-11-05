@@ -174,7 +174,7 @@ function SidebarNavLink({
 function GroupLabel({ children, collapsed }: { children: React.ReactNode; collapsed?: boolean }) {
   if (collapsed) return <div className="my-1 w-6 border-t border-white/10" />;
   return (
-    <p className="px-3 pt-4 pb-1 text-[10.5px] font-bold uppercase tracking-wider text-white/35">
+    <p className="px-3 pt-4 pb-1 text-[10.5px] font-bold uppercase tracking-wider text-white/50">
       {children}
     </p>
   );

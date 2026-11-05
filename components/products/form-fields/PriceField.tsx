@@ -27,6 +27,7 @@ export default function Price() {
         render={({ field: { onChange, value, ...field } }) => (
           <NumericFormat
             {...field}
+            id="price"
             value={value}
             customInput={Input}
             thousandSeparator

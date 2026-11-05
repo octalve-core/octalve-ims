@@ -14,8 +14,7 @@ import {
   transformFunctions,
   type ColumnMapping,
 } from "@/lib/import";
-import { createProductSchema } from "@/lib/validations";
-import { z } from "zod";
+import { productImportRowSchema } from "@/lib/validations";
 import {
   createImportHistory,
   updateImportHistory,
@@ -86,87 +85,9 @@ export async function POST(request: NextRequest) {
     });
 
     try {
-      // Column mapping for product import
-      // Maps import file columns to product schema fields
-      const columnMapping: ColumnMapping[] = [
-        {
-          importColumn: "Product Name",
-          schemaField: "name",
-          transform: (value) => String(value).trim(),
-        },
-        {
-          importColumn: "SKU",
-          schemaField: "sku",
-          transform: (value) => String(value).trim().toUpperCase(),
-        },
-        {
-          importColumn: "Price",
-          schemaField: "price",
-          transform: transformFunctions.toNumber,
-        },
-        {
-          importColumn: "Quantity",
-          schemaField: "quantity",
-          transform: transformFunctions.toInteger,
-        },
-        {
-          importColumn: "Status",
-          schemaField: "status",
-          transform: (value) => {
-            const status = String(value).trim();
-            if (["Available", "Stock Low", "Stock Out"].includes(status)) {
-              return status;
-            }
-            // Default to Available if invalid
-            return "Available";
-          },
-        },
-        {
-          importColumn: "Category",
-          schemaField: "categoryId",
-          transform: async (value) => {
-            // Look up category by name
-            const categoryName = String(value).trim();
-            if (!categoryName) {
-              throw new Error("Category is required");
-            }
-            const category = await prisma.category.findFirst({
-              where: {
-                name: { equals: categoryName, mode: "insensitive" },
-                userId,
-              },
-            });
-            if (!category) {
-              throw new Error(`Category "${categoryName}" not found`);
-            }
-            return category.id;
-          },
-        },
-        {
-          importColumn: "Supplier",
-          schemaField: "supplierId",
-          transform: async (value) => {
-            // Look up supplier by name
-            const supplierName = String(value).trim();
-            if (!supplierName) {
-              throw new Error("Supplier is required");
-            }
-            const supplier = await prisma.supplier.findFirst({
-              where: {
-                name: { equals: supplierName, mode: "insensitive" },
-                userId,
-              },
-            });
-            if (!supplier) {
-              throw new Error(`Supplier "${supplierName}" not found`);
-            }
-            return supplier.id;
-          },
-        },
-      ];
-
-      // Note: Column mapping with async transforms requires special handling
-      // For now, we'll validate synchronously and handle category/supplier lookup separately
+      // Column mapping for product import — category/supplier are resolved to ids by name
+      // *after* validation (categoryMap/supplierMap below), not by an async transform here,
+      // since validateRows' schema.parse() call is synchronous.
       const simplifiedMapping: ColumnMapping[] = [
         {
           importColumn: "Product Name",
@@ -211,19 +132,24 @@ export async function POST(request: NextRequest) {
         },
       ];
 
-      // Validate rows (without category/supplier lookup)
+      // Validate rows (without category/supplier lookup) — ISS-0086: validates exactly what
+      // simplifiedMapping produces (categoryName/supplierName strings), not categoryId/
+      // supplierId/userId, which are resolved below and never come from an import column.
       const validationResult = validateRows(
         dataRows,
-        createProductSchema.extend({
-          categoryName: z.string().min(1),
-          supplierName: z.string().min(1),
-        }),
+        productImportRowSchema,
         simplifiedMapping,
       );
 
       // Process valid rows
       let successCount = 0;
-      let failCount = 0;
+      // Seeded with the rows that already failed Zod validation (blank name, negative price,
+      // etc.) — previously started at 0 and only grew inside the loop below, so those rows'
+      // errors were collected and returned but never counted as failures: a 6-of-8 import with
+      // 2 schema-invalid rows reported failedRows: 0, which also meant
+      // ProductImportDialog.tsx's "close automatically if failedRows === 0" fired on a result
+      // that was not actually all-success.
+      let failCount = validationResult.errors.length;
       const errors: Array<{
         rowNumber: number;
         field?: string;

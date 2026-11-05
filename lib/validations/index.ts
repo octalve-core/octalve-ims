@@ -9,6 +9,7 @@ export {
   productFormSubmitSchema,
   createProductBodySchema,
   createProductSchema,
+  productImportRowSchema,
   updateProductBodySchema,
   updateProductSchema,
   generateProductQrCodeBodySchema,

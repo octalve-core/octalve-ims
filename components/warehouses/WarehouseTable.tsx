@@ -159,6 +159,7 @@ export const WarehouseTable = React.memo(function WarehouseTable({
           <Button
             variant="outline"
             size="sm"
+            aria-label="First page"
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
             className="h-10 rounded-[28px] border border-sky-400/30 dark:border-sky-400/30"
@@ -168,6 +169,7 @@ export const WarehouseTable = React.memo(function WarehouseTable({
           <Button
             variant="outline"
             size="sm"
+            aria-label="Previous page"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
             className="h-10 rounded-[28px] border border-sky-400/30 dark:border-sky-400/30"
@@ -180,6 +182,7 @@ export const WarehouseTable = React.memo(function WarehouseTable({
           <Button
             variant="outline"
             size="sm"
+            aria-label="Next page"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
             className="h-10 rounded-[28px] border border-sky-400/30 dark:border-sky-400/30"
@@ -189,6 +192,7 @@ export const WarehouseTable = React.memo(function WarehouseTable({
           <Button
             variant="outline"
             size="sm"
+            aria-label="Last page"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
             className="h-10 rounded-[28px] border border-sky-400/30 dark:border-sky-400/30"

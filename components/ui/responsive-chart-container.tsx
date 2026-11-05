@@ -22,6 +22,10 @@ export function ResponsiveChartContainer({
       }
       style={{ minWidth: 1, minHeight: 200 }}
       aria-hidden="true"
+      // Recharts' SVG sets tabindex="0" on itself (and on each pie slice) for its own
+      // keyboard interaction, which stays focusable even under aria-hidden — `inert`
+      // removes the whole subtree from the tab order and AT alike.
+      inert
     >
       <ResponsiveContainer
         width="100%"
