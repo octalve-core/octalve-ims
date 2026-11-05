@@ -77,7 +77,7 @@ export default function PaginationSelector({
         });
       }}
     >
-      <SelectTrigger className={styles.trigger}>
+      <SelectTrigger className={styles.trigger} aria-label="Rows per page">
         <SelectValue placeholder={pagination.pageSize.toString()} />
       </SelectTrigger>
       <SelectContent

@@ -45,6 +45,8 @@ export const CATALOG_ENTITY_META: Record<
   CatalogEntity,
   {
     allLabel: string;
+    /** role="combobox" doesn't support name-from-content — needs an explicit aria-label. */
+    filterLabel: string;
     icon: LucideIcon;
     selectTriggerClass: string;
     selectPlaceholderClass: string;
@@ -54,6 +56,7 @@ export const CATALOG_ENTITY_META: Record<
 > = {
   category: {
     allLabel: "All Categories",
+    filterLabel: "Filter categories by status",
     icon: FolderTree,
     selectTriggerClass: catalogSelectTriggerClass(CATEGORY_HUE, "sky"),
     selectPlaceholderClass: catalogSelectPlaceholderClass(CATEGORY_HUE),
@@ -62,6 +65,7 @@ export const CATALOG_ENTITY_META: Record<
   },
   supplier: {
     allLabel: "All Suppliers",
+    filterLabel: "Filter suppliers by status",
     icon: Truck,
     selectTriggerClass: catalogSelectTriggerClass(SUPPLIER_HUE, "emerald"),
     selectPlaceholderClass: catalogSelectPlaceholderClass(SUPPLIER_HUE),
@@ -70,6 +74,7 @@ export const CATALOG_ENTITY_META: Record<
   },
   warehouse: {
     allLabel: "All Warehouses",
+    filterLabel: "Filter warehouses by status",
     icon: Warehouse,
     selectTriggerClass: catalogSelectTriggerClass(WAREHOUSE_HUE, "cyan"),
     selectPlaceholderClass: catalogSelectPlaceholderClass(WAREHOUSE_HUE),

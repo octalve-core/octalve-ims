@@ -707,8 +707,10 @@ export function productStockLabelFromAvailable(available: number): string {
  * Available >20 emerald · Stock Low >0 orange · Stock Out red.
  */
 export function productStockAvailableTextClass(available: number): string {
-  if (available > 20) return "text-emerald-600 dark:text-emerald-400";
-  if (available > 0) return "text-orange-600 dark:text-orange-400";
+  // text-emerald-600/text-orange-600 on white are 3.77:1 / 3.56:1 — under WCAG AA's 4.5:1
+  // for normal-weight text; -700 clears it (5.18–5.48:1) without changing dark mode.
+  if (available > 20) return "text-emerald-700 dark:text-emerald-400";
+  if (available > 0) return "text-orange-700 dark:text-orange-400";
   return "text-red-600 dark:text-red-400";
 }
 
