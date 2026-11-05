@@ -474,7 +474,7 @@
     "prisma/order-client-access.test.ts",
     "prisma/invoice.ts", "prisma/invoice-client-access.test.ts",
     "prisma/invoice-list-filters.test.ts", "prisma/notification.ts",
-    "prisma/system-config.ts", "prisma/user-admin.ts",
+    "prisma/system-config.ts", "prisma/user-admin.ts", "prisma/user-admin.test.ts",
 
     "components/category", "components/invoices", "components/orders", "components/products",
     "components/warehouses", "components/supplier",

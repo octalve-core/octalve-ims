@@ -22,3 +22,14 @@ export const ACCOUNT_STATUS = {
 
 export type UserAccountStatus =
   (typeof ACCOUNT_STATUS)[keyof typeof ACCOUNT_STATUS];
+
+/**
+ * The only two states an admin may set directly (PUT /api/users/[id], ISS-0102).
+ * PENDING_VERIFICATION is reached only by self-registration and left out on purpose — an admin
+ * granting access to an account should land it ACTIVE, not re-trigger the email-verification
+ * gate from decision (a).
+ */
+export type AdminSettableAccountStatus = Extract<
+  UserAccountStatus,
+  "ACTIVE" | "SUSPENDED"
+>;

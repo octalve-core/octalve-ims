@@ -15,6 +15,9 @@ const userRoleEnum = z.enum([
 export const updateUserAdminSchema = z.object({
   role: userRoleEnum.nullable().optional(),
   name: z.string().min(1, "Name is required").max(200).optional(),
+  // ISS-0102 — the only two states an admin may set; PENDING_VERIFICATION is
+  // reached only by self-registration.
+  status: z.enum(["ACTIVE", "SUSPENDED"]).optional(),
 });
 
 export const createUserAdminSchema = z.object({

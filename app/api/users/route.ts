@@ -29,6 +29,7 @@ function transform(
     username: r.username,
     role: r.role as UserForAdmin["role"],
     image: r.image,
+    status: r.status as UserForAdmin["status"],
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt?.toISOString() ?? null,
   };

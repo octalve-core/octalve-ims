@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import {
   ArrowLeft,
+  Ban,
   Loader2,
   User,
   UserCog,
@@ -67,19 +68,18 @@ import { isDataSlotLoading, queryKeys, useSyncSsrQueryData } from "@/lib/react-q
 import type { UserForAdmin, UserRole } from "@/types";
 import type { UserDetailForPage } from "@/hooks/queries/use-user-management";
 import { cn } from "@/lib/utils";
-import { UserRoleBadge, userRoleBadgeClass } from "@/lib/ui/semantic-badges";
+import {
+  UserRoleBadge,
+  userRoleBadgeClass,
+  UserAccountStatusBadge,
+} from "@/lib/ui/semantic-badges";
 import { GlassCard, DetailInfoRow } from "@/components/orders/detail";
 import { APP_SHELL_DETAIL_CLASS, DETAIL_PAGE_HEADER_SPACING_CLASS } from "@/lib/ui/shell-layout-styles";
 import {
   getUserOverviewDescription,
   shouldShowMyActivityTip,
 } from "@/lib/ui/user-overview-copy";
-
-const PROTECTED_EMAILS = [
-  "test@admin.com",
-  "test@supplier.com",
-  "test@client.com",
-];
+import { isProtectedEmail } from "@/lib/auth/protected-emails";
 
 function getDisplayUsername(u: UserForAdmin): string {
   if (u.username?.trim()) return u.username.trim();
@@ -117,13 +117,12 @@ export default function AdminUserManagementDetailContent({
   const updateMutation = useUpdateUser();
   const deleteMutation = useDeleteUser();
   const isOwner = currentUser?.id != null && currentUser.id === id;
-  const isProtected = user
-    ? PROTECTED_EMAILS.includes((user.email ?? "").toLowerCase())
-    : false;
+  const isProtected = user ? isProtectedEmail(user.email) : false;
 
   const [name, setName] = useState("");
   const [nameTouched, setNameTouched] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!user || nameTouched) return;
@@ -160,6 +159,22 @@ export default function AdminUserManagementDetailContent({
       },
     });
   }, [id, deleteMutation, navigateTo]);
+
+  // ISS-0102 — suspend signs the account out everywhere (same revocation Module K's
+  // tokensRevokedAt + refresh-token sweep already give logout/change-password); reactivate is
+  // a simple, reversible grant-back so it skips the confirmation dialog.
+  const handleSuspend = useCallback(() => {
+    if (!id) return;
+    updateMutation.mutate(
+      { id, data: { status: "SUSPENDED" } },
+      { onSuccess: () => setSuspendDialogOpen(false) },
+    );
+  }, [id, updateMutation]);
+
+  const handleReactivate = useCallback(() => {
+    if (!id) return;
+    updateMutation.mutate({ id, data: { status: "ACTIVE" } });
+  }, [id, updateMutation]);
 
   if (isError) {
     return (
@@ -216,10 +231,12 @@ export default function AdminUserManagementDetailContent({
   const overview = u?.overview;
   const actionsDisabled = dataLoading || !user;
   const isProtectedResolved =
-    !dataLoading && u
-      ? PROTECTED_EMAILS.includes((u.email ?? "").toLowerCase())
-      : false;
+    !dataLoading && u ? isProtectedEmail(u.email) : false;
   const canDeleteResolved = !dataLoading && isOwner && !isProtectedResolved;
+  // Not isOwner's inverted pattern above (ISS-0094, a pre-existing bug left as-is): suspending
+  // your own account or a protected demo account must be blocked, not required.
+  const canChangeStatusResolved =
+    !dataLoading && !isOwner && !isProtectedResolved;
 
   return (
     <PageContentWrapper>
@@ -381,6 +398,98 @@ export default function AdminUserManagementDetailContent({
                 </Select>
               )}
             </DeferredSelectGate>
+          )}
+        </GlassCard>
+
+        <GlassCard variant="violet">
+          <SectionCardHeader
+            title="Status"
+            description="Suspending signs the account out everywhere and blocks sign-in until reactivated."
+            icon={Ban}
+            tone="violet"
+            className="mb-4"
+          />
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            {dataLoading ? (
+              <DataSlotPulse
+                variant="badge"
+                className="h-9 w-[140px] rounded-[28px]"
+              />
+            ) : (
+              <UserAccountStatusBadge status={u!.status} />
+            )}
+            {!dataLoading && u!.status === "SUSPENDED" ? (
+              <Button
+                size="sm"
+                onClick={handleReactivate}
+                disabled={isUpdating || !canChangeStatusResolved}
+                className={cn("gap-2", GLASS_GHOST_BUTTON)}
+              >
+                {isUpdating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Reactivate"
+                )}
+              </Button>
+            ) : !dataLoading ? (
+              <AlertDialog
+                open={suspendDialogOpen}
+                onOpenChange={setSuspendDialogOpen}
+              >
+                <AlertDialogTrigger asChild>
+                  <DialogSubmitButton
+                    type="button"
+                    isPending={isUpdating}
+                    pendingLabel="Suspending…"
+                    label="Suspend"
+                    hue="rose"
+                    disabled={!canChangeStatusResolved}
+                  />
+                </AlertDialogTrigger>
+                <AlertDialogContent
+                  onOverlayClick={() => {
+                    if (isUpdating) return;
+                    setSuspendDialogOpen(false);
+                  }}
+                >
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Suspend user?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to suspend{" "}
+                      <span className="font-medium">{u?.name ?? "—"}</span> (
+                      {u?.email ?? "—"})? They will be signed out everywhere
+                      and unable to sign back in until reactivated.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isUpdating}>
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleSuspend}
+                      disabled={isUpdating}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      {isUpdating ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Suspending...
+                        </>
+                      ) : (
+                        "Suspend"
+                      )}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : null}
+          </div>
+          {!dataLoading && !canChangeStatusResolved && (
+            <p className={cn("text-xs mt-2", TYPO_BODY_MUTED)}>
+              {isOwner
+                ? "You can't change your own status."
+                : "This account's status can't be changed."}
+            </p>
           )}
         </GlassCard>
 

@@ -116,6 +116,13 @@ const ACTIVE_INACTIVE: Record<string, BadgeTone> = {
   inactive: { className: GLASS_BADGE_CLASS.slate, icon: Ban },
 };
 
+/** User.status (lib/auth/account-status.ts) — ISS-0102's admin Suspend/Reactivate control. */
+const USER_ACCOUNT_STATUS: Record<string, BadgeTone> = {
+  active: { className: GLASS_BADGE_CLASS.emerald, icon: CheckCircle },
+  suspended: { className: GLASS_BADGE_CLASS.red, icon: Ban },
+  pending_verification: { className: GLASS_BADGE_CLASS.amber, icon: Clock },
+};
+
 const TICKET_PRIORITY: Record<string, BadgeTone> = {
   low: { className: GLASS_BADGE_CLASS.gray, icon: Clock },
   medium: { className: GLASS_BADGE_CLASS.blue, icon: AlertCircle },
@@ -474,6 +481,31 @@ export function ActiveInactiveBadge({
     <SemanticBadgeBase
       tone={tone}
       label={active ? "Active" : "Inactive"}
+      className={className}
+      size={size}
+    />
+  );
+}
+
+/** User.status badge (ACTIVE / SUSPENDED / PENDING_VERIFICATION) — ISS-0102. */
+export function UserAccountStatusBadge({
+  status,
+  className,
+  size,
+}: {
+  status: string | null | undefined;
+  className?: string;
+  size?: "compact" | "detail";
+}) {
+  const tone = resolveTone(USER_ACCOUNT_STATUS, status ?? "active");
+  const label =
+    status === "PENDING_VERIFICATION"
+      ? "Pending Verification"
+      : formatSemanticLabel(status ?? "active");
+  return (
+    <SemanticBadgeBase
+      tone={tone}
+      label={label}
       className={className}
       size={size}
     />
