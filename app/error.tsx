@@ -17,7 +17,6 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // eslint-disable-next-line no-console -- no server-side logging hook reaches this boundary
     console.error(error);
   }, [error]);
 

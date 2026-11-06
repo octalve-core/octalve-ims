@@ -74,6 +74,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     if (cachedIsLoggedIn && cachedSession) {
       try {
         const parsed = JSON.parse(cachedSession);
+        // One-time hydration from localStorage on mount (SSR had no
+        // initialUser), not a render loop.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setUser({
           id: parsed.userId || parsed.id,
           name: parsed.userName || parsed.name,
@@ -190,6 +193,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     } else {
       // For OAuth redirect, set isCheckingAuth to false immediately
       // The homepage's refreshSession will handle the session check
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsCheckingAuth(false);
     }
   }, [mounted, checkSession]);
