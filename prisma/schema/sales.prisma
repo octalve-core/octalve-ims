@@ -22,10 +22,10 @@ model Order {
   trackingCarrier       String?
   trackingUrl           String?
   labelUrl              String?
-  estimatedDelivery     DateTime?
-  shippedAt             DateTime?
-  deliveredAt           DateTime?
-  cancelledAt           DateTime?
+  estimatedDelivery     DateTime?   @db.Timestamptz(3)
+  shippedAt             DateTime?   @db.Timestamptz(3)
+  deliveredAt           DateTime?   @db.Timestamptz(3)
+  cancelledAt           DateTime?   @db.Timestamptz(3)
   stripePaymentIntentId String?
   createdAt             DateTime    @default(now()) @db.Timestamptz(3)
   updatedAt             DateTime?   @db.Timestamptz(3)
@@ -33,6 +33,12 @@ model Order {
   updatedBy             String?
   items                 OrderItem[]
   invoice               Invoice?
+
+  // ISS-0052: zero indexes on a model whose own code (prisma/order.ts) filters
+  // by each of these on nearly every query.
+  @@index([userId])
+  @@index([clientId])
+  @@index([businessId])
 }
 
 model OrderItem {

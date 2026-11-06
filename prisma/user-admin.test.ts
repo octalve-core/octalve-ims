@@ -7,23 +7,24 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * working too, instead of surviving up to its own 15-minute lifetime after the suspension.
  */
 
-const { userUpdate, userFindUnique, userCount, refreshTokenUpdateMany, transaction } = vi.hoisted(() => ({
+const { userUpdate, userFindUnique, userCount, userCreate, refreshTokenUpdateMany, transaction } = vi.hoisted(() => ({
   userUpdate: vi.fn(),
   userFindUnique: vi.fn(),
   userCount: vi.fn(),
+  userCreate: vi.fn(),
   refreshTokenUpdateMany: vi.fn(),
   transaction: vi.fn(),
 }));
 
 vi.mock("@/prisma/client", () => ({
   prisma: {
-    user: { update: userUpdate, findUnique: userFindUnique, count: userCount },
+    user: { update: userUpdate, findUnique: userFindUnique, count: userCount, create: userCreate },
     refreshToken: { updateMany: refreshTokenUpdateMany },
     $transaction: transaction,
   },
 }));
 
-import { updateUserAdmin, isLastAdmin } from "./user-admin";
+import { updateUserAdmin, isLastAdmin, createUserAdmin, emailExists } from "./user-admin";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -96,5 +97,35 @@ describe("isLastAdmin", () => {
     userFindUnique.mockResolvedValue({ role: "admin" });
     userCount.mockResolvedValue(1);
     expect(await isLastAdmin("u1")).toBe(true);
+  });
+});
+
+/**
+ * ISS-0052 — User.email is @unique at the DB level, but the column is
+ * case-sensitive and login's own lookup already normalizes to lowercase.
+ * Every write path must normalize too, or an account created with any
+ * uppercase letter becomes unreachable (or a case-variant duplicate) at login.
+ */
+describe("createUserAdmin email normalization", () => {
+  it("lowercases email before writing", async () => {
+    userCreate.mockResolvedValue({ id: "u2", email: "foo@x.com" });
+    await createUserAdmin({
+      email: "Foo@X.com",
+      name: "Foo",
+      password: "pw",
+    } as Parameters<typeof createUserAdmin>[0]);
+    expect(userCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ email: "foo@x.com" }) }),
+    );
+  });
+});
+
+describe("emailExists", () => {
+  it("looks up by the lowercased email regardless of caller casing", async () => {
+    userFindUnique.mockResolvedValue(null);
+    await emailExists("Foo@X.com");
+    expect(userFindUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { email: "foo@x.com" } }),
+    );
   });
 });

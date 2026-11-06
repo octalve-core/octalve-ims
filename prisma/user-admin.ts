@@ -83,7 +83,9 @@ export async function createUserAdmin(data: CreateUserAdminInput) {
 
   return prisma.user.create({
     data: {
-      email: data.email,
+      // ISS-0052: normalize at every write path so an admin-created account's
+      // case always matches login's normalized (lowercased) lookup.
+      email: data.email.toLowerCase(),
       name: data.name,
       password: hashedPassword,
       username: data.username || null,
@@ -125,7 +127,7 @@ export async function isLastAdmin(userId: string): Promise<boolean> {
  */
 export async function emailExists(email: string): Promise<boolean> {
   const user = await prisma.user.findUnique({
-    where: { email },
+    where: { email: email.toLowerCase() },
     select: { id: true },
   });
   return !!user;

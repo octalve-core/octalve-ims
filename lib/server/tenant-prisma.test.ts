@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { prisma } from "@/prisma/client";
 import { forTenant } from "./tenant-prisma";
+import { REQUIRED_DB_NAME } from "@/tests/walkthrough/lib/preflight";
 
 /**
  * The one test in this repo that hits a real Postgres connection instead of
@@ -8,10 +9,22 @@ import { forTenant } from "./tenant-prisma";
  * Proves the RLS + set_config mechanism from tenant-prisma.ts actually
  * isolates rows by businessId, not just that the code compiles.
  *
- * Skipped automatically if DATABASE_URL isn't set/reachable, so it doesn't
- * break the fast default suite in environments without a local Postgres.
+ * Skipped automatically unless DATABASE_URL is both set AND points at
+ * octalve_ims_test specifically (ISS-0063) — checking only that the
+ * variable is set let this test write rows to whatever database happened
+ * to be configured, same hazard the walkthrough's own preflight guards
+ * against; reusing that exact guard's required-name constant here.
  */
-describe.skipIf(!process.env.DATABASE_URL)("forTenant row-level security", () => {
+const targetsTestDb = (() => {
+  if (!process.env.DATABASE_URL) return false;
+  try {
+    return new URL(process.env.DATABASE_URL).pathname.replace(/^\//, "") === REQUIRED_DB_NAME;
+  } catch {
+    return false;
+  }
+})();
+
+describe.skipIf(!targetsTestDb)("forTenant row-level security", () => {
   let categoryId: string;
   const businessAId = `test-biz-a-${Date.now()}`;
   const businessBId = `test-biz-b-${Date.now()}`;
