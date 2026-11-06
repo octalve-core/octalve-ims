@@ -231,6 +231,8 @@ test("Chapter A — first screen and authentication (anonymous)", async ({ page 
       // activates the account out-of-band here instead, same gap/same
       // answer as "no UI path to become admin" (S-009's note).
       await activateSelfRegisteredWalkthroughUser(process.env.DATABASE_URL!, "folake.adewale@walkthrough.test");
+      await guarded.clearHumanlike(guarded.getByLabel("Email"));
+      await guarded.clearHumanlike(password());
       await guarded.typeHumanlike(guarded.getByLabel("Email"), "folake.adewale@walkthrough.test");
       await guarded.typeHumanlike(password(), "Walkthrough#2026");
       await guarded.click(guarded.getByRole("button", { name: "Sign In" }));
