@@ -40,7 +40,7 @@ export function OrderDetailHeader({
       asChild
       className={DETAIL_HEADER_BACK_ICON_CLASS}
     >
-      <Link href={backHref}>
+      <Link href={backHref} aria-label="Back to Orders">
         <ArrowLeft className="h-5 w-5" />
       </Link>
     </Button>
@@ -49,6 +49,7 @@ export function OrderDetailHeader({
       variant="ghost"
       size="icon"
       onClick={onBack}
+      aria-label="Back to Orders"
       className={DETAIL_HEADER_BACK_ICON_CLASS}
     >
       <ArrowLeft className="h-5 w-5" />

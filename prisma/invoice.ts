@@ -4,7 +4,7 @@
  */
 
 import { prisma } from "@/prisma/client";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import type { CreateInvoiceInput, UpdateInvoiceInput, InvoiceFilters } from "@/types/invoice";
 import { logger } from "@/lib/logger";
 import { applyIncrementalInvoicePayment } from "@/lib/invoices/order-payment-sync";
@@ -97,6 +97,35 @@ export async function generateInvoiceNumber(): Promise<string> {
 }
 
 /**
+ * ISS-0045 — generateInvoiceNumber's own exists-check loop isn't atomic
+ * with the caller's later `create()`: two concurrent creates can both pass
+ * the check for the same number before either actually inserts, leaving a
+ * narrow TOCTOU race despite the pre-check. Regenerate and retry
+ * specifically on the real P2002 collision, bounded, same pattern as
+ * createOrder's orderNumber retry.
+ */
+const MAX_INVOICE_NUMBER_ATTEMPTS = 5;
+async function createInvoiceWithNumberRetry<T>(
+  createFn: (invoiceNumber: string) => Promise<T>,
+): Promise<T> {
+  for (let attempt = 1; attempt <= MAX_INVOICE_NUMBER_ATTEMPTS; attempt++) {
+    const invoiceNumber = await generateInvoiceNumber();
+    try {
+      return await createFn(invoiceNumber);
+    } catch (err) {
+      const isInvoiceNumberCollision =
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002" &&
+        (err.meta?.target as string[] | undefined)?.includes("invoiceNumber");
+      if (!isInvoiceNumberCollision || attempt === MAX_INVOICE_NUMBER_ATTEMPTS) {
+        throw err;
+      }
+    }
+  }
+  throw new Error("unreachable");
+}
+
+/**
  * Create a new invoice from an order
  * Calculates totals and amounts based on order data
  *
@@ -128,9 +157,6 @@ export async function createInvoice(
     throw new Error(`Invoice already exists for order ${data.orderId}`);
   }
 
-  // Generate unique invoice number
-  const invoiceNumber = await generateInvoiceNumber();
-
   // Calculate invoice amounts based on order (include shipping for order ↔ invoice transparency)
   const subtotal = order.subtotal;
   const tax = data.tax ?? order.tax ?? 0;
@@ -150,34 +176,36 @@ export async function createInvoice(
   const billingAddress = resolveInvoiceBillingAddressInput(order);
 
   // REQ-0158: invoice.userId = store owner (order.userId); clientId = buyer; createdBy = actor
-  const invoice = await prisma.invoice.create({
-    data: {
-      invoiceNumber,
-      orderId: data.orderId,
-      userId: order.userId,
-      clientId: order.clientId,
-      status: "draft",
-      subtotal,
-      tax: tax > 0 ? tax : null,
-      shipping: shipping > 0 ? shipping : null,
-      discount: discount > 0 ? discount : null,
-      total,
-      amountPaid,
-      amountDue,
-      dueDate,
-      issuedAt,
-      sentAt: null,
-      paidAt: null,
-      cancelledAt: null,
-      paymentLink: data.paymentLink || null,
-      notes: data.notes || null,
-      billingAddress,
-      createdBy: userId,
-      updatedBy: null,
-      createdAt: issuedAt,
-      updatedAt: null,
-    },
-  });
+  const invoice = await createInvoiceWithNumberRetry((invoiceNumber) =>
+    prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        orderId: data.orderId,
+        userId: order.userId,
+        clientId: order.clientId,
+        status: "draft",
+        subtotal,
+        tax: tax > 0 ? tax : null,
+        shipping: shipping > 0 ? shipping : null,
+        discount: discount > 0 ? discount : null,
+        total,
+        amountPaid,
+        amountDue,
+        dueDate,
+        issuedAt,
+        sentAt: null,
+        paidAt: null,
+        cancelledAt: null,
+        paymentLink: data.paymentLink || null,
+        notes: data.notes || null,
+        billingAddress,
+        createdBy: userId,
+        updatedBy: null,
+        createdAt: issuedAt,
+        updatedAt: null,
+      },
+    }),
+  );
 
   logger.info("Invoice created successfully", {
     invoiceId: invoice.id,
@@ -265,7 +293,6 @@ export async function applyStripeChargeToOrderInvoice(
     priorStatus: "sent",
   });
 
-  const invoiceNumber = await generateInvoiceNumber();
   const subtotal = order.subtotal;
   const tax = order.tax ?? 0;
   const shipping = order.shipping ?? 0;
@@ -274,36 +301,38 @@ export async function applyStripeChargeToOrderInvoice(
   const billingAddress = resolveInvoiceBillingAddressInput(order);
 
   // REQ-0158 — invoice.userId = store owner on order; createdBy = product owner issuer
-  const invoice = await prisma.invoice.create({
-    data: {
-      invoiceNumber,
-      orderId,
-      userId: order.userId,
-      clientId: order.clientId,
-      status: next.status,
-      subtotal,
-      tax: tax > 0 ? tax : null,
-      shipping: shipping > 0 ? shipping : null,
-      discount: discount > 0 ? discount : null,
-      total,
-      amountPaid: next.amountPaid,
-      amountDue: next.amountDue,
-      dueDate: now,
-      issuedAt: now,
-      sentAt: now,
-      paidAt: next.fullyPaid ? now : null,
-      cancelledAt: null,
-      paymentLink: null,
-      notes: next.fullyPaid
-        ? "Auto-generated when order was paid via Stripe."
-        : "Auto-generated from Stripe partial payment on order.",
-      billingAddress,
-      createdBy: issuerId,
-      updatedBy: null,
-      createdAt: now,
-      updatedAt: null,
-    },
-  });
+  const invoice = await createInvoiceWithNumberRetry((invoiceNumber) =>
+    prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        orderId,
+        userId: order.userId,
+        clientId: order.clientId,
+        status: next.status,
+        subtotal,
+        tax: tax > 0 ? tax : null,
+        shipping: shipping > 0 ? shipping : null,
+        discount: discount > 0 ? discount : null,
+        total,
+        amountPaid: next.amountPaid,
+        amountDue: next.amountDue,
+        dueDate: now,
+        issuedAt: now,
+        sentAt: now,
+        paidAt: next.fullyPaid ? now : null,
+        cancelledAt: null,
+        paymentLink: null,
+        notes: next.fullyPaid
+          ? "Auto-generated when order was paid via Stripe."
+          : "Auto-generated from Stripe partial payment on order.",
+        billingAddress,
+        createdBy: issuerId,
+        updatedBy: null,
+        createdAt: now,
+        updatedAt: null,
+      },
+    }),
+  );
 
   logger.info("Invoice auto-created for Stripe order charge", {
     invoiceId: invoice.id,
@@ -569,6 +598,18 @@ export async function updateInvoice(
       existingInvoice.total;
     const amountDue = total - data.amountPaid;
     updateData.amountDue = Math.max(0, amountDue);
+    if (amountDue < 0) {
+      // ISS-0047 — previously silently absorbed (amountDue just clamped to
+      // 0, no trace of the overpayment anywhere). No modeled field for the
+      // excess exists yet, so at minimum this makes it visible for manual
+      // follow-up instead of vanishing.
+      logger.warn("Invoice overpayment absorbed", {
+        invoiceId,
+        total,
+        amountPaid: data.amountPaid,
+        excess: Math.abs(amountDue),
+      });
+    }
 
     // REQ-0152 — auto paid when fully settled; downgrade paid → sent if amount lowered.
     // ISS-0015 — excludes "cancelled": settling the balance must not auto-revive it.

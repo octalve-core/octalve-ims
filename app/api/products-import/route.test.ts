@@ -13,7 +13,12 @@ import { NextRequest } from "next/server";
  * their errors were right there in the response.
  */
 
-const { getSessionFromRequest, withRateLimit, prismaMock } = vi.hoisted(() => {
+const {
+  getSessionFromRequest,
+  withRateLimit,
+  prismaMock,
+  checkAndSendStockAlerts,
+} = vi.hoisted(() => {
   const category = { findMany: vi.fn() };
   const supplier = { findMany: vi.fn() };
   const product = {
@@ -21,11 +26,13 @@ const { getSessionFromRequest, withRateLimit, prismaMock } = vi.hoisted(() => {
     findMany: vi.fn(),
     create: vi.fn(),
   };
+  const user = { findUnique: vi.fn() };
   const importHistory = { create: vi.fn(), update: vi.fn() };
   return {
     getSessionFromRequest: vi.fn(),
     withRateLimit: vi.fn(),
-    prismaMock: { category, supplier, product, importHistory },
+    checkAndSendStockAlerts: vi.fn(),
+    prismaMock: { category, supplier, product, user, importHistory },
   };
 });
 
@@ -35,7 +42,7 @@ vi.mock("@/lib/api/rate-limit", () => ({
   defaultRateLimits: { standard: {} },
 }));
 vi.mock("@/prisma/client", () => ({ prisma: prismaMock }));
-vi.mock("@/lib/email/notifications", () => ({ checkAndSendStockAlerts: vi.fn() }));
+vi.mock("@/lib/email/notifications", () => ({ checkAndSendStockAlerts }));
 vi.mock("@/lib/cache", () => ({ scheduleInvalidateImportCaches: vi.fn() }));
 vi.mock("@/lib/logger", () => ({ logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 
@@ -57,6 +64,7 @@ function request(): NextRequest {
   );
   return new NextRequest("http://localhost/api/products-import", {
     method: "POST",
+    headers: { origin: "http://localhost", host: "localhost" },
     body: formData,
   });
 }
@@ -74,6 +82,11 @@ beforeEach(() => {
   prismaMock.product.findUnique.mockResolvedValue(null);
   prismaMock.product.create.mockResolvedValue({});
   prismaMock.product.findMany.mockResolvedValue([]);
+  prismaMock.user.findUnique.mockResolvedValue({
+    email: "owner@example.com",
+    name: "Owner Name",
+  });
+  checkAndSendStockAlerts.mockResolvedValue(undefined);
 });
 
 describe("POST /api/products-import — failedRows must count every real failure", () => {
@@ -106,5 +119,42 @@ describe("POST /api/products-import — failedRows must count every real failure
     expect(body.successRows).toBe(1);
     expect(body.failedRows).toBe(3);
     expect(body.successRows + body.failedRows).toBe(body.totalRows);
+  });
+});
+
+describe("POST /api/products-import — stock-alert fan-out (ISS-0039)", () => {
+  it("passes recipientEmail/recipientName/userId in their real positional slots, not shifted", async () => {
+    prismaMock.category.findMany.mockResolvedValue([
+      { id: "cat-bev", name: "Beverages" },
+      { id: "cat-snacks", name: "Snacks" },
+    ]);
+
+    await POST(request());
+
+    expect(checkAndSendStockAlerts).toHaveBeenCalled();
+    for (const call of checkAndSendStockAlerts.mock.calls) {
+      const [, previousQuantity, recipientEmail, recipientName, userId] = call;
+      expect(previousQuantity).toBeUndefined();
+      expect(recipientEmail).toBe("owner@example.com");
+      expect(recipientName).toBe("Owner Name");
+      expect(userId).toBe("u1");
+    }
+  });
+
+  it("only alerts on rows this import actually created, not the user's whole catalog", async () => {
+    prismaMock.category.findMany.mockResolvedValue([
+      { id: "cat-bev", name: "Beverages" },
+      { id: "cat-snacks", name: "Snacks" },
+    ]);
+
+    await POST(request());
+
+    // Fixture has 2 rows that successfully create (Ginger Beer, Plantain Chips);
+    // the other 2 fail validation before any create happens.
+    expect(checkAndSendStockAlerts).toHaveBeenCalledTimes(2);
+    const names = checkAndSendStockAlerts.mock.calls.map((call) => call[0].name);
+    expect(names).toEqual(["Ginger Beer 330ml", "Plantain Chips 100g"]);
+    // The old bug queried the user's entire catalog for this — assert it's gone.
+    expect(prismaMock.product.findMany).not.toHaveBeenCalled();
   });
 });

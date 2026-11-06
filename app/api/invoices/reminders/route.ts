@@ -8,6 +8,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/utils/auth";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/prisma/client";
 import { sendInvoiceEmail } from "@/lib/email/notifications";
@@ -37,9 +38,17 @@ export async function POST(request: NextRequest) {
       process.env.INTERNAL_API_KEY,
     );
 
-    // Either admin or internal call required
-    if (!isInternalCall && (!session || session.role !== "admin")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Either admin or internal call required. CSRF only applies to the
+    // admin-session path — an internal cron/QStash call has no browser
+    // Origin/Referer at all, so enforcing it there would just break the
+    // legitimate caller (ISS-0031).
+    if (!isInternalCall) {
+      if (!validateCSRF(request)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+      if (!session || session.role !== "admin") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
     }
 
     // Parse optional days parameter (default: send for invoices due in 3 days or overdue)
@@ -161,7 +170,12 @@ export async function POST(request: NextRequest) {
         };
 
         // Send reminder email
-        await sendInvoiceEmail(emailData, clientEmail, clientName);
+        await sendInvoiceEmail(
+          emailData,
+          clientEmail,
+          clientName,
+          invoice.clientId ?? undefined,
+        );
         sentCount++;
 
         logger.info(

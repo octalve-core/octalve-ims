@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { logger } from "@/lib/logger";
 import { getSessionFromRequest } from "@/utils/auth";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
@@ -33,6 +34,10 @@ import { getErrorMessage } from "@/lib/api/errors";
  * Send email notification
  */
 export async function POST(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const rateLimitResponse = await withRateLimit(
       request,

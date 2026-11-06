@@ -18,11 +18,21 @@ on:
         description: 'Type "migrate production" to confirm you want to run migrations against the real production database'
         required: true
 
+# Two manual dispatches at once would race migrate deploy against the same
+# database -- queue the second instead of letting them overlap.
+concurrency:
+  group: migrate-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
 jobs:
   migrate:
     name: Migrate production database
     runs-on: ubuntu-latest
     environment: production
+    timeout-minutes: 15
     steps:
       - name: Verify confirmation input
         if: inputs.confirm != 'migrate production'
@@ -51,6 +61,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: prisma migrate status (pre-flight, dry check)
+        # Informational only -- `migrate status` exits non-zero whenever
+        # migrations are pending, which is the expected, common case right
+        # before this very job applies them. Must not block the real
+        # `migrate deploy` step below.
+        continue-on-error: true
         env:
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}

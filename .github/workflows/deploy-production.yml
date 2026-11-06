@@ -17,11 +17,19 @@ on:
         description: 'Type "deploy production" to confirm you have already run migrate-production.yml and it succeeded'
         required: true
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     name: Deploy to Vercel
     runs-on: ubuntu-latest
     environment: production
+    timeout-minutes: 15
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - name: Verify confirmation input
         if: inputs.confirm != 'deploy production'
@@ -46,27 +54,22 @@ jobs:
           node-version: '22.x'
           cache: pnpm
 
+      # TODO(ISS-0078): pin to a specific released version instead of
+      # `@latest` once one is verified -- left unpinned here deliberately
+      # rather than guessing a version number with no network access to
+      # confirm it exists.
       - name: Install Vercel CLI
         run: pnpm add -g vercel@latest
 
       # Pulls the project's real production env vars into .vercel, so the
       # build below sees the same configuration the deployed app will.
       - name: Pull Vercel environment
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
 
       - name: Build
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel build --prod --token="$VERCEL_TOKEN"
 
       # --prebuilt uploads the artifact built above rather than rebuilding on
       # Vercel, so what was migrated against is exactly what ships.
       - name: Deploy
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"

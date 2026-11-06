@@ -12,11 +12,15 @@ on:
       - 'prisma/migrations/**'
       - 'prisma/schema/**'
 
+permissions:
+  contents: read
+
 jobs:
   check:
     name: Validate schema & diff against staging
     runs-on: ubuntu-latest
     environment: staging
+    timeout-minutes: 10
     # Forks don't get repository/environment secrets, so this would fail
     # with a confusing auth error rather than being skipped -- same guard
     # preview.yml already uses for the same reason.

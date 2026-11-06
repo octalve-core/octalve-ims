@@ -15,13 +15,22 @@ concurrency:
   group: preview-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   preview:
     name: Deploy preview to Vercel
     runs-on: ubuntu-latest
+    environment: preview
+    timeout-minutes: 15
     # Forks don't get repository secrets, so this would fail with a confusing
     # auth error rather than being skipped.
     if: github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
 
@@ -34,23 +43,18 @@ jobs:
           node-version: '22.x'
           cache: pnpm
 
+      # TODO(ISS-0078): pin to a specific released version instead of
+      # `@latest` once one is verified -- left unpinned here deliberately
+      # rather than guessing a version number with no network access to
+      # confirm it exists.
       - name: Install Vercel CLI
         run: pnpm add -g vercel@latest
 
       - name: Pull Vercel environment
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
 
       - name: Build
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel build --token="$VERCEL_TOKEN"
 
       - name: Deploy
-        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel deploy --prebuilt --token="$VERCEL_TOKEN"

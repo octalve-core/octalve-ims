@@ -23,6 +23,7 @@ import { getClientIp, reserveAttempt, tooManyAttempts } from "@/lib/auth/rate-li
 import { isBrevoConfigured } from "@/lib/email/brevo";
 import { sendEmailViaBrevo } from "@/lib/email/brevo";
 import { generatePasswordResetEmail } from "@/lib/email/templates";
+import { getApiUrl } from "@/lib/env";
 
 const RESET_TOKEN_TTL_MINUTES = 60;
 
@@ -111,7 +112,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(tooManyAttempts(byEmail), { status: 429 });
     }
 
-    const origin = request.nextUrl.origin;
+    // ISS-0070 — request.nextUrl.origin is derived from the Host header,
+    // which an attacker can set to point the emailed reset link at a
+    // domain they control. getApiUrl() prefers the configured
+    // NEXT_PUBLIC_API_URL over anything request-derived.
+    const origin = getApiUrl(request);
     after(() => sendResetLink(email, origin));
 
     return NextResponse.json(GENERIC_SUCCESS);

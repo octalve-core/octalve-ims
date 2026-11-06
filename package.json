@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "license": "SEE LICENSE IN LICENSE",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.28.0",
   "scripts": {
     "dev": "next dev --turbo",
     "postinstall": "npx prisma generate",
@@ -58,7 +62,6 @@
     "@tanstack/react-query-devtools": "^5.91.2",
     "@tanstack/react-query-persist-client": "^5.90.19",
     "@tanstack/react-table": "^8.20.5",
-    "@types/cookies": "^0.9.0",
     "@types/papaparse": "^5.3.16",
     "@types/qrcode": "^1.5.5",
     "@upstash/qstash": "^2.8.4",
@@ -69,18 +72,14 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
-    "cookies": "^0.9.1",
     "date-fns": "^4.1.0",
     "exceljs": "^4.4.0",
     "ioredis": "^6.0.0",
     "jose": "^6.2.10",
-    "js-cookie": "^3.0.5",
-    "jsonwebtoken": "^9.0.2",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.562.0",
     "next": "^16.0.0",
-    "next-auth": "^5.0.0-beta.30",
     "next-themes": "^0.4.3",
     "papaparse": "^5.5.3",
     "qrcode": "^1.5.4",
@@ -103,8 +102,6 @@
     "@playwright/test": "^1.64.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/exceljs": "^0.5.3",
-    "@types/js-cookie": "^3.0.6",
-    "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^20",
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
@@ -122,12 +119,12 @@
     "vitest": "^4.1.6",
     "yaml": "^2.9.1"
   },
-  "overrides": {
-    "minimatch": ">=10.2.1",
-    "glob": ">=11.0.0",
-    "rimraf": "^5.0.5"
-  },
   "pnpm": {
+    "overrides": {
+      "minimatch": ">=10.2.1",
+      "glob": ">=11.0.0",
+      "rimraf": "^5.0.5"
+    },
     "onlyBuiltDependencies": [
       "@prisma/client",
       "@prisma/engines",

@@ -381,6 +381,14 @@ export function getRedisClient(): UnifiedRedisClient | null {
         retryStrategy(times) {
           return Math.min(times * 200, 5000);
         },
+        // Bounds how long any ONE command waits for a reply. Without this,
+        // a command issued while the connection is down queues and rides out
+        // the full maxRetriesPerRequest backoff (200+400+600ms ≈ 1.2s —
+        // ISS-0076) before failing. This fails each call fast instead, which
+        // matches the "cache/rate-limit is optional, fail open" philosophy
+        // (ADR 0008) without touching the connection-level retry/self-heal
+        // behavior above.
+        commandTimeout: 300,
       });
       // ioredis throws (crashing the process) if an 'error' event has no
       // listener — this is required, not optional, for graceful degradation.

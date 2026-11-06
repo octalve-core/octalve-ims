@@ -6,12 +6,14 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import {
   getUserById,
   updateUserAdmin,
   deleteUserAdmin,
+  isLastAdmin,
 } from "@/prisma/user-admin";
 import { updateUserAdminSchema } from "@/lib/validations";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
@@ -72,6 +74,10 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const rateLimitResponse = await withRateLimit(
       request,
@@ -126,6 +132,17 @@ export async function PUT(
       }
     }
 
+    // ISS-0071 — demoting the sole remaining admin would lock everyone out
+    // of admin functionality with no way back in short of direct DB access.
+    if (data.role !== undefined && data.role !== "admin" && existing.role === "admin") {
+      if (await isLastAdmin(id)) {
+        return NextResponse.json(
+          { error: "Cannot demote the only remaining admin" },
+          { status: 400 },
+        );
+      }
+    }
+
     const updatePayload: UpdateUserAdminInput = {};
     if (data.role !== undefined) updatePayload.role = data.role;
     if (data.name !== undefined) updatePayload.name = data.name;
@@ -158,6 +175,10 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const rateLimitResponse = await withRateLimit(
       request,
@@ -186,6 +207,24 @@ export async function DELETE(
     const existing = await getUserById(id);
     if (!existing) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // ISS-0094 — the PUT status guard's comment already claimed this existed; it didn't. A
+    // protected demo account (lib/auth/protected-emails.ts) was only kept undeleteable by the
+    // UI hiding the button, not by this route.
+    if (isProtectedEmail(existing.email)) {
+      return NextResponse.json(
+        { error: "Cannot delete this account" },
+        { status: 400 },
+      );
+    }
+
+    // ISS-0071 — same "no way back in" concern as the role-demotion guard above.
+    if (await isLastAdmin(id)) {
+      return NextResponse.json(
+        { error: "Cannot delete the only remaining admin" },
+        { status: 400 },
+      );
     }
 
     const deleted = await deleteUserAdmin(id);

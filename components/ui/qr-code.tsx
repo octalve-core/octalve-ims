@@ -56,10 +56,13 @@ export function QRCodeComponent({
   }, []);
 
   useEffect(() => {
-    // If QR code URL is provided (from ImageKit), use it directly
+    // If QR code URL is provided (from ImageKit), use it directly — this
+    // syncs local state to the prop, it's not a render loop.
     if (providedQrCodeUrl) {
+      /* eslint-disable react-hooks/set-state-in-effect */
       setQrCodeUrl(providedQrCodeUrl);
       setIsLoading(false);
+      /* eslint-enable react-hooks/set-state-in-effect */
       return;
     }
 

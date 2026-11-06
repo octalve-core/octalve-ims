@@ -1,5 +1,7 @@
 # Integration Guide: Redis Caching, Sentry & PostHog
 
+> **Known drift (ISS-0083, checked 2026-11-06):** generic reference guide, not written for this repo — paths/examples use `src/`, `next.config.js`, and a client `useEffect` in a server layout, none of which match this codebase (`app/`, `next.config.ts`; see `sentry.client.config.ts` for the real setup). It also tells you to call `Sentry.init` client-side a second time, which `CLAUDE.md` explicitly forbids here (double reporting). It ignores this repo's real Redis client (`ioredis` via `REDIS_URL`, see `lib/cache/redis.ts`) and PostHog is not implemented in this repo at all. Treat as general background, not setup instructions to follow literally.
+
 > **Purpose**: Complete setup guide for Redis caching, Sentry error tracking, and PostHog analytics integration  
 > **Reusable**: This guide can be applied to any Next.js project  
 > **Last Updated**: 2025-01-20

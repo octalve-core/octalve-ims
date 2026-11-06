@@ -37,6 +37,7 @@ export default async function OrderDetailRoute({ params, searchParams }: Props) 
     user.id,
     id,
     productIds as string[],
+    user.role,
   );
 
   return (

@@ -16,11 +16,15 @@ concurrency:
   group: migrate-staging
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   migrate:
     name: Migrate staging database
     runs-on: ubuntu-latest
     environment: staging
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 

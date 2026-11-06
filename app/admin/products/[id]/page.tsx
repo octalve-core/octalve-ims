@@ -23,7 +23,7 @@ export default async function AdminProductDetailPage({ params }: Props) {
   const [initialProduct, initialReviews, initialEligibility, initialStockByProduct] =
     await Promise.all([
       getProductDetailForPage({ id: user.id, role: user.role }, id),
-      getReviewsForProductPage(id, "all"),
+      getReviewsForProductPage(id, { id: user.id, role: user.role }),
       getReviewEligibilityForProduct(user.id, id),
       getStockByProductForPage({ id: user.id, role: user.role }, id),
     ]);

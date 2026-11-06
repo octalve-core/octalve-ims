@@ -14,6 +14,7 @@ export const API_ENDPOINTS = {
     logout: "/auth/logout",
     register: "/auth/register",
     session: "/auth/session",
+    changePassword: "/auth/change-password",
   },
 
   // Product endpoints

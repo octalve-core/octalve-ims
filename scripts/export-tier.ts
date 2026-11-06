@@ -15,6 +15,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { assertSafeExportTarget } from "./export-tier-guard";
 
 const ROOT = path.resolve(__dirname, "..");
 const TIERS = ["core", "pro", "premium"] as const;
@@ -190,6 +191,11 @@ function copyPath(relSrc: string) {
 console.log(`Exporting tier "${tier}" -> ${outDir}`);
 console.log(`Buckets included: ${includedBuckets.join(", ")}`);
 
+assertSafeExportTarget(
+  outDir,
+  ROOT,
+  process.env.HOME ? path.resolve(process.env.HOME) : null,
+);
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
 

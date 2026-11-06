@@ -144,7 +144,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, email, password } = validationResult.data;
+    const { name, password } = validationResult.data;
+    // ISS-0052: normalize at every write path, not just login's read-side
+    // lowercasing, so "Foo@x.com" and "foo@x.com" can't both register (the
+    // DB's unique index is case-sensitive) and so whichever case a user
+    // signs up with always matches login's normalized lookup later.
+    const email = validationResult.data.email.toLowerCase();
     const origin = request.nextUrl.origin;
 
     const existingUser = await prisma.user.findUnique({ where: { email } });

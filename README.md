@@ -5,7 +5,7 @@
 [![React](https://img.shields.io/badge/React-19.2-blue)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-6.4-2D3748)](https://www.prisma.io/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1)](https://www.postgresql.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-4169E1)](https://www.postgresql.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC)](https://tailwindcss.com/)
 [![TanStack Query](https://img.shields.io/badge/TanStack_Query-5-FF4154)](https://tanstack.com/query)
 [![Vitest](https://img.shields.io/badge/Vitest-4-6E9F18)](https://vitest.dev/)
@@ -71,13 +71,15 @@ Octalve IMS is a role-based warehouse and stock inventory platform. Store owners
 
 ## Project Overview
 
-Octalve IMS is a **full-stack inventory, order, and warehouse management system**. One codebase serves three roles with different dashboards and permissions:
+Octalve IMS is a **full-stack inventory, order, and warehouse management system**. One codebase has five roles (`lib/auth/can.ts`), though only three have a distinct UI home today — `user` and `retailer` currently land on the admin shell (view-only; see [docs/open-items.md](docs/open-items.md)):
 
 | Role                    | Typical home        | What they do                                                                                   |
 | ----------------------- | ------------------- | ---------------------------------------------------------------------------------------------- |
 | **Admin** (store owner) | `/` or `/admin/...` | Full catalog, warehouses, orders, invoices, users, analytics, client/supplier portal overviews |
 | **Supplier**            | `/supplier`         | Own catalog slice, related orders/invoices (read where gated), tickets, revenue KPIs           |
 | **Client**              | `/client`           | Browse products by owner, place orders, pay invoices (Stripe), support tickets                 |
+| **User** (self-registered default) | `/` (admin shell, view-only grants) | Least-privileged legacy role; view/create on products, stock, orders, invoicing |
+| **Retailer**            | `/` (admin shell, view-only grants) | Read-only on products, stock, orders; not assigned by any signup flow today      |
 
 **Core idea for learners:**  
 Pages are **SSR-first** (`force-dynamic` + server prefetch in `page.tsx`). The browser then hydrates with **TanStack Query**. After any create/update/delete, mutations **patch the cache** (instant badges/rows) then **invalidate** related queries so lists, detail pages, and portals stay in sync — including after the browser **Back** button — without a full page refresh. Optional **Upstash Redis** caches API/SSR payloads; writes **await** Redis invalidation before the HTTP response so clients never refetch stale server cache.
@@ -136,7 +138,7 @@ You do **not** need every third-party key to learn or run the app. With only Pos
 | UI              | **React 19**, **Tailwind 3.4**, **shadcn/ui** (Radix)                          | Components, dialogs, tables                    |
 | Language        | **TypeScript 5**                                                               | End-to-end types (`types/`, Zod, Prisma)       |
 | Database        | **PostgreSQL** + **Prisma 6**                                                  | Relational models, repositories in `prisma/*.ts` |
-| Auth            | **JWT** cookie (`session_id`), **bcryptjs**, optional Google OAuth             | Session in `utils/auth.ts`                     |
+| Auth            | **JWT** cookies — `access_token` (15 min, path `/`) + `refresh_token` (opaque, scoped to `/api/auth/refresh`), **bcryptjs**, optional Google OAuth | Session in `utils/auth.ts`, cookies in `lib/auth/cookies.ts` |
 | Server state    | **TanStack Query 5**                                                           | Lists/details, patch → invalidate              |
 | Forms           | **React Hook Form** + **Zod**                                                  | Dialogs and API `safeParse`                    |
 | Tables / charts | **TanStack Table**, **Recharts**                                               | Data grids and insights                        |
@@ -272,7 +274,7 @@ flowchart LR
 git clone <your-octalve-ims-repo-url>
 cd octalve-ims
 
-npm install
+pnpm install
 
 cp .env.example .env
 # Edit .env — set at least DATABASE_URL, JWT_SECRET, NEXT_PUBLIC_API_URL
@@ -280,17 +282,24 @@ cp .env.example .env
 npx prisma generate   # also runs on postinstall
 npx prisma migrate dev # apply schema to PostgreSQL (first time)
 
-npm run dev           # http://localhost:3000 (Turbopack)
+pnpm dev              # http://localhost:3000 (Turbopack)
 ```
+
+This repo ships only `pnpm-lock.yaml` (no `package-lock.json`/`yarn.lock`) — use pnpm, not npm/yarn, or installs can drift from the versions CI resolves.
 
 | Script           | Command                   | Purpose                          |
 | ---------------- | ------------------------- | -------------------------------- |
-| Dev              | `npm run dev`             | Local server (Turbopack)         |
-| Build            | `npm run build`           | `prisma generate` + `next build` |
-| Start            | `npm run start`           | Production server                |
-| Lint             | `npm run lint`            | ESLint                           |
-| Test             | `npm run test`            | Vitest suite                     |
-| Invalidate audit | `npm run test:invalidate` | TanStack/API write coverage      |
+| Dev              | `pnpm dev`                | Local server (Turbopack)         |
+| Build            | `pnpm build`               | `prisma generate` + `next build` |
+| Start            | `pnpm start`               | Production server                |
+| Lint             | `pnpm lint`                | ESLint (not run in CI today — see `ci.yml`) |
+| Typecheck        | `pnpm typecheck`           | `tsc --noEmit`, run in CI         |
+| Test             | `pnpm test`                | Vitest suite                     |
+| Invalidate audit | `pnpm test:invalidate`     | TanStack/API write coverage      |
+| Tier manifest    | `pnpm check:manifest`      | Validates `tier-manifest.json` against the codebase |
+| Tier export      | `pnpm export:core` / `export:pro` / `export:premium` | Build a sellable per-tier export |
+
+The table above isn't the full script list — see `package.json`'s `scripts` block for the data-management (`script:*`), Prisma (`prisma:*`), and `db:migrate:deploy` commands used by seeding and CI.
 
 **Important:** You **do** need a `.env` with the **three required** variables to run. Optional vars are not required for core learning — leave them commented in `.env.example`.
 
@@ -301,11 +310,13 @@ npm run dev           # http://localhost:3000 (Turbopack)
 After DB is empty or reset, seed demo users:
 
 ```bash
-npm run script:reset-demo-db              # accounts (+ Test Supplier entity)
-npm run script:seed-demo-catalog          # small explore catalog (optional)
+pnpm script:reset-demo-db                 # accounts (+ Test Supplier entity) — WIPES the target DB first, prints a warning only
+pnpm script:seed-demo-catalog             # small explore catalog (optional)
 # or: npx tsx scripts/reset-demo-db.ts --with-catalog
-npm run script:seed-full-demo             # wipes DB, seeds every table (>=4 rows each) — see docs/MANUAL_TEST_FIXTURES.md
+pnpm script:seed-full-demo                # wipes DB, seeds every table (>=4 rows each) — see docs/MANUAL_TEST_FIXTURES.md
 ```
+
+**These scripts delete data in whatever database `DATABASE_URL` resolves to** — they only print a warning, they don't prompt for confirmation. Double-check `DATABASE_URL` before running any of them.
 
 | Role     | Email               | Password   |
 | -------- | ------------------- | ---------- |
@@ -331,9 +342,9 @@ accounts (not in the role Select — log in with the email directly):
 
 ## Environment Variables
 
-Validated in `lib/env.ts`. Copy `.env.example` → `.env`. **Never commit `.env`.**
+Copy `.env.example` → `.env`. **Never commit `.env`.** `lib/env.ts` defines `validateEnv()` to fail fast on a missing required var, but **nothing calls it** — the app does not validate env vars at startup. In practice, `getEnvVar()` throws a clear error the first time a required var is actually read through it, but `DATABASE_URL` is read directly by Prisma's own client (not through `getEnvVar()`), so a missing `DATABASE_URL` surfaces as Prisma's own connection error rather than one of these messages. `JWT_SECRET` is only enforced to be non-empty in production (`lib/auth/jwt.ts`); the `.env.example` placeholder value is accepted as-is in development.
 
-### Required (app will not start without these)
+### Required (the three below; not startup-validated — see above)
 
 | Variable              | Description                                     | Local example                                                    |
 | --------------------- | ----------------------------------------------- | ---------------------------------------------------------------- |
@@ -534,7 +545,7 @@ In-app browsing: `/api-docs`. Machine-readable: `GET /api/openapi`.
 
 ### Models (high level)
 
-Defined in `prisma/schema.prisma`: **User**, **Category**, **Supplier**, **Product**, **Warehouse**, **StockAllocation**, **StockTransfer**, **Order**, **OrderItem**, **Invoice**, **SupportTicket**, **ProductReview**, **Notification**, **ImportHistory**, audit-related collections, etc.
+Defined across `prisma/schema/*.prisma` (not a single `schema.prisma` file — split by domain: `auth`, `catalog`, `crm`, `notifications`, `ops`, `sales`, `support`, `tenancy`, `warehousing`). 26 models: **User**, **Category**, **Supplier**, **Product**, **ProductSupplier**, **Warehouse**, **StockAllocation**, **StockTransfer**, **Order**, **OrderItem**, **Invoice**, **ProcessedPayment**, **ProcessedRefund**, **SupportTicket**, **SupportTicketReply**, **ProductReview**, **Notification**, **ImportHistory**, **AuditLog**, **Business**, **Role**, **Permission**, **RefreshToken**, **VerificationToken**, **LoginAttempt**, **PasswordResetToken**.
 
 ### Layers
 
