@@ -8,6 +8,7 @@ import {
   getReviewsByProductId,
   getEligibleReviewSlots,
 } from "@/prisma/product-review";
+import { resolvePublicReviewStatus } from "@/lib/product-reviews/resolve-public-review-status";
 import type { ProductReview, ReviewEligibilitySlot } from "@/types";
 
 function transformReview(
@@ -42,16 +43,20 @@ export type ReviewEligibilityResult = {
   slots: ReviewEligibilitySlot[];
 };
 
-/** Approved + pending reviews for product detail display. */
+/**
+ * Reviews for product detail display, scoped to what this viewer may see.
+ * ISS-0049 — this used to always request status "all" regardless of who
+ * was looking, the SSR equivalent of the exact hole ISS-0023 closed on the
+ * client-fetched /api/product-reviews/by-product route: every visitor saw
+ * every other buyer's pending/rejected reviews, reviewer email included.
+ * Only the product's own owner or an admin may see anything but approved.
+ */
 export async function getReviewsForProductPage(
   productId: string,
-  status: "approved" | "pending" | "all" = "all",
+  viewer: { id: string; role: string | null } | null,
 ): Promise<ProductReview[]> {
-  const options =
-    status === "all" || status === "pending"
-      ? { status }
-      : { status: "approved" as const };
-  const reviews = await getReviewsByProductId(productId, options);
+  const status = await resolvePublicReviewStatus("all", productId, viewer);
+  const reviews = await getReviewsByProductId(productId, { status });
   const userIds = [...new Set(reviews.map((r) => r.userId))];
   const users =
     userIds.length > 0

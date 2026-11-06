@@ -7,21 +7,23 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * working too, instead of surviving up to its own 15-minute lifetime after the suspension.
  */
 
-const { userUpdate, refreshTokenUpdateMany, transaction } = vi.hoisted(() => ({
+const { userUpdate, userFindUnique, userCount, refreshTokenUpdateMany, transaction } = vi.hoisted(() => ({
   userUpdate: vi.fn(),
+  userFindUnique: vi.fn(),
+  userCount: vi.fn(),
   refreshTokenUpdateMany: vi.fn(),
   transaction: vi.fn(),
 }));
 
 vi.mock("@/prisma/client", () => ({
   prisma: {
-    user: { update: userUpdate },
+    user: { update: userUpdate, findUnique: userFindUnique, count: userCount },
     refreshToken: { updateMany: refreshTokenUpdateMany },
     $transaction: transaction,
   },
 }));
 
-import { updateUserAdmin } from "./user-admin";
+import { updateUserAdmin, isLastAdmin } from "./user-admin";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -69,5 +71,30 @@ describe("updateUserAdmin", () => {
       where: { userId: "u1", revokedAt: null },
       data: { revokedAt: expect.any(Date) },
     });
+  });
+});
+
+/**
+ * ISS-0071 — role-demotion/delete routes had no guard against removing the
+ * only remaining admin, which would lock everyone out with no way back in
+ * short of direct DB access.
+ */
+describe("isLastAdmin", () => {
+  it("is false for a non-admin user regardless of admin count", async () => {
+    userFindUnique.mockResolvedValue({ role: "user" });
+    expect(await isLastAdmin("u1")).toBe(false);
+    expect(userCount).not.toHaveBeenCalled();
+  });
+
+  it("is false for an admin when other admins exist", async () => {
+    userFindUnique.mockResolvedValue({ role: "admin" });
+    userCount.mockResolvedValue(3);
+    expect(await isLastAdmin("u1")).toBe(false);
+  });
+
+  it("is true for the sole remaining admin", async () => {
+    userFindUnique.mockResolvedValue({ role: "admin" });
+    userCount.mockResolvedValue(1);
+    expect(await isLastAdmin("u1")).toBe(true);
   });
 });

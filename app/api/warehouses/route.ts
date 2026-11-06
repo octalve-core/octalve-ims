@@ -16,6 +16,7 @@ import {
 } from "@/lib/validations/warehouse";
 
 import { scheduleInvalidateWarehouseCaches } from "@/lib/cache";
+import { canManageCatalogSupportEntities } from "@/lib/auth/can";
 
 /**
  * GET /api/warehouses
@@ -57,6 +58,9 @@ export async function POST(request: NextRequest) {
     const session = await getSessionFromRequest(request);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!canManageCatalogSupportEntities(session.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const userId = session.id;
@@ -125,6 +129,9 @@ export async function PUT(request: NextRequest) {
     const session = await getSessionFromRequest(request);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!canManageCatalogSupportEntities(session.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const userId = session.id;
@@ -217,6 +224,9 @@ export async function DELETE(request: NextRequest) {
     const session = await getSessionFromRequest(request);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!canManageCatalogSupportEntities(session.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const userId = session.id;

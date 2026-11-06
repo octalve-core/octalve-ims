@@ -1,48 +1,75 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 /**
- * ISS-0031 — representative sample: confirms the CSRF guard added to this
- * route (and the ~25 others it was mechanically applied to) actually
- * short-circuits before any business logic runs, on a route the walkthrough
- * doesn't already cover with its own test file.
+ * ISS-0055 — categories/suppliers/warehouses mutations never called can()
+ * or any role check at all: any authenticated role, including the
+ * external-buyer "client" role, could create/edit/delete them. Tested here
+ * for categories; suppliers/warehouses wire the same helper identically.
  */
 
-vi.mock("@/utils/auth", () => ({ getSessionFromRequest: vi.fn() }));
-vi.mock("@/prisma/client", () => ({ prisma: {} }));
-vi.mock("@/prisma/audit-log", () => ({ createAuditLog: vi.fn() }));
+const { getSessionFromRequest, prismaMock, createAuditLog } = vi.hoisted(() => ({
+  getSessionFromRequest: vi.fn(),
+  prismaMock: { category: { create: vi.fn() } },
+  createAuditLog: vi.fn(),
+}));
+
+vi.mock("@/utils/auth", () => ({ getSessionFromRequest }));
+vi.mock("@/prisma/client", () => ({ prisma: prismaMock }));
+vi.mock("@/prisma/audit-log", () => ({ createAuditLog }));
 vi.mock("@/lib/cache", () => ({ scheduleInvalidateCategoryCaches: vi.fn() }));
 vi.mock("@/lib/logger", () => ({ logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 
-import { POST } from "@/app/api/categories/route";
-import { getSessionFromRequest } from "@/utils/auth";
+import { POST } from "./route";
 
-function request(headers: Record<string, string>) {
+function request(body: unknown): NextRequest {
   return new NextRequest("http://localhost/api/categories", {
     method: "POST",
-    headers: { "content-type": "application/json", ...headers },
-    body: JSON.stringify({ name: "Snacks" }),
+    headers: {
+      origin: "http://localhost",
+      host: "localhost",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(body),
   });
 }
 
-describe("POST /api/categories — CSRF guard", () => {
-  it("rejects a cross-origin request before touching the session", async () => {
-    const res = await POST(
-      request({ origin: "http://attacker.example", host: "localhost" }),
-    );
+beforeEach(() => {
+  vi.clearAllMocks();
+  prismaMock.category.create.mockResolvedValue({
+    id: "c1",
+    name: "Snacks",
+    userId: "u1",
+    status: true,
+  });
+  createAuditLog.mockResolvedValue(undefined);
+});
+
+describe("POST /api/categories role gate", () => {
+  it("403s the external-buyer 'client' role", async () => {
+    getSessionFromRequest.mockResolvedValue({ id: "u1", role: "client" });
+    const res = await POST(request({ name: "Snacks" }));
     expect(res.status).toBe(403);
-    expect(getSessionFromRequest).not.toHaveBeenCalled();
+    expect(prismaMock.category.create).not.toHaveBeenCalled();
   });
 
-  it("rejects a request with no Origin/Referer at all", async () => {
-    const res = await POST(request({ host: "localhost" }));
+  it("403s the 'supplier' role", async () => {
+    getSessionFromRequest.mockResolvedValue({ id: "u1", role: "supplier" });
+    const res = await POST(request({ name: "Snacks" }));
     expect(res.status).toBe(403);
+    expect(prismaMock.category.create).not.toHaveBeenCalled();
   });
 
-  it("proceeds past the guard on a same-origin request", async () => {
-    vi.mocked(getSessionFromRequest).mockResolvedValue(null);
-    const res = await POST(request({ origin: "http://localhost", host: "localhost" }));
-    // Falls through to the real auth check next, not the CSRF guard.
-    expect(res.status).toBe(401);
+  it("allows 'admin' through", async () => {
+    getSessionFromRequest.mockResolvedValue({ id: "u1", role: "admin" });
+    const res = await POST(request({ name: "Snacks" }));
+    expect(res.status).toBe(201);
+    expect(prismaMock.category.create).toHaveBeenCalled();
+  });
+
+  it("allows 'user' through", async () => {
+    getSessionFromRequest.mockResolvedValue({ id: "u1", role: "user" });
+    const res = await POST(request({ name: "Snacks" }));
+    expect(res.status).toBe(201);
   });
 });

@@ -16,6 +16,7 @@ import { logger } from "@/lib/logger";
 import { aiInsightsBodySchema } from "@/lib/validations/ai";
 import { LLM_INSIGHTS_MAX_TOKENS } from "@/lib/ai/constants";
 import { getWarehouseStockSummary } from "@/prisma/stock-allocation";
+import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 
 const SYSTEM_PROMPT = `You are a concise inventory advisor. Given a short summary of inventory metrics, reply with 2-4 brief, actionable recommendations (one short sentence each). Focus on reorder suggestions, low-stock attention, value optimization, warehouse rebalancing, and inter-warehouse transfer opportunities when warehouse data is present. Keep the tone professional and direct. Do not use markdown or bullet symbols.`;
 
@@ -67,6 +68,20 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return errorResponse("Unauthorized", 401);
     }
+    // ISS-0054: this sends warehouse data to a third-party LLM — "client"
+    // is a pure external-buyer role (no inventory-management grants
+    // anywhere else in lib/auth/can.ts) and has no legitimate use for it.
+    if (user.role === "client") {
+      return errorResponse("Forbidden", 403);
+    }
+    // ISS-0054: per-user cap — this was fully unthrottled, so any one
+    // caller could burn LLM credits/cost without limit.
+    const rateLimitResponse = await withRateLimit(
+      request,
+      defaultRateLimits.strict,
+      user.id,
+    );
+    if (rateLimitResponse) return rateLimitResponse;
 
     if (!isLlmConfigured()) {
       return serviceUnavailableResponse(LLM_NOT_CONFIGURED, {

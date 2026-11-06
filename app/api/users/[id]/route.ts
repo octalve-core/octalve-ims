@@ -13,6 +13,7 @@ import {
   getUserById,
   updateUserAdmin,
   deleteUserAdmin,
+  isLastAdmin,
 } from "@/prisma/user-admin";
 import { updateUserAdminSchema } from "@/lib/validations";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
@@ -131,6 +132,17 @@ export async function PUT(
       }
     }
 
+    // ISS-0071 — demoting the sole remaining admin would lock everyone out
+    // of admin functionality with no way back in short of direct DB access.
+    if (data.role !== undefined && data.role !== "admin" && existing.role === "admin") {
+      if (await isLastAdmin(id)) {
+        return NextResponse.json(
+          { error: "Cannot demote the only remaining admin" },
+          { status: 400 },
+        );
+      }
+    }
+
     const updatePayload: UpdateUserAdminInput = {};
     if (data.role !== undefined) updatePayload.role = data.role;
     if (data.name !== undefined) updatePayload.name = data.name;
@@ -195,6 +207,14 @@ export async function DELETE(
     const existing = await getUserById(id);
     if (!existing) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // ISS-0071 — same "no way back in" concern as the role-demotion guard above.
+    if (await isLastAdmin(id)) {
+      return NextResponse.json(
+        { error: "Cannot delete the only remaining admin" },
+        { status: 400 },
+      );
     }
 
     const deleted = await deleteUserAdmin(id);

@@ -42,6 +42,7 @@ export default async function InvoiceDetailRoute({
     user.id,
     initialInvoice.orderId,
     productIds,
+    user.role,
   );
 
   return (

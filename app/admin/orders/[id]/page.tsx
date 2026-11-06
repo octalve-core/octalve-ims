@@ -40,6 +40,7 @@ export default async function AdminOrderDetailPage({
     user.id,
     id,
     productIds as string[],
+    user.role,
   );
 
   return (

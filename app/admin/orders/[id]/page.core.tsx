@@ -33,6 +33,7 @@ export default async function AdminOrderDetailPage({ params }: Props) {
     user.id,
     id,
     productIds as string[],
+    user.role,
   );
 
   return (

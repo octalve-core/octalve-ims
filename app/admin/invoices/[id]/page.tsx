@@ -42,6 +42,7 @@ export default async function AdminInvoiceDetailPage({
     user.id,
     initialInvoice.orderId,
     productIds,
+    user.role,
   );
 
   return (

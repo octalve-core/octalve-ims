@@ -26,6 +26,11 @@ export interface AccessTokenPayload {
   iat?: number; // seconds since epoch, set by .setIssuedAt()
 }
 
+// ISS-0070 — HS256 (what SignJWT below uses) treats a short secret as a
+// short key: a 256-bit key needs about 32 ASCII characters, and nothing
+// here ever checked that a configured secret met that bar.
+const MIN_JWT_SECRET_LENGTH = 32;
+
 function getSecret(): Uint8Array {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
@@ -34,6 +39,11 @@ function getSecret(): Uint8Array {
     }
     return new TextEncoder().encode(
       "dev_octalve_ims_jwt_secret_only_for_local_testing"
+    );
+  }
+  if (process.env.NODE_ENV === "production" && secret.length < MIN_JWT_SECRET_LENGTH) {
+    throw new Error(
+      `JWT_SECRET must be at least ${MIN_JWT_SECRET_LENGTH} characters in production (got ${secret.length})`
     );
   }
   return new TextEncoder().encode(secret);
