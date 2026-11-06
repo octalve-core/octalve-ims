@@ -13,6 +13,7 @@ import { prisma } from "@/prisma/client";
 import { generateInvoicePDF } from "@/lib/pdf";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 import { getInvoiceDetailForPage } from "@/lib/server/invoice-detail-data";
+import { getConfigValue } from "@/prisma/system-config";
 
 /**
  * GET /api/invoices/[id]/pdf
@@ -70,8 +71,25 @@ export async function GET(
       clientName = client?.username || client?.email || "Customer";
     }
 
+    // Real company identity (ISS-0077): admin-configurable via System Settings
+    // (prisma/system-config.ts), never read by this route before now — every PDF
+    // showed the generator's own hardcoded placeholder (a fictitious address, a
+    // third-party "stockinventory.com" billing email from the template this app
+    // was forked from) regardless of what the admin set.
+    const [companyName, companyAddress, companyPhone, companyEmail] =
+      await Promise.all([
+        getConfigValue<string>("company_name"),
+        getConfigValue<string>("company_address"),
+        getConfigValue<string>("company_phone"),
+        getConfigValue<string>("company_email"),
+      ]);
+
     // Prepare PDF data
     const pdfData = {
+      companyName,
+      companyAddress,
+      companyPhone,
+      companyEmail,
       invoiceNumber: invoice.invoiceNumber,
       status: invoice.status,
       issuedAt: invoice.issuedAt,

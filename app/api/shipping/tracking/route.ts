@@ -162,6 +162,7 @@ export async function POST(request: NextRequest) {
         shippingNotificationData,
         clientEmail,
         clientName,
+        order.clientId ?? order.userId,
       ).catch((err) =>
         logger.warn("Failed to send shipping notification email", {
           error: err,

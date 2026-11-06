@@ -120,6 +120,7 @@ export async function POST(request: NextRequest) {
               statusUpdateData,
               client.email,
               client.username || undefined,
+              order.clientId,
             ).catch((err) =>
               logger.warn("Failed to send status update email", { error: err }),
             );

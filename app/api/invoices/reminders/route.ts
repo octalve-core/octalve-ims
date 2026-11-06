@@ -170,7 +170,12 @@ export async function POST(request: NextRequest) {
         };
 
         // Send reminder email
-        await sendInvoiceEmail(emailData, clientEmail, clientName);
+        await sendInvoiceEmail(
+          emailData,
+          clientEmail,
+          clientName,
+          invoice.clientId ?? undefined,
+        );
         sentCount++;
 
         logger.info(

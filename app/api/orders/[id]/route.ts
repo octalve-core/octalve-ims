@@ -306,7 +306,10 @@ export async function PUT(
       });
     }
 
-    // Send order status update email if status changed
+    // Send order status update email if status changed. The recipient is always the
+    // order's own account — never the stored shippingAddress.email — for the same
+    // reason as the order-confirmation email (ISS-0037): that field is client-supplied
+    // and would otherwise let it be redirected to an address of the caller's choosing.
     if (
       statusChanged &&
       existingOrder.shippingAddress &&
@@ -316,19 +319,24 @@ export async function PUT(
         email?: string;
         name?: string;
       };
-      if (shippingAddr.email) {
+      const statusRecipient = await prisma.user.findUnique({
+        where: { id: existingOrder.clientId ?? existingOrder.userId },
+        select: { email: true, name: true },
+      });
+      if (statusRecipient?.email) {
         sendOrderStatusUpdate(
           {
             orderNumber: order.orderNumber,
-            clientName: shippingAddr.name || "Customer",
-            clientEmail: shippingAddr.email,
+            clientName: statusRecipient.name || "Customer",
+            clientEmail: statusRecipient.email,
             previousStatus: existingOrder.status,
             newStatus: updateData.status ?? order.status,
             orderUrl: `${getApiUrl(request)}/orders/${order.id}`,
             estimatedDelivery: order.estimatedDelivery?.toISOString(),
           },
-          shippingAddr.email,
-          shippingAddr.name,
+          statusRecipient.email,
+          statusRecipient.name || shippingAddr.name,
+          existingOrder.clientId ?? existingOrder.userId,
         ).catch((error) => {
           // Log error but don't fail the request
           logger.error("Failed to send order status update email:", error);

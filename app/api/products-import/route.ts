@@ -23,6 +23,10 @@ import {
 import { checkAndSendStockAlerts } from "@/lib/email/notifications";
 import { scheduleInvalidateImportCaches } from "@/lib/cache";
 
+// Caps how many stock-alert emails one import request can trigger, independent
+// of how many rows it imports (ISS-0039).
+const MAX_STOCK_ALERT_EMAILS_PER_IMPORT = 20;
+
 /**
  * POST /api/products-import
  * Import products from CSV/Excel file
@@ -160,6 +164,11 @@ export async function POST(request: NextRequest) {
         field?: string;
         message: string;
       }> = [...validationResult.errors];
+      const createdProducts: Array<{
+        name: string;
+        quantity: number;
+        sku: string;
+      }> = [];
 
       // Get all categories and suppliers for lookup
       const categories = await prisma.category.findMany({
@@ -239,6 +248,11 @@ export async function POST(request: NextRequest) {
               createdBy: userId,
             },
           });
+          createdProducts.push({
+            name: String(rowData.name),
+            quantity: Number(rowData.quantity),
+            sku: String(rowData.sku),
+          });
 
           successCount++;
         } catch (error) {
@@ -258,22 +272,25 @@ export async function POST(request: NextRequest) {
         status: failCount === 0 ? "completed" : "completed",
       });
     await scheduleInvalidateImportCaches();
-      // Check and send stock alerts for newly imported products
-      // This is done asynchronously to not block the response
-      // Note: We check alerts for all products, not just imported ones
-      // The stock alert system will check all products and send alerts as needed
-      const allProducts = await prisma.product.findMany({
-        where: { userId },
-      });
-      for (const product of allProducts) {
+      // Check and send stock alerts, scoped to only the rows this request actually
+      // created (previously loaded the user's whole catalog and alerted on every
+      // product regardless of whether this import touched it), capped so one large
+      // import can't fire an unbounded number of emails.
+      const alertRecipient = createdProducts.length
+        ? await prisma.user.findUnique({
+            where: { id: userId },
+            select: { email: true, name: true },
+          })
+        : null;
+      for (const product of createdProducts.slice(
+        0,
+        MAX_STOCK_ALERT_EMAILS_PER_IMPORT,
+      )) {
         checkAndSendStockAlerts(
-          {
-            name: product.name,
-            quantity: Number(product.quantity),
-            sku: product.sku,
-          },
-          undefined,
-          undefined,
+          product,
+          undefined, // new product, no previous quantity to compare against
+          alertRecipient?.email || undefined,
+          alertRecipient?.name || undefined,
           userId,
         ).catch((error) => {
           logger.error("Failed to check stock alerts after import:", error);

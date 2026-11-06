@@ -91,13 +91,28 @@ export async function POST(
       (invoice.billingAddress as unknown as BillingAddress) ||
       (order.billingAddress as unknown as BillingAddress);
 
-    // Extract client email and name from billing address or order
+    // Prefer the invoice/order's own linked account — billingAddress/shippingAddress
+    // are client-supplied at order-creation time and would otherwise let an invoice be
+    // redirected to an address of the orderer's choosing (same root cause as ISS-0037).
+    // Fall back to the billing/shipping address only when there's no linked account at
+    // all (e.g. a guest order), matching the pattern already used in
+    // app/api/invoices/reminders/route.ts.
+    const invoiceClientId = invoice.clientId ?? order.clientId ?? order.userId;
+    const linkedClient = invoiceClientId
+      ? await prisma.user.findUnique({
+          where: { id: invoiceClientId },
+          select: { email: true, username: true },
+        })
+      : null;
+
     const clientEmail =
+      linkedClient?.email ||
       (billingAddress as unknown as { email?: string })?.email ||
       (order.shippingAddress as unknown as { email?: string })?.email ||
       null;
 
     const clientName =
+      linkedClient?.username ||
       (billingAddress as unknown as { name?: string })?.name ||
       (order.shippingAddress as unknown as { name?: string })?.name ||
       "Customer";
@@ -191,14 +206,17 @@ export async function POST(
       amountPaid: invoice.amountPaid,
       amountDue: invoice.amountDue,
       paymentLink: paymentLink || undefined,
-      invoiceUrl: `${
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
-      }/invoices/${invoice.id}`,
+      invoiceUrl: `${getApiUrl(request)}/invoices/${invoice.id}`,
       status: invoice.status as InvoiceEmailData["status"],
     };
 
     // Send invoice email (async, don't block response)
-    sendInvoiceEmail(invoiceEmailData, clientEmail, clientName).catch(
+    sendInvoiceEmail(
+      invoiceEmailData,
+      clientEmail,
+      clientName,
+      invoiceClientId ?? undefined,
+    ).catch(
       (error) => {
         logger.error("Failed to send invoice email:", error);
       },

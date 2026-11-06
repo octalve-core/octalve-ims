@@ -274,17 +274,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const checkoutSession = await stripe.checkout.sessions.create({
-      mode: "payment",
-      payment_method_types: ["card"],
-      line_items: lineItems,
-      metadata,
-      customer_email: customerEmail,
-      success_url:
-        successUrl ||
-        `${baseUrl}/${type}s/${id}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancelUrl || `${baseUrl}/${type}s/${id}?payment=cancelled`,
-    });
+    // Stripe's own idempotency key (ISS-0048): the global TanStack mutation retry
+    // (lib/react-query/config.ts, retry: 1) re-runs this exact request on a timeout,
+    // which would otherwise create a second live checkout session for the same
+    // order/invoice. Bucketed by a 5-minute window so a genuinely new checkout
+    // attempt later (e.g. a different payment try after this session expired) still
+    // gets its own session rather than being deduped forever.
+    const idempotencyWindow = Math.floor(Date.now() / (5 * 60 * 1000));
+    const checkoutSession = await stripe.checkout.sessions.create(
+      {
+        mode: "payment",
+        payment_method_types: ["card"],
+        line_items: lineItems,
+        metadata,
+        customer_email: customerEmail,
+        success_url:
+          successUrl ||
+          `${baseUrl}/${type}s/${id}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: cancelUrl || `${baseUrl}/${type}s/${id}?payment=cancelled`,
+      },
+      {
+        idempotencyKey: `checkout:${type}:${id}:${session.id}:${idempotencyWindow}`,
+      },
+    );
 
     // REQ-0152 — store payment link only; never clobber order paymentStatus to unpaid
     if (type === "invoice" && checkoutSession.url) {
