@@ -183,7 +183,7 @@ export async function deleteCacheByPattern(pattern: string): Promise<number> {
     let cursor: number | string = 0;
 
     do {
-      const result = await redis.scan(cursor, { match: cachePattern });
+      const result = await redis.scan(cursor, { match: cachePattern, count: 100 });
       cursor = result[0];
       const resultKeys = Array.isArray(result[1]) ? result[1] : [];
       keys.push(...resultKeys);

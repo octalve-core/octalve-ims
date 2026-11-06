@@ -13,6 +13,12 @@ const requiredEnvVars = [
 
 /** Optional: when set, enable ImageKit, OAuth, email, cache, payments, shipping, etc. */
 const optionalEnvVars = [
+  "NEXT_PUBLIC_APP_URL",
+  "NEXT_PUBLIC_DISABLE_DEMO_LOGIN",
+  "NEXT_PUBLIC_DISABLE_BROWSER_TRANSLATE",
+  "SENTRY_ORG",
+  "SENTRY_PROJECT",
+  "INTERNAL_API_KEY",
   "IMAGEKIT_PUBLIC_KEY",
   "IMAGEKIT_PRIVATE_KEY",
   "IMAGEKIT_URL_ENDPOINT",

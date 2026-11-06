@@ -57,6 +57,10 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon\\.ico|.*\\.svg|.*\\.png|.*\\.jpg|.*\\.woff|.*\\.woff2).*)",
+    // robots.txt was missing here (ISS-0081): an unauthenticated crawler
+    // hitting it got redirected to /login instead of served the file, and
+    // crawlers don't follow redirects for robots.txt — effectively no
+    // robots.txt at all from a bot's point of view.
+    "/((?!api|_next/static|_next/image|favicon\\.ico|robots\\.txt|.*\\.svg|.*\\.png|.*\\.jpg|.*\\.woff|.*\\.woff2).*)",
   ],
 };
