@@ -34,7 +34,10 @@ import {
 } from "@/lib/cache";
 import { getStockAllocationsByProduct } from "@/prisma/stock-allocation";
 import { planCatalogQuantityReconcile } from "@/lib/stock-allocation/catalog-quantity-reconcile";
-import { applyCatalogQuantityReconcile } from "@/lib/stock-allocation/apply-catalog-quantity-reconcile";
+import {
+  applyCatalogQuantityReconcile,
+  ProductConcurrentModificationError,
+} from "@/lib/stock-allocation/apply-catalog-quantity-reconcile";
 import { enrichProductsWithCommittedQuantity } from "@/lib/products/enrich-product-committed-quantity";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 import { createAuditLog } from "@/prisma/audit-log";
@@ -573,6 +576,7 @@ export async function PUT(request: NextRequest) {
           newCatalog: quantity,
           shrinkSteps: reconcilePlan.shrinkSteps,
           productUpdate: productUpdateData,
+          expectedCurrentQuantity: existingProduct.quantity,
         });
         // REQ-0225 — client patches warehouse/product stock caches from steps
         stockReconcile = {
@@ -585,13 +589,18 @@ export async function PUT(request: NextRequest) {
           })),
         };
       } else {
-        await prisma.product.update({
-          where: { id },
+        // ISS-0046 — guard against a second concurrent PUT that read the
+        // same now-stale quantity; see ProductConcurrentModificationError.
+        const claimed = await prisma.product.updateMany({
+          where: { id, quantity: existingProduct.quantity },
           data: {
             ...productUpdateData,
             quantity: BigInt(quantity) as never,
           },
         });
+        if (claimed.count === 0) {
+          throw new ProductConcurrentModificationError(id);
+        }
       }
 
       await scheduleInvalidateStockAllocationCaches();
@@ -754,6 +763,12 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(transformedProduct);
   } catch (error) {
+    if (error instanceof ProductConcurrentModificationError) {
+      return NextResponse.json(
+        { error: "Product was modified concurrently. Please retry." },
+        { status: 409 },
+      );
+    }
     logger.error("Error updating product:", error);
     return NextResponse.json(
       { error: "Failed to update product" },
@@ -932,11 +947,12 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Hard delete: DB first (fast response), ImageKit cleanup deferred after response
-    await prisma.stockAllocation.deleteMany({ where: { productId: id } });
-
-    await prisma.product.delete({
-      where: { id },
-    });
+    // ISS-0046 — these were two separate statements; a crash between them
+    // orphaned allocation rows with no product to belong to.
+    await prisma.$transaction([
+      prisma.stockAllocation.deleteMany({ where: { productId: id } }),
+      prisma.product.delete({ where: { id } }),
+    ]);
 
     const mediaSnapshot = {
       qrCodeFileId: existingProduct.qrCodeFileId,

@@ -16,7 +16,27 @@ import {
   validateCheckoutChargeAmount,
 } from "@/lib/validations/payment";
 import { scheduleInvalidateOrderGraphCaches } from "@/lib/cache";
+import { getApiUrl } from "@/lib/env";
 import type { CheckoutSessionResponse } from "@/types";
+
+/**
+ * ISS-0047 — successUrl/cancelUrl come straight from the request body and
+ * were passed to Stripe with no validation: an attacker-controlled
+ * successUrl becomes the page Stripe redirects a real paying customer to
+ * right after a real payment, an open-redirect/phishing vector. Only accept
+ * one whose origin matches this app's own trusted origin.
+ */
+function trustedReturnUrl(
+  url: string | undefined,
+  trustedOrigin: string,
+): string | undefined {
+  if (!url) return undefined;
+  try {
+    return new URL(url).origin === trustedOrigin ? url : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 /**
  * POST /api/payments/checkout
@@ -65,7 +85,9 @@ export async function POST(request: NextRequest) {
       validationResult.data;
 
     const stripe = getStripe();
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const baseUrl = getApiUrl(request);
+    const safeSuccessUrl = trustedReturnUrl(successUrl, baseUrl);
+    const safeCancelUrl = trustedReturnUrl(cancelUrl, baseUrl);
 
     let lineItems: {
       price_data: {
@@ -289,9 +311,10 @@ export async function POST(request: NextRequest) {
         metadata,
         customer_email: customerEmail,
         success_url:
-          successUrl ||
+          safeSuccessUrl ||
           `${baseUrl}/${type}s/${id}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: cancelUrl || `${baseUrl}/${type}s/${id}?payment=cancelled`,
+        cancel_url:
+          safeCancelUrl || `${baseUrl}/${type}s/${id}?payment=cancelled`,
       },
       {
         idempotencyKey: `checkout:${type}:${id}:${session.id}:${idempotencyWindow}`,
