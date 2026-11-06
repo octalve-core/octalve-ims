@@ -128,8 +128,8 @@ test("Chapter A — first screen and authentication (anonymous)", async ({ page 
 
       await guarded.typeHumanlike(guarded.getByLabel("Email"), "nobody@walkthrough.test");
       await guarded.click(guarded.getByRole("button", { name: "Send Reset Link" }));
-      await expect(guarded.getByText("Check your email")).toBeVisible();
-      await expect(guarded.getByText(/If an account exists for/)).toBeVisible();
+      await expect(guarded.getByText("Check your email").first()).toBeVisible();
+      await expect(guarded.getByText(/If an account exists for/).first()).toBeVisible();
     },
   );
 
@@ -174,8 +174,10 @@ test("Chapter A — first screen and authentication (anonymous)", async ({ page 
       await guarded.typeHumanlike(password(), "ab1de");
       await guarded.typeHumanlike(confirmPassword(), "ab1de");
       await guarded.click(guarded.getByRole("button", { name: "Sign Up" }));
-      await expect(guarded.getByText("Registration Failed")).toBeVisible();
-      await expect(guarded.getByText("Invalid request body")).toBeVisible();
+      // Toasts duplicate into a visible div + an aria-live announcer with
+      // the same text — .first() picks the real one.
+      await expect(guarded.getByText("Registration Failed").first()).toBeVisible();
+      await expect(guarded.getByText("Invalid request body").first()).toBeVisible();
     },
   );
 
@@ -234,7 +236,7 @@ test("Chapter A — first screen and authentication (anonymous)", async ({ page 
       await guarded.click(guarded.getByRole("button", { name: "Sign In" }));
       await page.waitForURL((url) => url.pathname === "/", { timeout: 15_000 });
       await expect(guarded.getByRole("complementary", { name: "Primary navigation" })).toBeVisible();
-      await expect(guarded.getByText("Folake Adewale")).toBeVisible();
+      await expect(guarded.getByText("Folake Adewale").first()).toBeVisible();
       // ISS-0064/0088, confirmed not a data leak: the admin-shaped nav is
       // shown (now presentation-scoped, not just dead-ending — see ISS-0064's
       // fix), but User Management is correctly hidden from a `user` role.

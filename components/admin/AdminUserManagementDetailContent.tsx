@@ -380,6 +380,7 @@ export default function AdminUserManagementDetailContent({
                 >
                   <SelectTrigger
                     id="um-role"
+                    aria-label="Change user role"
                     className={cn(
                       "w-auto min-w-[140px] rounded-full h-auto py-1 px-2",
                       userRoleBadgeClass(u!.role),

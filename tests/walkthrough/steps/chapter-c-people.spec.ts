@@ -264,13 +264,15 @@ test("Chapter C — people (user management)", async ({ page }) => {
       await setCaption(page, "Going back to User Management...");
       await guarded.goBack();
       await expect(page).toHaveURL(/\/admin\/user-management$/);
-      await expect(guarded.getByText("Ngozi Obi")).toBeVisible();
+      // Scoped to the table: a lingering "Ngozi Obi (...) has been created"
+      // toast from S-044 can still contain this text too.
+      const ngoziRow = guarded.locator("table tbody tr").filter({ hasText: "Ngozi Obi" });
+      await expect(ngoziRow).toBeVisible();
 
       // ISS-0094, fixed: the row's "Delete User" action now works — like
       // "View Detail"/"Edit User", it's a shortcut to the detail page, where
       // the real delete button and its confirmation dialog live.
       await setCaption(page, "Opening Ngozi's row actions...");
-      const ngoziRow = guarded.locator("table tbody tr").filter({ hasText: "Ngozi Obi" });
       await guarded.click(ngoziRow.getByRole("button", { name: "Actions" }));
       await guarded.click(guarded.getByRole("menuitem", { name: "Delete User" }));
       await expect(page).toHaveURL(/\/admin\/user-management\/[^/]+$/);
