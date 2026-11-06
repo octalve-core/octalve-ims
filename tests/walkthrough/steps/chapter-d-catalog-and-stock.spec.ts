@@ -13,11 +13,10 @@ import { FIRST_ADMIN, activateSelfRegisteredWalkthroughUser } from "../lib/seed-
  * and stock allocation/transfer.
  *
  * Runs standalone, so it replays the tail of Chapter A/B's bootstrap
- * (register Folake, recover from ISS-0087, sign out, sign in as Amara)
- * unrecorded before the chapter's own timeline starts — see Chapter B's
- * file header for why. One addition Chapters A/B/C didn't need: task 0004's
- * decision (a) (built 2026-10-26, after those chapters) made self-
- * registration issue no session until email verification, so Folake's
+ * (register Folake, activate out-of-band and sign in, sign out, sign in as
+ * Amara) unrecorded before the chapter's own timeline starts — see Chapter
+ * B's file header for why. Task 0004's decision (a) (built 2026-10-26) made
+ * self-registration issue no session until email verification, so Folake's
  * bootstrap account is activated out-of-band here too — see
  * activateSelfRegisteredWalkthroughUser in lib/seed-admin.ts.
  *

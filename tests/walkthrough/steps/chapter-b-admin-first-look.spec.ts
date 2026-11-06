@@ -5,7 +5,7 @@ import { wrapPage } from "../lib/guarded-page";
 import { WalkthroughObservers } from "../observers";
 import { installOverlay, setCaption } from "../lib/overlay";
 import { Timeline, type TimelineStep } from "../lib/timeline";
-import { FIRST_ADMIN } from "../lib/seed-admin";
+import { FIRST_ADMIN, activateSelfRegisteredWalkthroughUser } from "../lib/seed-admin";
 
 /**
  * Storyboard Chapter B (storyboard.md) — S-010 through S-033: Amara's first
@@ -14,8 +14,9 @@ import { FIRST_ADMIN } from "../lib/seed-admin";
  * two users listed).
  *
  * This file runs standalone, so it replays the tail of Chapter A
- * (S-008/S-008b/S-008c/S-009 — register Folake, recover from ISS-0087's
- * blank page, sign out, sign in as Amara) as an unrecorded bootstrap before
+ * (S-008/S-008b/S-008c/S-009 — register Folake, activate out-of-band and
+ * sign in — see activateSelfRegisteredWalkthroughUser, superseding
+ * ISS-0087 — sign out, sign in as Amara) as an unrecorded bootstrap before
  * the chapter's own timeline starts. It is not re-asserted or re-screenshot
  * here — Chapter A already covers it. In the eventual continuous Phase 3
  * run, this chapter will simply inherit that state from Chapter A's own
@@ -68,12 +69,23 @@ test("Chapter B — admin's first look (empty database)", async ({ page }) => {
   await guarded.typeHumanlike(password(), "Walkthrough#2026");
   await guarded.typeHumanlike(confirmPassword(), "Walkthrough#2026");
   await guarded.click(guarded.getByRole("button", { name: "Sign Up" }));
-  await expect(guarded.getByText("Account Created Successfully").first()).toBeVisible();
   await page.waitForURL(/\/login$/, { timeout: 10_000 });
 
-  // ISS-0087: register leaves a blank page at /login; a reload completes
-  // the now-authenticated redirect (lands signed in as Folake, on "/").
-  await guarded.reload();
+  // Task 0004 decision (a) (built after this bootstrap was first written):
+  // self-registration now creates PENDING_VERIFICATION and issues NO session
+  // at all — the old "reload and you're already logged in" recovery depended
+  // on a cookie register used to set regardless of status, which no longer
+  // happens. Folake's account is activated out-of-band (see
+  // activateSelfRegisteredWalkthroughUser's doc comment), then — since there
+  // is now nothing to "discover" via a reload — she logs in explicitly,
+  // right here on /login, same as any other sign-in. Same fix as Chapter D's
+  // bootstrap, which was written after this one and already accounts for it.
+  await activateSelfRegisteredWalkthroughUser(process.env.DATABASE_URL!, "folake.adewale@walkthrough.test");
+
+  await guarded.typeHumanlike(guarded.getByLabel("Email"), "folake.adewale@walkthrough.test");
+  await guarded.typeHumanlike(password(), "Walkthrough#2026");
+  await guarded.click(guarded.getByRole("button", { name: "Sign In" }));
+  await page.waitForURL((url) => url.pathname === "/", { timeout: 15_000 });
   await expect(page).toHaveURL(`${BASE_URL}/`);
   await page.waitForLoadState("networkidle");
   await expect(guarded.getByRole("complementary", { name: "Primary navigation" })).toBeVisible();
@@ -340,11 +352,12 @@ test("Chapter B — admin's first look (empty database)", async ({ page }) => {
     { id: "S-029", chapter: "B", role: "admin", name: "Profile menu — Support Tickets", covers: ["S-029"] },
     async () => {
       await setCaption(page, "Opening the profile menu — Support Tickets...");
-      await guarded.click(guarded.getByRole("button", { name: "Open account menu" }));
-      // Confirms FND-01/ISS-pending: the profile menu has exactly these four
-      // items — no change-password entry exists anywhere in it.
+      await guarded.click(guarded.getByRole("button", { name: /account menu$/i }));
+      // ISS-0084 (fixed this session): the profile menu now has a Change
+      // Password entry too, alongside these four.
       await expect(guarded.getByRole("menuitem", { name: "Support Tickets" })).toBeVisible();
       await expect(guarded.getByRole("menuitem", { name: "Email Preferences" })).toBeVisible();
+      await expect(guarded.getByRole("menuitem", { name: "Change Password" })).toBeVisible();
       await expect(guarded.getByRole("menuitem", { name: "API Documentation" })).toBeVisible();
       await expect(guarded.getByRole("menuitem", { name: "API Status" })).toBeVisible();
       await guarded.click(guarded.getByRole("menuitem", { name: "Support Tickets" }));
@@ -362,7 +375,7 @@ test("Chapter B — admin's first look (empty database)", async ({ page }) => {
     },
     async () => {
       await setCaption(page, "Opening Email Preferences...");
-      await guarded.click(guarded.getByRole("button", { name: "Open account menu" }));
+      await guarded.click(guarded.getByRole("button", { name: /account menu$/i }));
       await guarded.click(guarded.getByRole("menuitem", { name: "Email Preferences" }));
       await expect(page).toHaveURL(/\/settings\/email-preferences$/);
       // Not exact: the page also has an "About Email Preferences" h3, which
@@ -379,10 +392,10 @@ test("Chapter B — admin's first look (empty database)", async ({ page }) => {
       await guarded.click(guarded.getByRole("button", { name: "Save All Changes" }));
 
       await setCaption(page, "Navigating away and back to confirm it persisted...");
-      await guarded.click(guarded.getByRole("button", { name: "Open account menu" }));
+      await guarded.click(guarded.getByRole("button", { name: /account menu$/i }));
       await guarded.click(guarded.getByRole("menuitem", { name: "API Documentation" }));
       await expect(page).toHaveURL(/\/api-docs$/);
-      await guarded.click(guarded.getByRole("button", { name: "Open account menu" }));
+      await guarded.click(guarded.getByRole("button", { name: /account menu$/i }));
       await guarded.click(guarded.getByRole("menuitem", { name: "Email Preferences" }));
       await expect(page).toHaveURL(/\/settings\/email-preferences$/);
       await expect(guarded.getByLabel("Low Stock Alerts")).toHaveAttribute(
@@ -396,7 +409,7 @@ test("Chapter B — admin's first look (empty database)", async ({ page }) => {
     { id: "S-031", chapter: "B", role: "admin", name: "Profile menu — API Documentation", covers: ["S-031"] },
     async () => {
       await setCaption(page, "Opening API Documentation...");
-      await guarded.click(guarded.getByRole("button", { name: "Open account menu" }));
+      await guarded.click(guarded.getByRole("button", { name: /account menu$/i }));
       await guarded.click(guarded.getByRole("menuitem", { name: "API Documentation" }));
       await expect(page).toHaveURL(/\/api-docs$/);
       await expect(guarded.getByRole("heading", { name: "Stock API Documentation" })).toBeVisible();
@@ -407,7 +420,7 @@ test("Chapter B — admin's first look (empty database)", async ({ page }) => {
     { id: "S-032", chapter: "B", role: "admin", name: "Profile menu — API Status", covers: ["S-032"] },
     async () => {
       await setCaption(page, "Opening API Status...");
-      await guarded.click(guarded.getByRole("button", { name: "Open account menu" }));
+      await guarded.click(guarded.getByRole("button", { name: /account menu$/i }));
       await guarded.click(guarded.getByRole("menuitem", { name: "API Status" }));
       await expect(page).toHaveURL(/\/api-status$/);
       await expect(guarded.getByRole("heading", { name: "API & Project Status" })).toBeVisible();
