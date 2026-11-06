@@ -232,9 +232,11 @@ export default function AdminUserManagementDetailContent({
   const actionsDisabled = dataLoading || !user;
   const isProtectedResolved =
     !dataLoading && u ? isProtectedEmail(u.email) : false;
-  const canDeleteResolved = !dataLoading && isOwner && !isProtectedResolved;
-  // Not isOwner's inverted pattern above (ISS-0094, a pre-existing bug left as-is): suspending
-  // your own account or a protected demo account must be blocked, not required.
+  // ISS-0094 — this used to require isOwner, the exact opposite of what can ever succeed:
+  // DELETE /api/users/[id] refuses a self-delete outright ("Cannot delete your own account"),
+  // so only another, non-protected account is a deletion that can actually go through — same
+  // shape as canChangeStatusResolved just below.
+  const canDeleteResolved = !dataLoading && !isOwner && !isProtectedResolved;
   const canChangeStatusResolved =
     !dataLoading && !isOwner && !isProtectedResolved;
 

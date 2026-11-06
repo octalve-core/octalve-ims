@@ -105,6 +105,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       }
 
       const session = await getSessionClient();
+      if (session === "indeterminate") {
+        // A 5xx or network blip proves nothing about the session itself
+        // (ISS-0050) — leave whatever auth state is already in memory/
+        // localStorage alone rather than logging the user out over it.
+        return;
+      }
       if (session) {
         const prevId = localStorage.getItem("prevUserId");
         if (prevId && prevId !== session.id) {
@@ -127,6 +133,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("getSession", JSON.stringify(session));
       } else {
+        // A definite 401/403 — the server rejected the cookie, so this is a
+        // real sign-out, not a guess.
         clearAuthData();
       }
     } finally {

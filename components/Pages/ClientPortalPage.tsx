@@ -74,6 +74,7 @@ import {
   ProductStockStatusBadge,
 } from "@/lib/ui/semantic-badges";
 import { StatisticsCard } from "@/components/home/StatisticsCard";
+import { formatStableCurrency } from "@/lib/date/format-stable";
 import {
   isDataSlotUnsettled,
   queryKeys,
@@ -261,13 +262,7 @@ export default function ClientPortalPage({
             />
             <StatisticsCard
               title="Total Spent"
-              value={`$${(dashboard?.totalSpent ?? 0).toLocaleString(
-                undefined,
-                {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                },
-              )}`}
+              value={formatStableCurrency(dashboard?.totalSpent ?? 0)}
               description="Total order value"
               icon={DollarSign}
               variant="emerald"
@@ -276,69 +271,36 @@ export default function ClientPortalPage({
               badges={[
                 {
                   label: "Paid",
-                  value: `$${(
-                    dashboard?.paymentBreakdown?.paid ?? 0
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                  value: formatStableCurrency(dashboard?.paymentBreakdown?.paid ?? 0),
                 },
                 {
                   label: "Partial",
-                  value: `$${(
-                    dashboard?.paymentBreakdown?.partial ?? 0
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                  value: formatStableCurrency(dashboard?.paymentBreakdown?.partial ?? 0),
                 },
                 {
                   label: "Due",
-                  value: `$${(
-                    dashboard?.paymentBreakdown?.due ?? 0
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                  value: formatStableCurrency(dashboard?.paymentBreakdown?.due ?? 0),
                 },
                 {
                   label: "Refund",
-                  value: `$${(
-                    dashboard?.paymentBreakdown?.refund ?? 0
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                  value: formatStableCurrency(dashboard?.paymentBreakdown?.refund ?? 0),
                 },
                 {
                   label: "Pending",
-                  value: `$${(
-                    dashboard?.paymentBreakdown?.pending ?? 0
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                  value: formatStableCurrency(dashboard?.paymentBreakdown?.pending ?? 0),
                 },
                 {
                   label: "Cancelled",
-                  value: `$${(
-                    dashboard?.paymentBreakdown?.cancelled ?? 0
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                  value: formatStableCurrency(dashboard?.paymentBreakdown?.cancelled ?? 0),
                 },
                 ...((dashboard?.totalOrders ?? 0) > 0
                   ? [
                       {
                         label: "Avg/Order",
-                        value: `$${(
+                        value: formatStableCurrency(
                           (dashboard?.totalSpent ?? 0) /
-                          (dashboard?.totalOrders ?? 1)
-                        ).toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}`,
+                            (dashboard?.totalOrders ?? 1),
+                        ),
                       },
                     ]
                   : []),
@@ -346,13 +308,7 @@ export default function ClientPortalPage({
             />
             <StatisticsCard
               title="Due"
-              value={`$${(dashboard?.outstandingAmount ?? 0).toLocaleString(
-                undefined,
-                {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                },
-              )}`}
+              value={formatStableCurrency(dashboard?.outstandingAmount ?? 0)}
               description="Unpaid invoice balance"
               icon={AlertCircle}
               variant="rose"

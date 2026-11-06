@@ -373,7 +373,7 @@
 
   "shared": [
     "app/login", "app/register", "app/forgot-password", "app/reset-password", "app/verify-email",
-    "app/settings", "app/_not-found", "app/fonts",
+    "app/settings", "app/not-found.tsx", "app/error.tsx", "app/fonts",
     "app/api-docs", "app/api-status",
     "app/api/auth", "app/api/health", "app/api/openapi", "app/api/user", "app/api/users",
     "app/admin/settings", "app/admin/layout.tsx", "app/admin/page.tsx",

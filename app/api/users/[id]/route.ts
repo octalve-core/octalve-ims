@@ -209,6 +209,16 @@ export async function DELETE(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // ISS-0094 — the PUT status guard's comment already claimed this existed; it didn't. A
+    // protected demo account (lib/auth/protected-emails.ts) was only kept undeleteable by the
+    // UI hiding the button, not by this route.
+    if (isProtectedEmail(existing.email)) {
+      return NextResponse.json(
+        { error: "Cannot delete this account" },
+        { status: 400 },
+      );
+    }
+
     // ISS-0071 — same "no way back in" concern as the role-demotion guard above.
     if (await isLastAdmin(id)) {
       return NextResponse.json(

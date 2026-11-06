@@ -42,8 +42,9 @@ import { cn } from "@/lib/utils";
 const PROFILE_MENU_LINKS = [
   { path: PROFILE_MENU_PATHS[0], label: "Support Tickets" },
   { path: PROFILE_MENU_PATHS[1], label: "Email Preferences" },
-  { path: PROFILE_MENU_PATHS[2], label: "API Documentation" },
-  { path: PROFILE_MENU_PATHS[3], label: "API Status" },
+  { path: PROFILE_MENU_PATHS[2], label: "Change Password" },
+  { path: PROFILE_MENU_PATHS[3], label: "API Documentation" },
+  { path: PROFILE_MENU_PATHS[4], label: "API Status" },
 ] as const;
 
 const ROLE_LABELS: Record<string, string> = {

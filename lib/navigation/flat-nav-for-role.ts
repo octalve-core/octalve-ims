@@ -10,6 +10,7 @@ import {
   ADMIN_MY_ACTIVITY_ITEMS,
   ADMIN_MY_STORE_ITEMS,
   ADMIN_SETTINGS_EMAIL_HREF,
+  filterAdminOnlyItems,
 } from "@/lib/navigation/admin-nav-config";
 import { getNavItemsForRole } from "@/lib/navigation/role-nav-config";
 
@@ -24,7 +25,7 @@ export function getFlatNavForRole(role: string | null | undefined): FlatNavRow[]
 
   return [
     ...ADMIN_MY_STORE_ITEMS,
-    ...ADMIN_MANAGEMENT_ITEMS,
+    ...filterAdminOnlyItems(ADMIN_MANAGEMENT_ITEMS, role),
     ...ADMIN_MY_ACTIVITY_ITEMS,
   ]
     .map((item) => ({ href: item.href, label: item.label }))

@@ -151,8 +151,13 @@ export function createUserManagementColumns(
         const href = `${base}/${u.id}`;
         const isOwner = currentUserId != null && currentUserId === u.id;
         const isProtected = isProtectedEmail(u.email);
-        const canEdit = isOwner && !isProtected;
-        const canDelete = false; // Disabled for all in list; only owner on detail page per requirements
+        // ISS-0094 — the detail page's own Name/Role fields are never owner-gated (only
+        // isProtectedEmail blocks them), so requiring isOwner here just made the shortcut to
+        // that same page needlessly disabled for every other user. Delete mirrors the detail
+        // page's corrected canDeleteResolved: the API refuses a self-delete outright, so
+        // enabling it only for OTHER non-protected users is what can ever actually succeed.
+        const canEdit = !isProtected;
+        const canDelete = !isOwner && !isProtected;
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -186,10 +191,19 @@ export function createUserManagementColumns(
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem disabled={!canDelete} className="gap-2">
-                <Trash2 className="h-4 w-4" />
-                Delete User
-              </DropdownMenuItem>
+              {canDelete ? (
+                <DropdownMenuItem asChild>
+                  <Link href={href} className="gap-2 cursor-pointer">
+                    <Trash2 className="h-4 w-4" />
+                    Delete User
+                  </Link>
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem disabled className="gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Delete User
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );

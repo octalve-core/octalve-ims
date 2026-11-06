@@ -19,6 +19,13 @@ const API_DIR = join(ROOT, "app/api");
 /** Hooks that intentionally scope invalidation (notifications — not full-app blast) */
 const SCOPED_INVALIDATION_FILES = new Set(["use-notifications.ts"]);
 
+/**
+ * Hooks whose mutation wipes the ENTIRE query cache via logout/clearAuthData
+ * instead of a targeted invalidateQueries call — stronger than anything this
+ * audit otherwise requires, so there's nothing narrower to check for.
+ */
+const FULL_CACHE_CLEAR_FILES = new Set(["use-change-password.ts"]);
+
 /** Components with inline fetch CRUD — exempt or must call invalidateAllRelatedQueries */
 const COMPONENT_FETCH_CRUD_ALLOWLIST = new Set([
   "components/products/form-fields/ImageField.tsx",
@@ -177,6 +184,9 @@ function walkFiles(
 
 function hasMutationInvalidation(fileName: string, content: string): boolean {
   if (!content.includes("useMutation")) return true;
+  if (FULL_CACHE_CLEAR_FILES.has(fileName)) {
+    return content.includes("logout(") || content.includes("clearAuthData(");
+  }
   if (SCOPED_INVALIDATION_FILES.has(fileName)) {
     return (
       content.includes("invalidateQueries") &&

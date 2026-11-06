@@ -53,6 +53,7 @@ import {
   ADMIN_MY_ACTIVITY_ITEMS,
   ADMIN_MY_STORE_ITEMS,
   ADMIN_SETTINGS_EMAIL_HREF,
+  filterAdminOnlyItems,
   type AdminNavItemConfig,
 } from "@/lib/navigation/admin-nav-config";
 import { getNavItemsForRole, type RoleNavItem } from "@/lib/navigation/role-nav-config";
@@ -269,7 +270,7 @@ export default function AppSidebar({
       <GroupLabel collapsed={collapsed}>My Store</GroupLabel>
       {renderAdminGroup(ADMIN_MY_STORE_ITEMS)}
       <GroupLabel collapsed={collapsed}>Management</GroupLabel>
-      {renderAdminGroup(ADMIN_MANAGEMENT_ITEMS)}
+      {renderAdminGroup(filterAdminOnlyItems(ADMIN_MANAGEMENT_ITEMS, role))}
       <GroupLabel collapsed={collapsed}>My Activity</GroupLabel>
       {renderAdminGroup(ADMIN_MY_ACTIVITY_ITEMS)}
       <GroupLabel collapsed={collapsed}>Settings</GroupLabel>
