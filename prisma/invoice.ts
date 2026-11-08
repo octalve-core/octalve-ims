@@ -3,7 +3,7 @@
  * Helper functions for invoice database operations
  */
 
-import { prisma } from "@/prisma/client";
+import { prisma, type InvoiceWithMoneyAsNumber } from "@/prisma/client";
 import { Prisma } from "@prisma/client";
 import type { CreateInvoiceInput, UpdateInvoiceInput, InvoiceFilters } from "@/types/invoice";
 import { logger } from "@/lib/logger";
@@ -137,7 +137,7 @@ async function createInvoiceWithNumberRetry<T>(
 export async function createInvoice(
   data: CreateInvoiceInput,
   userId: string
-): Promise<Prisma.InvoiceGetPayload<Record<string, never>>> {
+): Promise<InvoiceWithMoneyAsNumber> {
   // Check if order exists
   const order = await prisma.order.findUnique({
     where: { id: data.orderId },
@@ -228,7 +228,7 @@ export async function createInvoice(
 export async function applyStripeChargeToOrderInvoice(
   orderId: string,
   chargeAmount: number,
-): Promise<Prisma.InvoiceGetPayload<Record<string, never>>> {
+): Promise<InvoiceWithMoneyAsNumber> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: {
@@ -351,7 +351,7 @@ export async function applyStripeChargeToOrderInvoice(
 export async function ensureInvoiceForPaidOrder(
   orderId: string,
   amountPaid: number,
-): Promise<Prisma.InvoiceGetPayload<Record<string, never>>> {
+): Promise<InvoiceWithMoneyAsNumber> {
   return applyStripeChargeToOrderInvoice(orderId, amountPaid);
 }
 
@@ -369,7 +369,7 @@ export async function ensureInvoiceForPaidOrder(
 export async function getInvoicesByUser(
   userId: string,
   filters?: InvoiceFilters
-): Promise<Prisma.InvoiceGetPayload<Record<string, never>>[]> {
+): Promise<InvoiceWithMoneyAsNumber[]> {
   const where = applyInvoiceFiltersToWhere(
     {
       userId,
@@ -393,7 +393,7 @@ export async function getInvoicesByUser(
 export async function getInvoicesByClientId(
   clientUserId: string,
   filters?: InvoiceFilters
-): Promise<Prisma.InvoiceGetPayload<Record<string, never>>[]> {
+): Promise<InvoiceWithMoneyAsNumber[]> {
   const where = applyInvoiceFiltersToWhere({ clientId: clientUserId }, filters);
 
   return prisma.invoice.findMany({
@@ -408,7 +408,7 @@ export async function getInvoicesByClientId(
 export async function getInvoicesByOrderIds(
   orderIds: string[],
   filters?: InvoiceFilters,
-): Promise<Prisma.InvoiceGetPayload<Record<string, never>>[]> {
+): Promise<InvoiceWithMoneyAsNumber[]> {
   if (orderIds.length === 0) return [];
 
   const where = applyInvoiceFiltersToWhere(
@@ -432,7 +432,7 @@ export async function getInvoicesByOrderIds(
 export async function getInvoiceById(
   invoiceId: string,
   userId: string
-): Promise<Prisma.InvoiceGetPayload<Record<string, never>> | null> {
+): Promise<InvoiceWithMoneyAsNumber | null> {
   return prisma.invoice.findFirst({
     where: {
       id: invoiceId,
@@ -447,7 +447,7 @@ export async function getInvoiceById(
 export async function getInvoiceByIdForProductOwner(
   invoiceId: string,
   productOwnerUserId: string,
-): Promise<Prisma.InvoiceGetPayload<Record<string, never>> | null> {
+): Promise<InvoiceWithMoneyAsNumber | null> {
   const invoice = await prisma.invoice.findUnique({
     where: { id: invoiceId },
   });
@@ -466,7 +466,7 @@ export async function getInvoiceByIdForProductOwner(
 export async function getInvoiceByIdForSupplier(
   invoiceId: string,
   supplierEntityId: string,
-): Promise<Prisma.InvoiceGetPayload<Record<string, never>> | null> {
+): Promise<InvoiceWithMoneyAsNumber | null> {
   const invoice = await prisma.invoice.findUnique({
     where: { id: invoiceId },
   });
@@ -487,7 +487,7 @@ export async function getInvoiceByIdForSupplier(
 export async function getInvoiceByIdForClient(
   invoiceId: string,
   clientUserId: string,
-): Promise<Prisma.InvoiceGetPayload<Record<string, never>> | null> {
+): Promise<InvoiceWithMoneyAsNumber | null> {
   const invoice = await prisma.invoice.findUnique({
     where: { id: invoiceId },
   });
@@ -509,7 +509,7 @@ export async function getInvoiceByIdForClient(
 export async function getInvoiceByOrderId(
   orderId: string,
   userId: string
-): Promise<Prisma.InvoiceGetPayload<Record<string, never>> | null> {
+): Promise<InvoiceWithMoneyAsNumber | null> {
   const invoice = await prisma.invoice.findUnique({
     where: { orderId },
   });
@@ -535,7 +535,7 @@ export async function updateInvoice(
   invoiceId: string,
   data: UpdateInvoiceInput,
   userId: string
-): Promise<Prisma.InvoiceGetPayload<Record<string, never>>> {
+): Promise<InvoiceWithMoneyAsNumber> {
   // Check if invoice exists and belongs to user
   const existingInvoice = await prisma.invoice.findFirst({
     where: {
@@ -705,7 +705,7 @@ export async function deleteInvoice(
 export async function markInvoiceAsSent(
   invoiceId: string,
   userId: string
-): Promise<Prisma.InvoiceGetPayload<Record<string, never>>> {
+): Promise<InvoiceWithMoneyAsNumber> {
   return updateInvoice(
     invoiceId,
     {

@@ -25,13 +25,12 @@
  * payments) can't race each other either.
  */
 
-import { prisma } from "@/prisma/client";
+import { prisma, type InvoiceWithMoneyAsNumber } from "@/prisma/client";
 import { applyIncrementalInvoicePayment } from "@/lib/invoices/order-payment-sync";
 import { resolveInvoiceBillingAddressInput } from "@/lib/invoices/resolve-invoice-billing-address";
 import { generateInvoiceNumber } from "@/prisma/invoice";
 import { isPrismaUniqueConstraintViolation } from "@/lib/api/prisma-errors";
 import { logger } from "@/lib/logger";
-import type { Invoice } from "@prisma/client";
 
 export type ApplyStripeSessionPaymentArgs = {
   sessionId: string;
@@ -58,7 +57,7 @@ type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
  */
 async function incrementInvoicePaid(
   tx: Tx,
-  invoice: Invoice,
+  invoice: InvoiceWithMoneyAsNumber,
   chargeAmount: number,
   paymentIntentId: string | null,
 ): Promise<void> {
@@ -99,7 +98,7 @@ async function createInvoiceForOrder(
   orderId: string,
   chargeAmount: number,
   paymentIntentId: string | null,
-): Promise<Invoice> {
+): Promise<InvoiceWithMoneyAsNumber> {
   const order = await tx.order.findUniqueOrThrow({
     where: { id: orderId },
     include: { items: { include: { product: { select: { userId: true } } } } },
