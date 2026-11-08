@@ -383,11 +383,13 @@
     "components/Pages/ForgotPasswordPage.tsx", "components/Pages/ResetPasswordPage.tsx",
     "components/Pages/VerifyEmailPage.tsx",
     "components/Pages/EmailPreferencesPage.tsx", "components/Pages/HomePage.tsx",
+    "components/Pages/ChangePasswordPage.tsx",
 
     "lib/api", "lib/auth", "lib/auth-server.ts", "lib/cache", "lib/date", "lib/email",
     "lib/format", "lib/monitoring", "lib/queue", "lib/react-query", "lib/ui",
     "lib/payments/stripe-return.ts",
     "lib/utils.ts", "lib/validations", "lib/vercel", "lib/logger.ts", "lib/logger.test.ts",
+    "lib/db",
     "lib/env.ts", "lib/imagekit.ts", "lib/imagekit-errors.ts", "lib/imagekit-errors.test.ts",
     "lib/proportional-line-amount.ts", "lib/proportional-line-amount.test.ts",
 
@@ -433,7 +435,8 @@
     "components/admin/UserManagementTable.tsx", "components/admin/UserRoleFilter.tsx",
 
     "contexts/auth-context.tsx", "contexts/shell-ssr-context.tsx", "contexts/index.ts",
-    "utils/auth.ts", "utils/auth.test.ts", "utils/auth.client.ts", "utils/axiosInstance.ts", "utils/axiosInstance.test.ts",
+    "utils/auth.ts", "utils/auth.test.ts", "utils/auth.client.ts", "utils/auth.client.test.ts",
+    "utils/axiosInstance.ts", "utils/axiosInstance.test.ts",
     "types/api.ts", "types/auth.ts", "types/user-management.ts", "types/index.ts",
     "types/dashboard.ts",
 
@@ -443,6 +446,7 @@
     "hooks/use-sync-dialog-open-state.ts", "hooks/use-clamp-pagination-index.ts",
     "hooks/use-auth-refresh.ts",
     "hooks/queries/use-auth.ts", "hooks/queries/use-user-management.ts",
+    "hooks/queries/use-change-password.ts",
     "hooks/queries/index.ts",
 
     "prisma/client.ts", "prisma/rls", "prisma/schema", "prisma/migrations", "prisma.config.ts",
@@ -466,7 +470,7 @@
     "lib/catalog", "lib/invoices", "lib/notifications", "lib/orders", "lib/pdf",
     "lib/products", "lib/warehouses", "lib/navigation", "lib/stock-allocation",
 
-    "prisma/stock-allocation.ts",
+    "prisma/stock-allocation.ts", "prisma/stock-allocation.concurrency.test.ts",
 
     "lib/insights/payment-money-stats.ts", "lib/insights/payment-money-stats.test.ts",
     "lib/insights/warehouse-insights-compute.ts", "lib/insights/warehouse-insights-compute.test.ts",
@@ -501,7 +505,7 @@
     "types/order.ts", "types/product.ts", "types/warehouse.ts", "types/warehouse-insights.ts", "types/invoice.ts",
     "types/category.ts", "types/notification.ts", "types/catalog-detail-lists.ts",
     "types/supplier.ts", "types/catalog-insights.ts", "types/stock-allocation.ts",
-    "types/audit-log.ts", "prisma/audit-log.ts", "types/portal.ts",
+    "types/audit-log.ts", "prisma/audit-log.ts", "prisma/audit-log.test.ts", "types/portal.ts",
     "types/forecasting.ts",
 
     "lib/auth/can.ts"

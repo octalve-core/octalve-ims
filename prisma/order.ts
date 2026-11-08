@@ -3,7 +3,7 @@
  * Helper functions for order database operations
  */
 
-import { prisma } from "@/prisma/client";
+import { prisma, type OrderWithItemsMoneyAsNumber } from "@/prisma/client";
 import { refundAllOrderPayments } from "@/lib/payments/refund-all-order-payments";
 import { orderCancelShouldRefundPayment } from "@/lib/orders/cancel-payment";
 import { Prisma } from "@prisma/client";
@@ -193,7 +193,7 @@ export async function createOrder(
   // retry specifically on that collision, bounded, rather than surfacing an
   // ugly 500 for what's really just a transient number clash.
   const MAX_ORDER_NUMBER_ATTEMPTS = 5;
-  let order!: Prisma.OrderGetPayload<{ include: { items: true } }>;
+  let order!: OrderWithItemsMoneyAsNumber;
   for (let attempt = 1; attempt <= MAX_ORDER_NUMBER_ATTEMPTS; attempt++) {
     const orderNumber = await generateOrderNumber();
     try {

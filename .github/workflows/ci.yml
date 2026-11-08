@@ -29,13 +29,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@a15d269cd4658e1107c09f1fabf4cbd7bd1f308a # v4.4.0
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -90,13 +90,13 @@ jobs:
           --health-retries 10
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@a15d269cd4658e1107c09f1fabf4cbd7bd1f308a # v4.4.0
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -173,6 +173,55 @@ jobs:
           JWT_SECRET: test_only_jwt_secret_do_not_use_in_production
           NEXT_PUBLIC_API_URL: http://localhost:3000
         run: pnpm test
+
+  # ISS-0058: catches the exact class of bug this repo hit repeatedly --
+  # a tier-manifest leak or gap invisible to the monorepo's own `tsc`
+  # (quality job above), surfacing only once a tier is actually exported,
+  # installed standalone and typechecked on its own (which is what a real
+  # Core/Pro/Premium customer's first `pnpm install` would do). The
+  # `check:manifest` step in the quality job only proves every file is
+  # CLASSIFIED somewhere -- it does not prove the files in a given tier's
+  # own combination of buckets resolve each other's imports. This job is
+  # that proof, for real, every push.
+  tier-exports:
+    name: Tier export (${{ matrix.tier }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        tier: [core, pro, premium]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: pnpm/action-setup@a15d269cd4658e1107c09f1fabf4cbd7bd1f308a # v4.4.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      # postinstall runs `prisma generate`, which needs no DATABASE_URL.
+      - name: Install monorepo dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Export tier
+        run: pnpm exec tsx scripts/export-tier.ts ${{ matrix.tier }} ${{ runner.temp }}/octalve-ims-${{ matrix.tier }}
+
+      - name: Install exported tier's dependencies
+        working-directory: ${{ runner.temp }}/octalve-ims-${{ matrix.tier }}
+        run: pnpm install
+
+      # The real proof the tier boundary holds (export-tier.ts's own header
+      # comment has said so since it was written) -- every import inside
+      # this tier's own file set must resolve using only what this tier's
+      # buckets actually copied, with no fallback onto the monorepo this
+      # ran from.
+      - name: Typecheck exported tier
+        working-directory: ${{ runner.temp }}/octalve-ims-${{ matrix.tier }}
+        run: pnpm exec tsc --noEmit
 
   # Migrations and Vercel deploys deliberately do not live here. main is the
   # staging tier (migrate-staging.yml) and prod is the real production gate

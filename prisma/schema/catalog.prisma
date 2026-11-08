@@ -24,7 +24,7 @@ model Product {
   createdAt        DateTime          @default(now()) @db.Timestamptz(3)
   updatedAt        DateTime?         @db.Timestamptz(3)
   name             String
-  price            Float
+  price            Decimal           @db.Decimal(12, 2)
   quantity         BigInt
   reservedQuantity BigInt            @default(0)
   sku              String            @unique
@@ -64,7 +64,7 @@ model ProductSupplier {
   productId     String
   supplierId    String
   supplierSku   String?
-  supplierPrice Float?
+  supplierPrice Decimal? @db.Decimal(12, 2)
   leadTimeDays  Int?
   notes         String?
   createdAt     DateTime @default(now()) @db.Timestamptz(3)

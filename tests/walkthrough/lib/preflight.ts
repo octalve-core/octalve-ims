@@ -1,5 +1,6 @@
 import { execSync } from "node:child_process";
 import { Client } from "pg";
+import { REQUIRED_DB_NAME } from "@/lib/db/required-test-db";
 
 /**
  * Hard-exit gate (template section 2 / per-package-plan.md section 5 step 1):
@@ -10,8 +11,7 @@ import { Client } from "pg";
  * checks the journey itself never may.
  */
 
-export const REQUIRED_DB_NAME = "octalve_ims_test";
-export const REQUIRED_REDIS_DB_INDEX = 15;
+export { REQUIRED_DB_NAME, REQUIRED_REDIS_DB_INDEX } from "@/lib/db/required-test-db";
 
 export type PreflightResult = {
   commitSha: string;
