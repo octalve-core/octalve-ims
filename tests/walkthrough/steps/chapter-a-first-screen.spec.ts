@@ -13,9 +13,13 @@ import { FIRST_ADMIN, activateSelfRegisteredWalkthroughUser } from "../lib/seed-
  * before this runs; this chapter never creates it through the UI.
  */
 
-const OUT_DIR =
-  process.env.WALKTHROUGH_OUT_DIR ??
-  path.join(process.cwd(), "out", "walkthrough-dev", "chapter-a");
+// Nested under WALKTHROUGH_OUT_DIR (not equal to it) so a multi-chapter run
+// sharing one base dir doesn't have every chapter overwrite the others'
+// timeline.json/chapters.vtt/screenshots — each chapter needs its own folder.
+const OUT_DIR = path.join(
+  process.env.WALKTHROUGH_OUT_DIR ?? path.join(process.cwd(), "out", "walkthrough-dev"),
+  "chapter-a",
+);
 
 /**
  * ISS-0030 (task 0004 decision d, built 2026-10-26 — before this chapter's

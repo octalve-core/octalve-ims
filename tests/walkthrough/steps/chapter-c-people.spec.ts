@@ -19,9 +19,13 @@ import { FIRST_ADMIN, activateSelfRegisteredWalkthroughUser } from "../lib/seed-
  * B's file header for why.
  */
 
-const OUT_DIR =
-  process.env.WALKTHROUGH_OUT_DIR ??
-  path.join(process.cwd(), "out", "walkthrough-dev", "chapter-c");
+// Nested under WALKTHROUGH_OUT_DIR (not equal to it) so a multi-chapter run
+// sharing one base dir doesn't have every chapter overwrite the others'
+// timeline.json/chapters.vtt/screenshots — each chapter needs its own folder.
+const OUT_DIR = path.join(
+  process.env.WALKTHROUGH_OUT_DIR ?? path.join(process.cwd(), "out", "walkthrough-dev"),
+  "chapter-c",
+);
 
 const BASE_URL = "http://localhost:3100";
 const THROWAWAY_PASSWORD = "Walkthrough#2026";

@@ -35,7 +35,8 @@
     "check:manifest": "tsx scripts/check-tier-manifest-coverage.ts",
     "export:core": "tsx scripts/export-tier.ts core",
     "export:pro": "tsx scripts/export-tier.ts pro",
-    "export:premium": "tsx scripts/export-tier.ts premium"
+    "export:premium": "tsx scripts/export-tier.ts premium",
+    "walkthrough:deliverables": "tsx tests/walkthrough/generate-deliverables.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
