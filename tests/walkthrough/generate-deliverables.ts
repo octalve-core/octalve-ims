@@ -55,7 +55,7 @@ function main(): void {
     if (!fs.existsSync(videoPath)) {
       throw new Error(`Missing ${videoPath} — Playwright didn't record this chapter's video`);
     }
-    videoChapters.push({ title: chapter.title, dir: testResultsDir, video: "video.webm" });
+    videoChapters.push({ title: chapter.title, timelineDir: chapterDir, videoPath });
   }
 
   const pdfOutFile = path.join(runDir, "walkthrough.pdf");

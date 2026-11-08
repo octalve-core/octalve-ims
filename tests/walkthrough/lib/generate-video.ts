@@ -4,14 +4,14 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import type { TimelineStep } from "./timeline";
 
-/** One chapter's recorded data, as written by `Timeline.writeJson`/`writeChaptersJson`. */
+/** One chapter's recorded data. */
 export type VideoChapterInput = {
   /** e.g. "Chapter A — first screen and authentication" */
   title: string;
-  /** Directory containing this chapter's timeline.json and video.webm. */
-  dir: string;
-  /** Path to this chapter's recorded video, relative to `dir`. */
-  video: string;
+  /** Directory containing this chapter's timeline.json (written by `Timeline.writeJson`). */
+  timelineDir: string;
+  /** Path to this chapter's recorded video (Playwright writes it under test-results/, not timelineDir). */
+  videoPath: string;
 };
 
 function probeDurationMs(file: string): number {
@@ -37,7 +37,7 @@ function buildChaptersMetadata(chapters: VideoChapterInput[], durationsMs: numbe
   const lines = [";FFMETADATA1"];
   let offsetMs = 0;
   for (const [chapter, durationMs] of chapters.map((c, i) => [c, durationsMs[i]] as const)) {
-    const steps = readTimeline(chapter.dir);
+    const steps = readTimeline(chapter.timelineDir);
     lines.push("", "[CHAPTER]", "TIMEBASE=1/1000", `START=${toFfmetadataTimestamp(offsetMs)}`);
     const chapterEndMs = offsetMs + (durationMs ?? 0);
     lines.push(`END=${toFfmetadataTimestamp(chapterEndMs)}`, `title=${chapter.title}`);
@@ -63,7 +63,7 @@ function buildChaptersMetadata(chapters: VideoChapterInput[], durationsMs: numbe
  * chapters before it.
  */
 export function generateWalkthroughVideo(chapters: VideoChapterInput[], outFile: string): void {
-  const videoPaths = chapters.map((c) => path.join(c.dir, c.video));
+  const videoPaths = chapters.map((c) => c.videoPath);
   for (const videoPath of videoPaths) {
     if (!fs.existsSync(videoPath)) {
       throw new Error(`Missing chapter video: ${videoPath}`);
