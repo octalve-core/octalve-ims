@@ -60,7 +60,10 @@ function addStepPage(doc: jsPDF, chapterDir: string, step: TimelineStep): void {
   const imagePath = path.join(chapterDir, step.screenshot);
   if (fs.existsSync(imagePath)) {
     const imageData = fs.readFileSync(imagePath).toString("base64");
-    doc.addImage(`data:image/png;base64,${imageData}`, "PNG", 0, 0, PAGE_WIDTH, 720);
+    // jsPDF defaults image compression to NONE, which stores each screenshot
+    // as a raw bitmap (~3.5MB each at this resolution) instead of
+    // flate-compressing it — "SLOW" closes most of that gap back down.
+    doc.addImage(`data:image/png;base64,${imageData}`, "PNG", 0, 0, PAGE_WIDTH, 720, undefined, "SLOW");
   } else {
     doc.setFontSize(12);
     doc.setTextColor(239, 68, 68);
