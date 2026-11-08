@@ -7,6 +7,7 @@
 import { prisma } from "@/prisma/client";
 import { planAllocationDecrements } from "@/lib/products/plan-allocation-decrements";
 import { fulfillAllocationFromPick } from "@/lib/products/stock-allocation-order-sync";
+import { logger } from "@/lib/logger";
 
 export interface DecrementStockAllocationItem {
   productId: string;
@@ -33,8 +34,10 @@ export async function decrementStockAllocations(
           item.quantity,
           { releaseReservation: true },
         );
-      } catch {
-        // best-effort — product-level stock already adjusted
+      } catch (error) {
+        // ISS-0044(b): non-blocking by design (product-level stock is
+        // already adjusted by this point), but was previously silent.
+        logger.warn("Failed to fulfill allocation from pick", { item, error });
       }
       continue;
     }
@@ -62,5 +65,41 @@ export async function decrementStockAllocations(
         },
       });
     }
+  }
+}
+
+/**
+ * ISS-0044(a) — the symmetric restore for decrementStockAllocations' no-pick
+ * (greedy) branch. That branch spreads a decrement across whichever
+ * StockAllocation rows exist for the product with no record of exactly
+ * which row(s) absorbed how much, so an exact reverse isn't possible without
+ * new per-order bookkeeping. Without this, cancelling a confirmed no-pick
+ * order restored Product.quantity (the catalog total) but never touched
+ * StockAllocation at all — a real, accumulating drift where the catalog
+ * total overstates what's actually sitting in any given warehouse. Same
+ * "best-effort" spirit as the function it mirrors: put the whole restore
+ * into whichever allocation is currently most depleted, rather than leaving
+ * it unrestored anywhere.
+ */
+export async function restoreStockAllocations(
+  items: DecrementStockAllocationItem[],
+): Promise<void> {
+  for (const item of items) {
+    if (item.quantity <= 0 || item.warehouseId) continue;
+
+    const allocation = await prisma.stockAllocation.findFirst({
+      where: { productId: item.productId },
+      orderBy: { quantity: "asc" },
+      select: { id: true },
+    });
+    if (!allocation) continue;
+
+    await prisma.stockAllocation.update({
+      where: { id: allocation.id },
+      data: {
+        quantity: { increment: item.quantity },
+        updatedAt: new Date(),
+      },
+    });
   }
 }

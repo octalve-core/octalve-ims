@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/prisma/client";
@@ -14,6 +15,7 @@ import {
   updateCategoryBodySchema,
 } from "@/lib/validations/category";
 import { scheduleInvalidateCategoryCaches } from "@/lib/cache";
+import { canManageCatalogSupportEntities } from "@/lib/auth/can";
 
 /**
  * GET /api/categories
@@ -59,10 +61,17 @@ export async function GET(request: NextRequest) {
  * Create a new category
  */
 export async function POST(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const session = await getSessionFromRequest(request);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!canManageCatalogSupportEntities(session.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const userId = session.id;
@@ -127,10 +136,17 @@ export async function POST(request: NextRequest) {
  * Update an existing category
  */
 export async function PUT(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const session = await getSessionFromRequest(request);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!canManageCatalogSupportEntities(session.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const userId = session.id;
@@ -220,10 +236,17 @@ export async function PUT(request: NextRequest) {
  * Delete a category
  */
 export async function DELETE(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const session = await getSessionFromRequest(request);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!canManageCatalogSupportEntities(session.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const userId = session.id;

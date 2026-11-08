@@ -1,0 +1,3 @@
+This is a plain text file, not a product import file.
+It exists only to prove the file-type guard in ProductImportDialog rejects
+a `.txt` extension before ever calling the import API.

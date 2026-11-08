@@ -14,6 +14,8 @@ import { isBrevoConfigured } from "@/lib/email/brevo";
 import { logger } from "@/lib/logger";
 import { successResponse, errorResponse } from "@/lib/api/response-helpers";
 import { trackDatabaseQuery } from "@/lib/monitoring/system-metrics";
+import { getSessionFromRequest } from "@/utils/auth";
+import { isAuthorizedInternalCall } from "@/lib/api/internal-call-auth";
 
 /**
  * Check database connection health
@@ -311,6 +313,17 @@ async function initializeUptimeTracking(): Promise<void> {
  */
 export async function GET(request: NextRequest) {
   try {
+    // ISS-0035: this hits ImageKit/Brevo with live keys on every call and
+    // returns internal infra detail, so it can't stay unauthenticated.
+    const session = await getSessionFromRequest(request);
+    const isInternalCall = isAuthorizedInternalCall(
+      request.headers.get("authorization"),
+      process.env.INTERNAL_API_KEY,
+    );
+    if (!isInternalCall && (!session || session.role !== "admin")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     // Initialize uptime tracking (non-blocking)
     await initializeUptimeTracking();
 

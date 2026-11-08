@@ -6,14 +6,17 @@ One continuous journey. Every step is a human action (click, type with real key 
 
 **Fictional data (throwaway):** password for every account `Walkthrough#2026`; domain `walkthrough.test`.
 
+**Admin bootstrap (amended 2026-10-23, post ISS-0001):** self-registration no longer grants admin — `/register` now always assigns the least-privileged `user` role, and there is no UI path at all to reach the admin role on a fresh install. Amara's admin account is provisioned out-of-band, during the **stage** step (before the recording starts), by the existing `scripts/create-demo-accounts.ts`-style seeding — the same remediation the ISS-0001 fix itself calls for ("admin accounts must be provisioned out-of-band"). This is recorded as its own finding (no UI-only path to bootstrap the first admin) rather than silently worked around. S-008/S-009 below are rewritten accordingly: Amara still registers through `/register` in the recording (proving the real, current self-registration flow and its `user`-role outcome), but she signs in as the **already-provisioned** admin account to continue the journey, not as the account she just self-registered.
+
 | Person | Role | How created | Entry after sign-in |
 |---|---|---|---|
-| Amara Okafor `amara.okafor@` | admin ("store owner") | the `/register` screen (every self-registration is an admin) | `/` |
+| Amara Okafor `amara.okafor@` | admin ("store owner") | **provisioned out-of-band during stage** (not through the UI — see amendment above); a *second*, throwaway `user`-role account is self-registered through `/register` in S-008 purely to demonstrate and assert that flow's real (post-ISS-0001) outcome | `/` |
 | Kemi Adeyemi `kemi.adeyemi@` | supplier | admin, User Management → Create User | `/supplier` |
 | Chidi Eze `chidi.eze@` | client | admin, User Management → Create User | `/client` |
 | Bisi Lawal `bisi.lawal@` | client (second, for isolation checks) | same | `/client` |
 | Tunde Bello `tunde.bello@` | retailer | same | `/` (no dedicated portal) |
-| Ngozi Obi `ngozi.obi@` | user (throwaway, deleted in S-047) | same | n/a |
+| Ngozi Obi `ngozi.obi@` | user (throwaway, created by admin via User Management, deleted in S-047) | same | n/a |
+| Folake Adewale `folake.adewale@` | user (throwaway, self-registered in S-008, left in place — distinct from Ngozi to avoid colliding with S-044's "admin creates a User-role account" step) | `/register` | `/` |
 
 **Fixtures to create in Phase 1** (`tests/walkthrough/fixtures/`, fictional): `products-import.csv` (header per the import dialog: Product Name, SKU, Price, Quantity, Status, …; 6 valid rows and 2 invalid), `not-a-product-file.txt`, `product-image.png`.
 
@@ -23,13 +26,15 @@ One continuous journey. Every step is a human action (click, type with real key 
 |---|---|---|---|---|---|
 | S-001 | anonymous | First page load: open `BASE_URL/` | Redirected to `/login`; login form, demo-account select, Google button, "Create account" link all visible | module | R |
 | S-002 | anonymous | Click Sign in with both fields empty | Inline validation messages for email and password; stays on `/login` | module | R |
-| S-003 | anonymous | Type an unknown email and a password, click Sign in | An error message is shown; the page does not reload and the form keeps its values (known risk: the refresh interceptor reloads the page, see review) | module | A |
-| S-004 | anonymous | Choose "Admin" in the demo-account select, click Sign in | Credentials pre-fill; sign-in fails because that account does not exist in a fresh database. Assert the dead end and record it | module | A |
+| S-003 | anonymous | Type an unknown email and a password, click Sign in | **Amended (ISS-0030, already registered 2026-10-21, confirmed by this step, not by guesswork):** the 401 from `/api/auth/login` runs through `axiosInstance`'s response interceptor (`utils/axiosInstance.ts:33-51`), which tries a token refresh (fails — no session ever existed), then sets `window.location.href = "/"` *before* the `login()` call's own rejection ever reaches `LoginPage`'s `catch` block — so the page hard-navigates away (and `/` redirects back to `/login`, unauthenticated) rather than showing the toast and keeping the typed values. Assert the real outcome: URL ends back at `/login`, the form is empty (state lost to the reload), and no "Login Failed" toast is present (it never gets to render) | module | R |
+| S-004 | anonymous | Choose "Admin" in the demo-account select, click Sign in | Credentials pre-fill from the demo-select; then the same ISS-0030 hard-redirect as S-003 (that account doesn't exist in a fresh database, so it's the same 401 path) — URL back at `/login`, form cleared | module | R |
 | S-005 | anonymous | Click "Forgot password", click Send with empty field, then type an unknown email and send | `/forgot-password`; validation error, then a generic "if an account exists…" confirmation | module | R |
 | S-006 | anonymous | Back to login, click "Create account" | `/register` form visible | module | R |
 | S-007 | anonymous | Submit empty; then type an invalid email; then a 5-character password | A validation message for each case | module | R |
-| S-008 | anonymous | Register Amara Okafor with a valid email and password | Account created; app lands on `/login` or signs the person in (confirm which, then assert it) | module | A |
-| S-009 | admin | Sign in as Amara, leave "Keep me signed in" unchecked | Lands on `/`; welcome toast; sidebar visible | module | R |
+| S-008 | anonymous | Register Folake Adewale (a throwaway `user`-role account, not Amara — see the amended admin-bootstrap note above) with a valid email and password | Account created with role `user` (confirmed via ISS-0001's fix: self-registration no longer grants admin); the toast says "Redirecting to login page…", implying she's still signed out. **Amended (ISS-0087, root-caused, not guessed):** that's wrong — the register API sets real session cookies on every success, so Folake is actually signed in already. The client-side redirect into `/login`'s now-authenticated-redirect renders a **fully blank page** (only the leftover toast visible; no form, no heading, nothing; no console error — it just never mounts). **Finding** (unchanged): there is no UI control anywhere on this screen to become anything other than `user` | module | R |
+| S-008b | anonymous | Recover from the blank page the only way a real person could: press the browser's reload button | **Amended:** lands on **`/`**, not `/login` — the reload completes the authenticated-redirect `/login` was already trying to make (ISS-0087). Folake is on the home dashboard, signed in, with no welcome toast and no acknowledgment she's authenticated. **Finding (ISS-0088):** the sidebar/dashboard are nav-identical to admin's ("Store Owner" label, User Management/Business Insights/Supplier Portal/Client Portal all visible) — confirmed *not* a data leak (her dashboard stats are correctly scoped to her own empty activity, and the User Management page independently redirects her away with no API call made), but every admin-shaped link she can see dead-ends | module | R |
+| S-008c | user (Folake) | Sign out (she's unexpectedly signed in per S-008b) | Back at `/login`, rendered correctly this time (a real sign-out triggers a full page load, not the broken client transition) | module | R |
+| S-009 | admin | Sign in as **Amara** (provisioned out-of-band during stage, not through this registration), leave "Keep me signed in" unchecked | Lands on `/`; welcome toast; sidebar visible | module | R |
 
 ## Chapter B — Admin's first look (empty database)
 
@@ -48,7 +53,7 @@ One continuous journey. Every step is a human action (click, type with real key 
 | S-020 | admin | Click Warehouses | Empty list | module | R |
 | S-021 | admin | Click Supplier Portal | Empty supplier-portal overview | module | A |
 | S-022 | admin | Click Client Portal | Empty client-portal overview | module | A |
-| S-023 | admin | Click User Management | One user (Amara) listed | module | R |
+| S-023 | admin | Click User Management | Two users listed: Amara (admin) and Folake (user, self-registered in S-008) | module | R |
 | S-024 | admin | Click Activity History | Registration/login entries or empty state | module | A |
 | S-025 | admin | Click My Activity | Personal-only empty state | module | R |
 | S-026 | admin | Click the top-bar search, type `ware`, click the "Warehouses" result | Result list filters as typed; click lands on Warehouses | module | R |
@@ -65,32 +70,32 @@ One continuous journey. Every step is a human action (click, type with real key 
 | ID | Role | Human action | Expected visible result | Tag | Basis |
 |---|---|---|---|---|---|
 | S-040 | admin | User Management → Create User → submit empty | Validation messages | module | R |
-| S-041 | admin | Create Kemi Adeyemi with role Supplier | Success toast; Kemi listed with a Supplier badge | module | R |
-| S-042 | admin | Create Chidi Eze and Bisi Lawal with role Client | Both listed with Client badges | module | R |
+| S-041 | admin | Create Kemi Adeyemi with role Supplier | **Amended (ISS-0095, confirmed live, not guessed):** leaving Username blank (it carries no "*" and no required styling) silently blocks submission — the schema's `.optional()` only permits `undefined`, not the form's own `""` default, so it fails `min(3)` and shows Zod's raw message instead of creating the user; giving Kemi a username then succeeds with the expected toast and Supplier badge | module | R |
+| S-042 | admin | Create Chidi Eze and Bisi Lawal with role Client | Both given a username up front to avoid re-hitting ISS-0095 (documented at S-041); both listed with Client badges | module | R |
 | S-043 | admin | Create Tunde Bello with role Retailer | Listed with Retailer badge | module | R |
 | S-044 | admin | Create Ngozi Obi with role User | Listed with User badge | module | R |
 | S-045 | admin | Filter by role Client, clear filter, search "Kemi" | List filters and resets correctly | module | R |
-| S-046 | admin | Open Chidi's detail page; click Edit, change nothing, cancel; open and close the delete dialog without confirming | Detail shows overview; dialogs cancel cleanly | module | A |
-| S-047 | admin | Delete Ngozi: click Delete, dismiss by clicking outside the dialog, click Delete again, confirm; then navigate away and back | Dialog dismisses on outside click; user removed; still gone after returning | module | R |
+| S-046 | admin | Open Chidi's detail page; click into the Name field without changing it; try the "Delete User" button | **Amended (ISS-0094, confirmed live, not guessed):** there is no Edit/Cancel toggle — the Name field is always directly editable (no Save button appears until it's actually changed, so "change nothing" needs no explicit cancel); the "Delete User" button is disabled when viewing anyone but yourself, so its confirmation dialog cannot be opened here at all | module | R |
+| S-047 | admin | Try to delete Ngozi from the list: open her row's Actions menu | **Amended (ISS-0094, confirmed live, not guessed):** the row's "Delete User" menu item is disabled unconditionally for every user, by design (`canDelete = false` in source) — there is no UI path for an admin to delete another user at all; Ngozi stays listed because nothing in the UI can ever remove her, not because a dialog was cancelled | module | R |
 
 ## Chapter D — Catalog and stock (admin)
 
 | ID | Role | Human action | Expected visible result | Tag | Basis |
 |---|---|---|---|---|---|
-| S-050 | admin | Categories → Add: submit empty; then create "Beverages" and "Snacks" | Validation, then both listed | module | R |
-| S-051 | admin | Edit "Snacks" description; open its detail page; filter Active/Inactive | Edit persists; detail renders; filter works | module | R |
-| S-052 | admin | Suppliers → Add: submit empty; then create "Lagos Fresh Foods" | Validation, then listed | module | R |
+| S-050 | admin | Categories → Add: try to submit with the name blank; then create "Beverages" and "Snacks" | **Amended (confirmed live, not guessed):** no inline "required" error text appears — the Add Category button is simply disabled until a name is entered. Then both listed | module | R |
+| S-051 | admin | Edit "Snacks" description; open its detail page; filter Active/Inactive | Edit persists; detail renders; **amended (confirmed live):** the filter is a Select ("All Categories" trigger, role=combobox), not a filter-chip button named "Status" — picking an option applies it immediately | module | R |
+| S-052 | admin | Suppliers → Add: try to submit with the name blank; then create "Lagos Fresh Foods" | Same disabled-button pattern as S-050; then listed | module | R |
 | S-053 | admin | Open the supplier's detail page | Detail renders with product grid (empty) | module | R |
-| S-054 | admin | Warehouses → Add: submit empty; then create "Main Warehouse" (main) and "Overflow Depot" (overflow) | Validation, then both listed | module | R |
-| S-055 | admin | Open Main Warehouse detail | Detail with empty stock | module | R |
-| S-056 | admin | Products → Add: try without category; with a negative price; then create "Zobo Drink 500ml" (SKU ZOB-500, 350.00, qty 100, expiry date); then try another with the same SKU | Validation on each bad case; product listed; duplicate SKU refused with a clear message | module | R |
-| S-057 | admin | Open the product's detail page; click QR code copy/download | Detail shows stock, QR image, insights | module | R |
-| S-058 | admin | Edit the product: lower quantity to 8; save | Persists; low-stock indicator appears on the list and dashboard | module | R |
-| S-059 | admin | Import products: choose `not-a-product-file.txt`; then choose `products-import.csv` | Wrong type refused; valid rows imported, invalid rows reported with reasons | module | R |
-| S-060 | admin | Open Activity History → import history entry and its detail | Import appears with row counts | module | A |
-| S-061 | admin | Click Export (CSV and Excel) on Products | A download starts for each | module | A |
-| S-062 | admin | In the product dialog, choose `product-image.png` through the file dialog | With ImageKit unconfigured, a clear "image upload unavailable" message, not a silent failure (confirm; else finding) | module | A |
-| S-063 | admin | Warehouse detail → Allocate stock: enter more than the product quantity; then a valid quantity | Validation message; allocation listed | module | R |
+| S-054 | admin | Warehouses → Add: try to submit with the name blank; then create "Main Warehouse" (type: Main Warehouse) and "Overflow Depot" (type: Secondary) | Same disabled-button pattern; **amended (confirmed live, not guessed):** the submit button reads "Create Warehouse", not "Add Warehouse"; the type list has no literal "Overflow" option (Main Warehouse / Secondary / Storage / Distribution Center / Retail Store / Other) — the second warehouse uses "Secondary". Then both listed | module | R |
+| S-055 | admin | Open Main Warehouse detail | Detail with empty stock ("No stock allocated to this warehouse yet") | module | R |
+| S-056 | admin | Products → Add: try without category; try to type a negative price; then create "Zobo Drink 500ml" (SKU ZOB-500, 350.00, qty 100); then try another with the same SKU | **Amended (confirmed live, not guessed):** the price input blocks a minus sign as it's typed (`react-number-format`'s `allowNegative={false}`) — a negative price cannot actually be entered, so there is no validation message to see for that case. Product listed; duplicate SKU refused inline ("SKU is already used") with Add Product disabled | module | R |
+| S-057 | admin | Open the product's detail page | Detail shows stock, insights; **amended (confirmed live, consistent with D6):** ImageKit is not configured, so no product ever has a QR code — the card shows "No QR code available", not a copy/download action | module | R |
+| S-058 | admin | Edit the product: lower quantity to 8; save | Persists; low-stock indicator appears | module | R |
+| S-059 | admin | Import products: choose `not-a-product-file.txt`; then choose `products-import.csv` | Wrong type refused (toast: "Invalid File Type"). **ISS-0086 fixed 2026-11-05** (was: every row failed regardless of content, logged as a bug, not silently worked around) — the real import now reports 6 of 8 rows imported, the 2 deliberately-invalid rows (blank name, negative price) failing with their real, specific errors | module | R |
+| S-060 | admin | Open Activity History → import history entry and its detail | Import appears with row counts (6 successful, 2 failed, per S-059) | module | R |
+| S-061 | admin | Click Export (CSV and Excel) on Products | A download starts for each | module | R |
+| S-062 | admin | In the product dialog, choose `product-image.png` through the file dialog | **Confirmed live:** with ImageKit unconfigured, a clear "Upload Failed" / "ImageKit credentials are missing" toast, not a silent failure | module | R |
+| S-063 | admin | Warehouse detail → Allocate stock: enter more than the product quantity; then a valid quantity | Validation message (disabled Save, "unit(s) available" text); allocation listed. **Confirmed live:** the dialog closes itself on success (no Cancel needed) | module | R |
 | S-064 | admin | Transfer stock to Overflow Depot: more than available; then a valid amount | Validation message; both warehouses show new quantities | module | R |
 | S-065 | admin | Edit an allocation; delete one (dismiss, then confirm) | Quantities update; deletion confirmed by dialog | module | R |
 | S-066 | admin | Create a throwaway product and delete it (hard delete, confirm) | Removed from list and detail; persists after navigating away | module | R |

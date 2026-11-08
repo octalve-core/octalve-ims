@@ -220,18 +220,22 @@ export async function GET(request: NextRequest) {
       // Note: Google uses 'picture' field, but we map it to 'image' for consistency
       const {
         id: googleId,
-        email,
+        email: rawEmail,
         name,
         picture: googleImage,
         verified_email: verifiedEmail,
       } = googleUser;
 
-      if (!email) {
+      if (!rawEmail) {
         logger.error("Google user info missing email");
         return NextResponse.redirect(
           new URL("/login?error=no_email", request.url)
         );
       }
+
+      // ISS-0052: normalize here so the lookup below, any account this
+      // creates, and login's own normalized lookup all agree on casing.
+      const email = rawEmail.toLowerCase();
 
       // ISS-0007 — this used to trust `email` to look up (and silently link
       // Google sign-in to, then mint a session for) an existing account with

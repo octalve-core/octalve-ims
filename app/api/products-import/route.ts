@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/prisma/client";
@@ -14,8 +15,7 @@ import {
   transformFunctions,
   type ColumnMapping,
 } from "@/lib/import";
-import { createProductSchema } from "@/lib/validations";
-import { z } from "zod";
+import { productImportRowSchema } from "@/lib/validations";
 import {
   createImportHistory,
   updateImportHistory,
@@ -23,11 +23,19 @@ import {
 import { checkAndSendStockAlerts } from "@/lib/email/notifications";
 import { scheduleInvalidateImportCaches } from "@/lib/cache";
 
+// Caps how many stock-alert emails one import request can trigger, independent
+// of how many rows it imports (ISS-0039).
+const MAX_STOCK_ALERT_EMAILS_PER_IMPORT = 20;
+
 /**
  * POST /api/products-import
  * Import products from CSV/Excel file
  */
 export async function POST(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     // Rate limiting check
     const rateLimitResponse = await withRateLimit(
@@ -86,87 +94,9 @@ export async function POST(request: NextRequest) {
     });
 
     try {
-      // Column mapping for product import
-      // Maps import file columns to product schema fields
-      const columnMapping: ColumnMapping[] = [
-        {
-          importColumn: "Product Name",
-          schemaField: "name",
-          transform: (value) => String(value).trim(),
-        },
-        {
-          importColumn: "SKU",
-          schemaField: "sku",
-          transform: (value) => String(value).trim().toUpperCase(),
-        },
-        {
-          importColumn: "Price",
-          schemaField: "price",
-          transform: transformFunctions.toNumber,
-        },
-        {
-          importColumn: "Quantity",
-          schemaField: "quantity",
-          transform: transformFunctions.toInteger,
-        },
-        {
-          importColumn: "Status",
-          schemaField: "status",
-          transform: (value) => {
-            const status = String(value).trim();
-            if (["Available", "Stock Low", "Stock Out"].includes(status)) {
-              return status;
-            }
-            // Default to Available if invalid
-            return "Available";
-          },
-        },
-        {
-          importColumn: "Category",
-          schemaField: "categoryId",
-          transform: async (value) => {
-            // Look up category by name
-            const categoryName = String(value).trim();
-            if (!categoryName) {
-              throw new Error("Category is required");
-            }
-            const category = await prisma.category.findFirst({
-              where: {
-                name: { equals: categoryName, mode: "insensitive" },
-                userId,
-              },
-            });
-            if (!category) {
-              throw new Error(`Category "${categoryName}" not found`);
-            }
-            return category.id;
-          },
-        },
-        {
-          importColumn: "Supplier",
-          schemaField: "supplierId",
-          transform: async (value) => {
-            // Look up supplier by name
-            const supplierName = String(value).trim();
-            if (!supplierName) {
-              throw new Error("Supplier is required");
-            }
-            const supplier = await prisma.supplier.findFirst({
-              where: {
-                name: { equals: supplierName, mode: "insensitive" },
-                userId,
-              },
-            });
-            if (!supplier) {
-              throw new Error(`Supplier "${supplierName}" not found`);
-            }
-            return supplier.id;
-          },
-        },
-      ];
-
-      // Note: Column mapping with async transforms requires special handling
-      // For now, we'll validate synchronously and handle category/supplier lookup separately
+      // Column mapping for product import — category/supplier are resolved to ids by name
+      // *after* validation (categoryMap/supplierMap below), not by an async transform here,
+      // since validateRows' schema.parse() call is synchronous.
       const simplifiedMapping: ColumnMapping[] = [
         {
           importColumn: "Product Name",
@@ -211,24 +141,34 @@ export async function POST(request: NextRequest) {
         },
       ];
 
-      // Validate rows (without category/supplier lookup)
+      // Validate rows (without category/supplier lookup) — ISS-0086: validates exactly what
+      // simplifiedMapping produces (categoryName/supplierName strings), not categoryId/
+      // supplierId/userId, which are resolved below and never come from an import column.
       const validationResult = validateRows(
         dataRows,
-        createProductSchema.extend({
-          categoryName: z.string().min(1),
-          supplierName: z.string().min(1),
-        }),
+        productImportRowSchema,
         simplifiedMapping,
       );
 
       // Process valid rows
       let successCount = 0;
-      let failCount = 0;
+      // Seeded with the rows that already failed Zod validation (blank name, negative price,
+      // etc.) — previously started at 0 and only grew inside the loop below, so those rows'
+      // errors were collected and returned but never counted as failures: a 6-of-8 import with
+      // 2 schema-invalid rows reported failedRows: 0, which also meant
+      // ProductImportDialog.tsx's "close automatically if failedRows === 0" fired on a result
+      // that was not actually all-success.
+      let failCount = validationResult.errors.length;
       const errors: Array<{
         rowNumber: number;
         field?: string;
         message: string;
       }> = [...validationResult.errors];
+      const createdProducts: Array<{
+        name: string;
+        quantity: number;
+        sku: string;
+      }> = [];
 
       // Get all categories and suppliers for lookup
       const categories = await prisma.category.findMany({
@@ -308,6 +248,11 @@ export async function POST(request: NextRequest) {
               createdBy: userId,
             },
           });
+          createdProducts.push({
+            name: String(rowData.name),
+            quantity: Number(rowData.quantity),
+            sku: String(rowData.sku),
+          });
 
           successCount++;
         } catch (error) {
@@ -327,22 +272,25 @@ export async function POST(request: NextRequest) {
         status: failCount === 0 ? "completed" : "completed",
       });
     await scheduleInvalidateImportCaches();
-      // Check and send stock alerts for newly imported products
-      // This is done asynchronously to not block the response
-      // Note: We check alerts for all products, not just imported ones
-      // The stock alert system will check all products and send alerts as needed
-      const allProducts = await prisma.product.findMany({
-        where: { userId },
-      });
-      for (const product of allProducts) {
+      // Check and send stock alerts, scoped to only the rows this request actually
+      // created (previously loaded the user's whole catalog and alerted on every
+      // product regardless of whether this import touched it), capped so one large
+      // import can't fire an unbounded number of emails.
+      const alertRecipient = createdProducts.length
+        ? await prisma.user.findUnique({
+            where: { id: userId },
+            select: { email: true, name: true },
+          })
+        : null;
+      for (const product of createdProducts.slice(
+        0,
+        MAX_STOCK_ALERT_EMAILS_PER_IMPORT,
+      )) {
         checkAndSendStockAlerts(
-          {
-            name: product.name,
-            quantity: Number(product.quantity),
-            sku: product.sku,
-          },
-          undefined,
-          undefined,
+          product,
+          undefined, // new product, no previous quantity to compare against
+          alertRecipient?.email || undefined,
+          alertRecipient?.name || undefined,
           userId,
         ).catch((error) => {
           logger.error("Failed to check stock alerts after import:", error);

@@ -10,6 +10,7 @@
 
 import { prisma } from "@/prisma/client";
 import { getOrderLineWarehouseAvailable } from "@/lib/orders/order-line-stock-validation";
+import { logger } from "@/lib/logger";
 
 export type WarehousePickOption = {
   warehouseId: string;
@@ -250,8 +251,9 @@ export async function syncReleasePendingOrderAllocations(
         item.warehouseId,
         item.quantity,
       );
-    } catch {
-      // non-blocking
+    } catch (error) {
+      // ISS-0044(b): non-blocking by design, but was previously silent.
+      logger.warn("Failed to release allocation reservation", { item, error });
     }
   }
 }
@@ -268,8 +270,9 @@ export async function syncFulfillPendingOrderAllocations(
         item.quantity,
         { releaseReservation: true },
       );
-    } catch {
-      // non-blocking
+    } catch (error) {
+      // ISS-0044(b): non-blocking by design, but was previously silent.
+      logger.warn("Failed to fulfill pending allocation", { item, error });
     }
   }
 }
@@ -285,8 +288,9 @@ export async function syncRestoreConfirmedOrderAllocations(
         item.warehouseId,
         item.quantity,
       );
-    } catch {
-      // non-blocking
+    } catch (error) {
+      // ISS-0044(b): non-blocking by design, but was previously silent.
+      logger.warn("Failed to restore confirmed-order allocation", { item, error });
     }
   }
 }
@@ -303,8 +307,9 @@ export async function syncFulfillReactivatedOrderAllocations(
         item.quantity,
         { releaseReservation: false },
       );
-    } catch {
-      // non-blocking
+    } catch (error) {
+      // ISS-0044(b): non-blocking by design, but was previously silent.
+      logger.warn("Failed to fulfill reactivated-order allocation", { item, error });
     }
   }
 }

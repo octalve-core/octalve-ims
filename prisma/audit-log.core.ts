@@ -11,7 +11,9 @@
 import { prisma } from "@/prisma/client";
 import type { CreateAuditLogInput } from "@/types";
 
-const MAX_AUDIT_LOGS = 50;
+// ISS-0034: see the Pro-tier variant (prisma/audit-log.ts) for why this is
+// a safety ceiling, not the real retention policy.
+const MAX_AUDIT_LOGS = 10_000;
 
 /**
  * Create an audit log entry. Enforces FIFO: if total count > MAX_AUDIT_LOGS, deletes oldest.

@@ -242,6 +242,9 @@ export default function ApiStatusPage({ userRole }: ApiStatusPageProps) {
 
   useEffect(() => {
     let cancelled = false;
+    // Re-arms the loading UI when userRole changes and a refetch starts
+    // (the initial `true` default only covers the very first mount).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true);
     void loadSystemStatus({ isCancelled: () => cancelled });
     return () => {

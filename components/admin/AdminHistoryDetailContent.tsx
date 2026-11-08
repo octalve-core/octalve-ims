@@ -148,6 +148,7 @@ export default function AdminHistoryDetailContent({
               variant="ghost"
               size="icon"
               onClick={handleBack}
+              aria-label="Back to Activity History"
               className={DETAIL_HEADER_BACK_ICON_CLASS}
             >
               <ArrowLeft className="h-5 w-5" />

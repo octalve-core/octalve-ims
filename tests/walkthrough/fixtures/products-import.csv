@@ -1,0 +1,9 @@
+Product Name,SKU,Price,Quantity,Status,Category,Supplier
+Ginger Beer 330ml,GIN-330,250.00,80,Available,Beverages,Lagos Fresh Foods
+Zobo Concentrate 1L,ZOB-1000,600.00,40,Available,Beverages,Lagos Fresh Foods
+Plantain Chips 100g,PLC-100,150.00,120,Available,Snacks,Lagos Fresh Foods
+Coconut Chips 50g,COC-050,90.00,200,Stock Low,Snacks,Lagos Fresh Foods
+Chapman Mix 500ml,CHM-500,300.00,60,Available,Beverages,Lagos Fresh Foods
+Kuli Kuli 80g,KUL-080,120.00,0,Stock Out,Snacks,Lagos Fresh Foods
+,MISSING-NAME,100.00,10,Available,Beverages,Lagos Fresh Foods
+Bad Price Item,BAD-PRICE,-50.00,10,Available,Snacks,Lagos Fresh Foods

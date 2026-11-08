@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
@@ -15,13 +16,37 @@ import {
   validateCheckoutChargeAmount,
 } from "@/lib/validations/payment";
 import { scheduleInvalidateOrderGraphCaches } from "@/lib/cache";
+import { getApiUrl } from "@/lib/env";
 import type { CheckoutSessionResponse } from "@/types";
+
+/**
+ * ISS-0047 — successUrl/cancelUrl come straight from the request body and
+ * were passed to Stripe with no validation: an attacker-controlled
+ * successUrl becomes the page Stripe redirects a real paying customer to
+ * right after a real payment, an open-redirect/phishing vector. Only accept
+ * one whose origin matches this app's own trusted origin.
+ */
+function trustedReturnUrl(
+  url: string | undefined,
+  trustedOrigin: string,
+): string | undefined {
+  if (!url) return undefined;
+  try {
+    return new URL(url).origin === trustedOrigin ? url : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 /**
  * POST /api/payments/checkout
  * Creates a Stripe Checkout session for an order or invoice
  */
 export async function POST(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const rateLimitResponse = await withRateLimit(
       request,
@@ -60,7 +85,9 @@ export async function POST(request: NextRequest) {
       validationResult.data;
 
     const stripe = getStripe();
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const baseUrl = getApiUrl(request);
+    const safeSuccessUrl = trustedReturnUrl(successUrl, baseUrl);
+    const safeCancelUrl = trustedReturnUrl(cancelUrl, baseUrl);
 
     let lineItems: {
       price_data: {
@@ -269,17 +296,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const checkoutSession = await stripe.checkout.sessions.create({
-      mode: "payment",
-      payment_method_types: ["card"],
-      line_items: lineItems,
-      metadata,
-      customer_email: customerEmail,
-      success_url:
-        successUrl ||
-        `${baseUrl}/${type}s/${id}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancelUrl || `${baseUrl}/${type}s/${id}?payment=cancelled`,
-    });
+    // Stripe's own idempotency key (ISS-0048): the global TanStack mutation retry
+    // (lib/react-query/config.ts, retry: 1) re-runs this exact request on a timeout,
+    // which would otherwise create a second live checkout session for the same
+    // order/invoice. Bucketed by a 5-minute window so a genuinely new checkout
+    // attempt later (e.g. a different payment try after this session expired) still
+    // gets its own session rather than being deduped forever.
+    const idempotencyWindow = Math.floor(Date.now() / (5 * 60 * 1000));
+    const checkoutSession = await stripe.checkout.sessions.create(
+      {
+        mode: "payment",
+        payment_method_types: ["card"],
+        line_items: lineItems,
+        metadata,
+        customer_email: customerEmail,
+        success_url:
+          safeSuccessUrl ||
+          `${baseUrl}/${type}s/${id}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url:
+          safeCancelUrl || `${baseUrl}/${type}s/${id}?payment=cancelled`,
+      },
+      {
+        idempotencyKey: `checkout:${type}:${id}:${session.id}:${idempotencyWindow}`,
+      },
+    );
 
     // REQ-0152 — store payment link only; never clobber order paymentStatus to unpaid
     if (type === "invoice" && checkoutSession.url) {

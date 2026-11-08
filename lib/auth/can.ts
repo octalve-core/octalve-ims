@@ -77,11 +77,29 @@ const LEGACY_ROLE_PERMISSIONS: Record<string, Partial<Record<Resource, Action[]>
 };
 
 function legacyCan(role: string | null | undefined, resource: Resource, action: Action): boolean {
-  const normalizedRole = role ?? "user";
-  if (normalizedRole === "admin") return true;
+  // ISS-0071 — this used to fall back to "user"'s grants for a null/undefined
+  // role, contradicting can()'s own docstring ("a lookup failure... resolves
+  // false"). A role that failed to resolve must deny, not inherit "user"'s
+  // write access.
+  if (role == null) return false;
+  if (role === "admin") return true;
 
-  const grants = LEGACY_ROLE_PERMISSIONS[normalizedRole]?.[resource];
+  const grants = LEGACY_ROLE_PERMISSIONS[role]?.[resource];
   return grants?.includes(action) ?? false;
+}
+
+/**
+ * ISS-0055 — categories/suppliers/warehouses mutation routes never called
+ * can() (or any role check) at all; any authenticated role, including the
+ * read-only external "client"/"retailer" roles, could create, edit or
+ * delete them. These three entities have no dedicated Resource in the enum
+ * above (they're catalog-support entities, not one of Products/Stock/etc.),
+ * so this mirrors the same plain role split already enforced on Products
+ * mutations (`session.role === "supplier"` checks there) rather than
+ * inventing a new Resource/Permission row type for a Core-only concept.
+ */
+export function canManageCatalogSupportEntities(role: string | null | undefined): boolean {
+  return role === "admin" || role === "user";
 }
 
 /**

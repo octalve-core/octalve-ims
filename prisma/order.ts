@@ -3,13 +3,16 @@
  * Helper functions for order database operations
  */
 
-import { prisma } from "@/prisma/client";
+import { prisma, type OrderWithItemsMoneyAsNumber } from "@/prisma/client";
 import { refundAllOrderPayments } from "@/lib/payments/refund-all-order-payments";
 import { orderCancelShouldRefundPayment } from "@/lib/orders/cancel-payment";
 import { Prisma } from "@prisma/client";
 import type { CreateOrderInput, UpdateOrderInput } from "@/types/order";
 import { invalidateCache, cacheKeys } from "@/lib/cache";
-import { decrementStockAllocations } from "@/lib/products/decrement-stock-allocations";
+import {
+  decrementStockAllocations,
+  restoreStockAllocations,
+} from "@/lib/products/decrement-stock-allocations";
 import {
   fulfillPendingOrderLines,
   releasePendingOrderLines,
@@ -77,9 +80,6 @@ export async function createOrder(
   data: CreateOrderInput,
   party: CreateOrderParty,
 ) {
-  // Generate unique order number
-  const orderNumber = await generateOrderNumber();
-
   // Calculate totals
   let subtotal = 0;
   const orderItemsData = [];
@@ -186,38 +186,60 @@ export async function createOrder(
   const total = subtotal + tax + shipping - discount;
 
   // Create order with items (REQ-0158 party semantics)
-  const order = await prisma.order.create({
-    data: {
-      orderNumber,
-      userId: party.storeOwnerUserId,
-      clientId: party.clientId,
-      status: "pending",
-      paymentStatus: "unpaid",
-      subtotal,
-      tax: tax > 0 ? tax : null,
-      shipping: shipping > 0 ? shipping : null,
-      discount: discount > 0 ? discount : null,
-      total,
-      shippingAddress: data.shippingAddress
-        ? (JSON.parse(
-            JSON.stringify(data.shippingAddress),
-          ) as Prisma.InputJsonValue)
-        : Prisma.DbNull,
-      billingAddress: data.billingAddress
-        ? (JSON.parse(
-            JSON.stringify(data.billingAddress),
-          ) as Prisma.InputJsonValue)
-        : Prisma.DbNull,
-      notes: data.notes || null,
-      createdBy: party.createdByUserId,
-      items: {
-        create: orderItemsData,
-      },
-    },
-    include: {
-      items: true,
-    },
-  });
+  //
+  // ISS-0045 — generateOrderNumber is pure count-based with no retry; two
+  // same-second creates could generate the same number and this create()
+  // would throw an unhandled P2002 (orderNumber is @unique). Regenerate and
+  // retry specifically on that collision, bounded, rather than surfacing an
+  // ugly 500 for what's really just a transient number clash.
+  const MAX_ORDER_NUMBER_ATTEMPTS = 5;
+  let order!: OrderWithItemsMoneyAsNumber;
+  for (let attempt = 1; attempt <= MAX_ORDER_NUMBER_ATTEMPTS; attempt++) {
+    const orderNumber = await generateOrderNumber();
+    try {
+      order = await prisma.order.create({
+        data: {
+          orderNumber,
+          userId: party.storeOwnerUserId,
+          clientId: party.clientId,
+          status: "pending",
+          paymentStatus: "unpaid",
+          subtotal,
+          tax: tax > 0 ? tax : null,
+          shipping: shipping > 0 ? shipping : null,
+          discount: discount > 0 ? discount : null,
+          total,
+          shippingAddress: data.shippingAddress
+            ? (JSON.parse(
+                JSON.stringify(data.shippingAddress),
+              ) as Prisma.InputJsonValue)
+            : Prisma.DbNull,
+          billingAddress: data.billingAddress
+            ? (JSON.parse(
+                JSON.stringify(data.billingAddress),
+              ) as Prisma.InputJsonValue)
+            : Prisma.DbNull,
+          notes: data.notes || null,
+          createdBy: party.createdByUserId,
+          items: {
+            create: orderItemsData,
+          },
+        },
+        include: {
+          items: true,
+        },
+      });
+      break;
+    } catch (err) {
+      const isOrderNumberCollision =
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002" &&
+        (err.meta?.target as string[] | undefined)?.includes("orderNumber");
+      if (!isOrderNumberCollision || attempt === MAX_ORDER_NUMBER_ATTEMPTS) {
+        throw err;
+      }
+    }
+  }
 
   // REQ-0103 — disjoint reserve: allocation OR product, never both.
   // ISS-0009 — reservePendingOrderLines already releases whatever IT
@@ -726,6 +748,15 @@ export async function updateOrder(
       }
       try {
         await syncRestoreConfirmedOrderAllocations(allocationItems);
+        // ISS-0044(a): no-pick items were greedily deducted from StockAllocation
+        // rows at fulfillment (decrementStockAllocations' fallback branch) —
+        // syncRestoreConfirmedOrderAllocations only covers warehouse-pick items,
+        // so this is the symmetric restore for the rest.
+        await restoreStockAllocations(
+          orderWithItems.items
+            .filter((item) => !item.warehouseId)
+            .map((item) => ({ productId: item.productId, quantity: item.quantity })),
+        );
       } catch (error) {
         logger.warn("Failed to restore allocation stock on order cancel", {
           orderId,
@@ -967,6 +998,12 @@ export async function cancelOrder(orderId: string, userId: string) {
     }
     try {
       await syncRestoreConfirmedOrderAllocations(allocationItems);
+      // ISS-0044(a): see the matching comment in updateOrder's cancel branch.
+      await restoreStockAllocations(
+        orderWithItems.items
+          .filter((item) => !item.warehouseId)
+          .map((item) => ({ productId: item.productId, quantity: item.quantity })),
+      );
     } catch (error) {
       logger.warn("Failed to restore allocation stock on cancelOrder", {
         orderId,

@@ -27,6 +27,7 @@ describe("role-nav-config (REQ-0094)", () => {
     expect(getProfileMenuPaths()).toEqual([
       "/support-tickets",
       "/settings/email-preferences",
+      "/settings/change-password",
       "/api-docs",
       "/api-status",
     ]);
@@ -43,12 +44,21 @@ describe("role-nav-config (REQ-0094)", () => {
           p === "/admin" ? "/admin/dashboard-overall-insights" : p,
         ),
         ...getProfileMenuPaths(),
-        ...getAdminSidebarWarmPaths(),
+        ...getAdminSidebarWarmPaths("admin"),
       ]).size,
     );
     expect(clientWarm).not.toEqual(
-      expect.arrayContaining(getAdminSidebarWarmPaths()),
+      expect.arrayContaining(getAdminSidebarWarmPaths("admin")),
     );
     expect(new Set(adminWarm).size).toBe(adminWarm.length);
+  });
+
+  it("doesn't prefetch the admin-exclusive dead-end pages for a non-admin role (ISS-0064)", () => {
+    const userWarm = getWarmPathsForRole("user");
+    expect(userWarm).not.toContain("/admin/supplier-portal");
+    expect(userWarm).not.toContain("/admin/client-portal");
+    expect(userWarm).not.toContain("/admin/user-management");
+    // but still warms what "user" actually has grants on
+    expect(userWarm).toContain("/admin/warehouses");
   });
 });

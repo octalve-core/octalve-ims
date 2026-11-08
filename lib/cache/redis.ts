@@ -48,6 +48,17 @@ export interface UnifiedRedisClient {
     max: number | string
   ): Promise<number>;
   zremrangebyrank(key: string, start: number, stop: number): Promise<number>;
+  /**
+   * Runs a Lua script server-side as a single atomic operation — no other command (from this
+   * client or any other) can interleave between the script's own Redis calls. Used by
+   * lib/cache/rate-limit.ts so a burst of concurrent requests can't all read "under the
+   * limit" before any of them records its own request.
+   */
+  eval<T = unknown>(
+    script: string,
+    keys: string[],
+    args: (string | number)[]
+  ): Promise<T>;
 }
 
 class UpstashAdapter implements UnifiedRedisClient {
@@ -155,6 +166,14 @@ class UpstashAdapter implements UnifiedRedisClient {
     stop: number
   ): Promise<number> {
     return this.client.zremrangebyrank(key, start, stop);
+  }
+
+  async eval<T = unknown>(
+    script: string,
+    keys: string[],
+    args: (string | number)[]
+  ): Promise<T> {
+    return this.client.eval(script, keys, args) as Promise<T>;
   }
 }
 
@@ -299,6 +318,19 @@ class IORedisAdapter implements UnifiedRedisClient {
   ): Promise<number> {
     return this.client.zremrangebyrank(key, start, stop);
   }
+
+  async eval<T = unknown>(
+    script: string,
+    keys: string[],
+    args: (string | number)[]
+  ): Promise<T> {
+    return this.client.eval(
+      script,
+      keys.length,
+      ...keys,
+      ...args
+    ) as unknown as Promise<T>;
+  }
 }
 
 /**
@@ -349,6 +381,14 @@ export function getRedisClient(): UnifiedRedisClient | null {
         retryStrategy(times) {
           return Math.min(times * 200, 5000);
         },
+        // Bounds how long any ONE command waits for a reply. Without this,
+        // a command issued while the connection is down queues and rides out
+        // the full maxRetriesPerRequest backoff (200+400+600ms ≈ 1.2s —
+        // ISS-0076) before failing. This fails each call fast instead, which
+        // matches the "cache/rate-limit is optional, fail open" philosophy
+        // (ADR 0008) without touching the connection-level retry/self-heal
+        // behavior above.
+        commandTimeout: 300,
       });
       // ioredis throws (crashing the process) if an 'error' event has no
       // listener — this is required, not optional, for graceful degradation.

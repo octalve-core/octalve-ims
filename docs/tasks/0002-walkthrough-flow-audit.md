@@ -1,7 +1,7 @@
 # 0002: Walkthrough video, PDF and findings for the full product
 
 - **Period / Focus:** started 2026-10-21 (end-to-end walkthrough that doubles as a flow audit)
-- **Status:** In Progress. Phase 0 (plan for the full build) complete; per-package plan written 2026-10-21; **paused** before Phase 0b and Phase 1 (session ended; resume at `docs/HANDOVER.md` section 0)
+- **Status:** In Progress. Phase 0 (plan) complete; Phase 1 (guardrails) built and verified against a real Premium build. Phase 2 (audit-and-fix loop) underway chapter by chapter: Chapters A–D written (see `tests/walkthrough/README.md`'s status line for current pass/fail and findings per chapter — kept there, not duplicated here, since it changes every chapter). Chapter D (2026-11-05) ran under a different policy than A–C: "fix to green immediately" instead of "log and defer," and is fully green with zero open findings from its own run. Phase 0b (per-package matrices) and Chapters E onward (then Core/Pro) not started.
 - **Priority:** High
 - **Assignee:** Claude, maintainer for decisions D3 to D9 (D1, D2 settled, D10 decided)
 - **Target Branch / PR:** `dev` (D2 settled: `dev` was fast-forwarded to `main` on 2026-10-21). PRs from feature branches into `dev`
@@ -39,14 +39,14 @@ One continuous recording, one PDF and a findings file for the whole product, dri
 - [ ] Mark storyboard steps by tier; write Core and Pro variants only where a screen differs; re-run the step-ID cross-check per package
 - [ ] Order of work: Premium, Pro, Core; desktop pass first for all three, then the other viewports
 
-### Phase 1: guardrails (not started)
-- [ ] `tests/walkthrough` Playwright config, `nav` wrapper, wrapped helpers, static guard with a negative test, runtime observers, cursor overlay, step timeline JSON, coverage gate, run manifest, preflight that hard-exits unless database name, local URL, production build, clean git tree and empty database all hold
-- [ ] Fixtures: `products-import.csv`, `not-a-product-file.txt`, `product-image.png`
-- [ ] Generators: PDF from the timeline, captions and chapters
+### Phase 1: guardrails (done)
+- [x] `tests/walkthrough` guard (static scan over `steps/`, tamper-tested), wrapped helpers (`guarded-page.ts`), runtime observers (console/network/axe), cursor overlay, step timeline JSON, preflight (DB name/host, local URL, clean tree, empty DB), `stage.ts` (drop/recreate/migrate+RLS/flush Redis/build+start)
+- [x] Fixtures: `products-import.csv`, `not-a-product-file.txt`, `product-image.png`
+- [ ] Generators: PDF from the timeline, captions and chapters — not built; chapters so far only produce timeline JSON + screenshots
 
-### Phase 2: audit-and-fix loop (not started)
-- [ ] Run, classify each failure, fix the product with a regression test, rerun from a fresh database; cap 15 iterations
-- [ ] One green uninterrupted run per viewport **per package** on the final commit; the 15-iteration cap applies per package
+### Phase 2: audit-and-fix loop (in progress, chapter by chapter)
+- [ ] Run, classify each failure; Chapters A–C used "log and defer" (findings go to `docs/issues/README.md`, chapter left red); Chapter D (2026-11-05) switched to "fix to green immediately" per the owner's instruction — every real bug found a test-first fix, DB reset, chapter rerun, repeated until green. Chapters E onward not started
+- [ ] One green uninterrupted run per viewport **per package** on the final commit; the 15-iteration cap applies per package — not yet reached (still building chapters against the desktop viewport only)
 
 ## 4. Unified Verification & Quality Gates
 - [ ] Guardrail unit test and its negative test green

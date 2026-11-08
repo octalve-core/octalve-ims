@@ -59,8 +59,10 @@ export default function ProductsPage({
   );
   const [selectedOwnerId, setSelectedOwnerId] = useState<string>(initialOwnerId);
 
-  // Full navigation from catalog link updates SSR initialOwnerId.
+  // Full navigation from catalog link updates SSR initialOwnerId — this
+  // syncs the client's selection to match the new SSR prop, not a loop.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedOwnerId(initialOwnerId);
   }, [initialOwnerId]);
 

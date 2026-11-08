@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import {
@@ -211,6 +212,10 @@ export async function GET(request: NextRequest) {
  * Includes inventory validation and automatic stock checks
  */
 export async function POST(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     // Rate limiting check
     const rateLimitResponse = await withRateLimit(
@@ -346,19 +351,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Send order confirmation email (async, non-blocking)
+    // Send order confirmation email (async, non-blocking). The recipient is always the
+    // order's own account — never the request body's shippingAddress.email — since that
+    // field is client-supplied and would otherwise let any authenticated user point a
+    // real order-confirmation email at an address of their choosing (ISS-0037).
     if (order.shippingAddress && typeof order.shippingAddress === "object") {
       const shippingAddr = order.shippingAddress as {
         email?: string;
         name?: string;
       };
-      if (shippingAddr.email) {
+      const confirmationRecipient = await prisma.user.findUnique({
+        where: { id: order.clientId ?? order.userId },
+        select: { email: true, name: true },
+      });
+      if (confirmationRecipient?.email) {
         sendOrderConfirmation(
           {
             orderNumber: order.orderNumber,
             orderDate: order.createdAt.toISOString(),
-            clientName: shippingAddr.name || "Customer",
-            clientEmail: shippingAddr.email,
+            clientName: confirmationRecipient.name || "Customer",
+            clientEmail: confirmationRecipient.email,
             items: order.items.map((item) => ({
               productName: item.productName,
               sku: item.sku || undefined,
@@ -380,8 +392,9 @@ export async function POST(request: NextRequest) {
             orderStatus: order.status,
             estimatedDelivery: order.estimatedDelivery?.toISOString(),
           },
-          shippingAddr.email,
-          shippingAddr.name,
+          confirmationRecipient.email,
+          confirmationRecipient.name || shippingAddr.name,
+          order.clientId ?? order.userId,
         ).catch((error) => {
           // Log error but don't fail the request
           logger.error("Failed to send order confirmation email:", error);

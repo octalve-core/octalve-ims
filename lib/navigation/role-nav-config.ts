@@ -62,6 +62,7 @@ export function getNavPathsForRole(role: string | null | undefined): string[] {
 export const PROFILE_MENU_PATHS = [
   "/support-tickets",
   "/settings/email-preferences",
+  "/settings/change-password",
   "/api-docs",
   "/api-status",
 ] as const;
@@ -86,7 +87,7 @@ export function getWarmPathsForRole(role: string | null | undefined): string[] {
     ...getProfileMenuPaths(),
   ];
   if (role !== "client" && role !== "supplier") {
-    paths.push(...getAdminSidebarWarmPaths());
+    paths.push(...getAdminSidebarWarmPaths(role));
   }
   return [...new Set(paths)];
 }

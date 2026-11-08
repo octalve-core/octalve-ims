@@ -19,6 +19,7 @@ import { IoMdArrowDown, IoMdArrowUp } from "react-icons/io";
 import { cn } from "@/lib/utils";
 import { UserRoleBadge } from "@/lib/ui/semantic-badges";
 import { AvatarInlineLink, ClientDate } from "@/components/shared";
+import { isProtectedEmail } from "@/lib/auth/protected-emails";
 import type { UserForAdmin } from "@/types";
 
 type SortableHeaderProps = {
@@ -44,6 +45,8 @@ function SortableHeader({ column, label }: SortableHeaderProps) {
             isSorted && "text-primary",
           )}
           aria-label={`Sort by ${label}`}
+          role="button"
+          tabIndex={0}
         >
           {label}
           <SortingIcon className="h-4 w-4" />
@@ -62,12 +65,6 @@ function SortableHeader({ column, label }: SortableHeaderProps) {
     </DropdownMenu>
   );
 }
-
-const PROTECTED_EMAILS = [
-  "test@admin.com",
-  "test@supplier.com",
-  "test@client.com",
-];
 
 /** Derive display username from email when username is empty (e.g. Gmail login) */
 function getDisplayUsername(user: UserForAdmin): string {
@@ -153,11 +150,14 @@ export function createUserManagementColumns(
         const u = row.original;
         const href = `${base}/${u.id}`;
         const isOwner = currentUserId != null && currentUserId === u.id;
-        const isProtected = PROTECTED_EMAILS.includes(
-          (u.email ?? "").toLowerCase(),
-        );
-        const canEdit = isOwner && !isProtected;
-        const canDelete = false; // Disabled for all in list; only owner on detail page per requirements
+        const isProtected = isProtectedEmail(u.email);
+        // ISS-0094 — the detail page's own Name/Role fields are never owner-gated (only
+        // isProtectedEmail blocks them), so requiring isOwner here just made the shortcut to
+        // that same page needlessly disabled for every other user. Delete mirrors the detail
+        // page's corrected canDeleteResolved: the API refuses a self-delete outright, so
+        // enabling it only for OTHER non-protected users is what can ever actually succeed.
+        const canEdit = !isProtected;
+        const canDelete = !isOwner && !isProtected;
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -191,10 +191,19 @@ export function createUserManagementColumns(
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem disabled={!canDelete} className="gap-2">
-                <Trash2 className="h-4 w-4" />
-                Delete User
-              </DropdownMenuItem>
+              {canDelete ? (
+                <DropdownMenuItem asChild>
+                  <Link href={href} className="gap-2 cursor-pointer">
+                    <Trash2 className="h-4 w-4" />
+                    Delete User
+                  </Link>
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem disabled className="gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Delete User
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );
