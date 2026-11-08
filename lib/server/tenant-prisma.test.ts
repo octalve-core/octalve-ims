@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { prisma } from "@/prisma/client";
 import { forTenant } from "./tenant-prisma";
-import { REQUIRED_DB_NAME } from "@/tests/walkthrough/lib/preflight";
+import { REQUIRED_DB_NAME } from "@/lib/db/required-test-db";
 
 /**
  * The one test in this repo that hits a real Postgres connection instead of

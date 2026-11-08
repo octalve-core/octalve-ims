@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { validateRows, transformFunctions, type ColumnMapping } from "@/lib/import";
-import { productImportRowSchema } from "./product";
+import { productImportRowSchema } from "@/lib/validations/product";
 
 /**
  * ISS-0086 — app/api/products-import/route.ts validated every imported row against
