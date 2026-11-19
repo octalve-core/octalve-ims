@@ -98,8 +98,9 @@ interface InvoiceDialogProps {
   initialOrderId?: string;
 }
 
+// ISS-0075: a fixed locale avoids a server/client hydration mismatch when fed from SSR'd initial data.
 const fmt = (v: number) =>
-  `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  `$${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /**
  * Invoice Dialog Component

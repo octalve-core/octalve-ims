@@ -16,6 +16,7 @@ import { CopyableText } from "@/components/shared/CopyableText";
 import { TABLE_CATALOG_LINK_CLASS } from "@/components/shared/dialog-edge-scroll";
 import type { StockAllocation } from "@/types";
 import { formatCatalogCommitWarehouseHint } from "@/lib/catalog/catalog-allocation-copy";
+import { productStockAvailableTextClass } from "@/lib/ui/semantic-badges";
 import { cn } from "@/lib/utils";
 
 const META_ROW_CLASS = "text-xs text-gray-600 dark:text-gray-300";
@@ -189,7 +190,7 @@ export function WarehouseStockAllocationRow({
               total
             </span>
           </p>
-          <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+          <p className={cn("text-sm font-medium", productStockAvailableTextClass(available))}>
             {available}{" "}
             <span className="font-normal text-gray-500 dark:text-gray-300">
               available

@@ -3,6 +3,7 @@
  * Handles Google OAuth authorization and callback
  */
 
+import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getGoogleOAuthUrl, isGoogleOAuthConfigured } from "@/lib/auth/oauth";
 import { logger } from "@/lib/logger";
@@ -21,11 +22,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Generate state for CSRF protection
-    const state = Buffer.from(
-      Math.random().toString(36).substring(2, 15) +
-        Math.random().toString(36).substring(2, 15)
-    ).toString("base64");
+    // Generate state for CSRF protection. ISS-0070 — Math.random() is not
+    // cryptographically secure and shouldn't back a CSRF token; this value
+    // only needs to be unpredictable, not reversible, so randomBytes is enough.
+    const state = crypto.randomBytes(24).toString("base64url");
 
     // Get callback URL from query params or use default
     const { searchParams } = new URL(request.url);

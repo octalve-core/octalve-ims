@@ -5,7 +5,12 @@
 import { prisma } from "@/prisma/client";
 import type { CreateAuditLogInput, AuditLogFilters } from "@/types";
 
-const MAX_AUDIT_LOGS = 50;
+// ISS-0034: this used to be 50 — a global cap that small meant the audit
+// trail rolled over within hours on any real deployment, well before anyone
+// could review it. This is a safety ceiling against unbounded growth, not
+// the real retention policy; long-term pruning should run `deleteOldAuditLogs`
+// on a schedule instead of relying on this inline FIFO trim.
+const MAX_AUDIT_LOGS = 10_000;
 
 /**
  * Create an audit log entry. Enforces FIFO: if total count > MAX_AUDIT_LOGS, deletes oldest.

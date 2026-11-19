@@ -24,7 +24,10 @@ import type {
   ShippingNotificationData,
   OrderStatusUpdateData,
 } from "./types";
-import { isEmailNotificationEnabled } from "./preferences";
+import {
+  isEmailNotificationEnabled,
+  mapNotificationTypeToPreference,
+} from "./preferences";
 
 /**
  * Email queue job types
@@ -131,23 +134,30 @@ export async function sendEmailDirectly(
     return;
   }
 
+  // Every queued type has an opt-out preference (mapNotificationTypeToPreference);
+  // this used to be checked for only 2 of the 6 types, so a recipient who opted out of
+  // (say) shipping notifications got them anyway (ISS-0038).
+  if (job.userId) {
+    const preferenceKey = mapNotificationTypeToPreference(job.type);
+    if (preferenceKey) {
+      const isEnabled = await isEmailNotificationEnabled(
+        job.userId,
+        preferenceKey,
+      );
+      if (!isEnabled) {
+        logger.info("Email disabled by user preferences", {
+          userId: job.userId,
+          type: job.type,
+        });
+        return;
+      }
+    }
+  }
+
   try {
     switch (job.type) {
       case "low_stock_alert": {
         const data = job.data as LowStockAlertData;
-        // Check user preferences if userId provided
-        if (job.userId) {
-          const isEnabled = await isEmailNotificationEnabled(
-            job.userId,
-            "lowStockAlerts"
-          );
-          if (!isEnabled) {
-            logger.info("Low stock alert email disabled by user preferences", {
-              userId: job.userId,
-            });
-            return;
-          }
-        }
         const emailContent = generateLowStockAlertEmail(data);
         const result = await sendEmailViaBrevo({
           to: {
@@ -169,22 +179,6 @@ export async function sendEmailDirectly(
       }
       case "stock_out_notification": {
         const data = job.data as StockOutNotificationData;
-        // Check user preferences if userId provided
-        if (job.userId) {
-          const isEnabled = await isEmailNotificationEnabled(
-            job.userId,
-            "stockOutNotifications"
-          );
-          if (!isEnabled) {
-            logger.info(
-              "Stock out notification email disabled by user preferences",
-              {
-                userId: job.userId,
-              }
-            );
-            return;
-          }
-        }
         const emailContent = generateStockOutNotificationEmail(data);
         const result = await sendEmailViaBrevo({
           to: {

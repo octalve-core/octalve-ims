@@ -27,8 +27,12 @@ import { buildStoreInvoiceStatusBadges } from "@/lib/ui/store-invoice-status-bad
 import { useAuth } from "@/contexts";
 import type { DashboardStats } from "@/types";
 
+// ISS-0075: `undefined` locale follows the runtime's configured locale, which
+// differs between the server (Node) and the browser and produces a React
+// hydration mismatch the moment this is fed from SSR'd initial data — a
+// fixed locale keeps server and client output identical.
 const formatCurrency = (value: number) =>
-  `$${value.toLocaleString(undefined, {
+  `$${value.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;

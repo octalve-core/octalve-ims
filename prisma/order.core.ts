@@ -15,6 +15,7 @@ import {
   reservePendingOrderLines,
 } from "@/lib/products/order-stock-reservation";
 import { getOrderLineCatalogAvailable } from "@/lib/orders/order-line-stock-validation";
+import { getOrderFeesFromSubtotal } from "@/lib/orders/order-fees";
 import {
   productRequiresWarehousePick,
   resolveWarehouseName,
@@ -171,9 +172,15 @@ export async function createOrder(
   }
 
   // Calculate total
-  const tax = data.tax || 0;
-  const shipping = data.shipping || 0;
-  const discount = data.discount || 0;
+  // ISS-0016 — tax/shipping/discount are a fixed schedule off subtotal,
+  // computed here rather than trusting client-submitted values; a buyer
+  // calling this API directly could otherwise submit an arbitrary discount
+  // and drive the total to zero or negative.
+  const {
+    taxAmount: tax,
+    shippingAmount: shipping,
+    discountAmount: discount,
+  } = getOrderFeesFromSubtotal(subtotal);
   const total = subtotal + tax + shipping - discount;
 
   // Create order with items (REQ-0158 party semantics)
@@ -495,25 +502,22 @@ const clientOrderDetailInclude = {
 } as const;
 
 /**
- * Get order by ID for client.
- * REQ-0214 — own buyer (`clientId`) first; else any order with line items so
- * product/category/supplier recent-order chips open read-only (mutations stay off in UI).
+ * Get order by ID for client — own orders only.
+ *
+ * ISS-0017 — this used to fall back to "any order with at least one line
+ * item" when the id wasn't the caller's own, on the theory that catalog
+ * recent-order chips should be clickable read-only. That fallback had no
+ * relationship to the chip the client actually clicked — it matched any
+ * order in the system — so any client could read any other buyer's full
+ * order (shipping address, email, items, total) just by requesting an id.
+ * Recent-order chips remain informational display data; they no longer
+ * deep-link into another buyer's order detail.
  */
 export async function getOrderByIdForClient(orderId: string, clientId: string) {
-  const own = await prisma.order.findFirst({
-    where: {
-      id: orderId,
-      clientId,
-    },
-    include: clientOrderDetailInclude,
-  });
-  if (own) return own;
-
-  // Catalog recent-order history rows are clickable for clients — mirror that access.
   return prisma.order.findFirst({
     where: {
       id: orderId,
-      items: { some: {} },
+      clientId,
     },
     include: clientOrderDetailInclude,
   });

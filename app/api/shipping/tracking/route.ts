@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import { getTrackingUrl } from "@/lib/shippo";
@@ -21,6 +22,10 @@ import { invalidateOnOrderChange } from "@/lib/cache";
  * Add manual tracking number to an order
  */
 export async function POST(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const rateLimitResponse = await withRateLimit(
       request,
@@ -66,10 +71,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    // Allow: admin, order creator, client, or supplier on this order
+    // ISS-0014 — marking "shipped" is a seller-side fulfillment attestation;
+    // the buyer has no business reporting their own order as shipped, even
+    // on their own order.
     const isAdmin = session.role === "admin";
     const isCreator = order.userId === session.id;
-    const isClient = order.clientId === session.id;
     let isSupplierOnOrder = false;
     if (session.role === "supplier") {
       const supplier = await getSupplierByUserId(session.id);
@@ -77,7 +83,7 @@ export async function POST(request: NextRequest) {
         !!supplier &&
         order.items.some((item) => item.product.supplierId === supplier.id);
     }
-    if (!isAdmin && !isCreator && !isClient && !isSupplierOnOrder) {
+    if (!isAdmin && !isCreator && !isSupplierOnOrder) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -156,6 +162,7 @@ export async function POST(request: NextRequest) {
         shippingNotificationData,
         clientEmail,
         clientName,
+        order.clientId ?? order.userId,
       ).catch((err) =>
         logger.warn("Failed to send shipping notification email", {
           error: err,

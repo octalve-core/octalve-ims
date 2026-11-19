@@ -5,16 +5,29 @@ import { DEMO_PASSWORD, DEMO_SEED_USERS, type DemoRoleKey } from "./demo-seed-us
 /** Demo test-account keys for login role Select (REQ-0030). */
 export type TestAccountRoleKey = DemoRoleKey;
 
+/**
+ * ISS-0025 — set NEXT_PUBLIC_DISABLE_DEMO_LOGIN=true on the real production
+ * deployment to drop the demo role Select from the login page and keep these
+ * credentials out of that build's client bundle entirely (Next inlines
+ * NEXT_PUBLIC_* at build time, so the literals below are dead-code-eliminated
+ * when this is false). Leave unset for dev/staging so reviewers can still
+ * one-click into each role.
+ */
+export const isDemoLoginEnabled =
+  process.env.NEXT_PUBLIC_DISABLE_DEMO_LOGIN !== "true";
+
 /** Credentials for quick demo login — sourced from demo-seed-users.ts. */
 export const testAccounts: Record<
   TestAccountRoleKey,
   { email: string; password: string }
-> = Object.fromEntries(
-  DEMO_SEED_USERS.map((u) => [
-    u.roleKey,
-    { email: u.email, password: DEMO_PASSWORD },
-  ]),
-) as Record<TestAccountRoleKey, { email: string; password: string }>;
+> = isDemoLoginEnabled
+  ? (Object.fromEntries(
+      DEMO_SEED_USERS.map((u) => [
+        u.roleKey,
+        { email: u.email, password: DEMO_PASSWORD },
+      ]),
+    ) as Record<TestAccountRoleKey, { email: string; password: string }>)
+  : ({} as Record<TestAccountRoleKey, { email: string; password: string }>);
 
 export type RoleMetaHue = "sky" | "emerald" | "amber" | "violet";
 
@@ -22,28 +35,33 @@ export type RoleMetaHue = "sky" | "emerald" | "amber" | "violet";
 export const roleMeta: Record<
   TestAccountRoleKey,
   { icon: LucideIcon; label: string; hue: RoleMetaHue }
-> = {
-  "guest-user": {
-    icon: Shield,
-    label: "Guest User / Admin (test@admin.com)",
-    hue: "sky",
-  },
-  "guest-supplier": {
-    icon: Store,
-    label: "Supplier (test@supplier.com)",
-    hue: "amber",
-  },
-  "guest-client": {
-    icon: ShoppingBag,
-    label: "Client (test@client.com)",
-    hue: "emerald",
-  },
-  "guest-retailer": {
-    icon: Package,
-    label: "Retailer (test@retailer.com)",
-    hue: "violet",
-  },
-};
+> = isDemoLoginEnabled
+  ? {
+      "guest-user": {
+        icon: Shield,
+        label: "Guest User / Admin (test@admin.com)",
+        hue: "sky",
+      },
+      "guest-supplier": {
+        icon: Store,
+        label: "Supplier (test@supplier.com)",
+        hue: "amber",
+      },
+      "guest-client": {
+        icon: ShoppingBag,
+        label: "Client (test@client.com)",
+        hue: "emerald",
+      },
+      "guest-retailer": {
+        icon: Package,
+        label: "Retailer (test@retailer.com)",
+        hue: "violet",
+      },
+    }
+  : ({} as Record<
+      TestAccountRoleKey,
+      { icon: LucideIcon; label: string; hue: RoleMetaHue }
+    >);
 
 export const testAccountRoleKeys = Object.keys(roleMeta) as TestAccountRoleKey[];
 

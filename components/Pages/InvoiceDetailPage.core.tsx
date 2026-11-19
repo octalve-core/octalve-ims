@@ -287,6 +287,7 @@ export default function InvoiceDetailPage({
                 variant="ghost"
                 size="icon"
                 onClick={onBack}
+                aria-label="Back to Invoices"
                 className={DETAIL_HEADER_BACK_ICON_CLASS}
               >
                 <ArrowLeft className="h-5 w-5" />

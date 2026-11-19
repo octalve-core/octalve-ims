@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import {
@@ -29,6 +30,10 @@ import {
   type TicketUserSnap,
 } from "@/lib/support-tickets/ticket-list-enrich";
 import type { SupportTicket } from "@/types";
+import {
+  isValidTicketAssignee,
+  orderBelongsToClient,
+} from "@/lib/support-tickets/validate-ticket-create-references";
 
 async function getUsersMap(
   userIds: string[],
@@ -148,6 +153,10 @@ export async function GET(request: NextRequest) {
  * Create a new support ticket.
  */
 export async function POST(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const rateLimitResponse = await withRateLimit(
       request,
@@ -183,6 +192,26 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json(
         { error: "Please select a product owner to send the ticket to." },
+        { status: 400 },
+      );
+    }
+
+    // ISS-0022 — assignedToId/orderId used to be trusted as-is; see
+    // validate-ticket-create-references.ts for why each check exists.
+    if (data.assignedToId && !(await isValidTicketAssignee(data.assignedToId))) {
+      return NextResponse.json(
+        { error: "Selected product owner is invalid." },
+        { status: 400 },
+      );
+    }
+
+    if (
+      data.orderId &&
+      session.role === "client" &&
+      !(await orderBelongsToClient(data.orderId, userId))
+    ) {
+      return NextResponse.json(
+        { error: "Related order must belong to you." },
         { status: 400 },
       );
     }

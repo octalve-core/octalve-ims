@@ -39,8 +39,9 @@ import { getOrderItemUnitCounts } from "@/lib/orders/order-list-meta";
 import { cn } from "@/lib/utils";
 import type { Order } from "@/types";
 
+// ISS-0075: a fixed locale avoids a server/client hydration mismatch when fed from SSR'd initial data.
 const fmt = (v: number) =>
-  `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  `$${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export type OrderPickerCommandProps = {
   /** Non-cancelled orders eligible for invoicing */

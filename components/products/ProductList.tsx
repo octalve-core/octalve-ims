@@ -126,8 +126,9 @@ const ProductList = React.memo(function ProductList({
 
   // Removed debug log - use React DevTools for debugging
 
+  // ISS-0075: a fixed locale avoids a server/client hydration mismatch when fed from SSR'd initial data.
   const formatCurrency = (value: number) =>
-    `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const nonCancelledSupplierOrders = Math.max(
     0,

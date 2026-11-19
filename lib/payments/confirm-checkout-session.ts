@@ -8,8 +8,7 @@
 
 import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/prisma/client";
-import { applyStripeChargeToOrderInvoice } from "@/prisma/invoice";
-import { applyIncrementalInvoicePayment } from "@/lib/invoices/order-payment-sync";
+import { applyStripeSessionPayment } from "@/lib/payments/apply-stripe-session-payment";
 import { healInvoiceStatusAfterMoney } from "@/lib/invoices/heal-invoice-status-after-money";
 import { invalidateOnOrderChange } from "@/lib/cache";
 import { logger } from "@/lib/logger";
@@ -25,6 +24,38 @@ export type ConfirmCheckoutSessionResult = {
   invoiceStatus?: string | null;
   error?: string;
 };
+
+/** What a Checkout Session's own metadata says it's paying for — no DB/mutation. */
+export type CheckoutSessionReference =
+  | { ok: true; type: "order"; orderId: string }
+  | { ok: true; type: "invoice"; invoiceId: string }
+  | { ok: false; error: string };
+
+/**
+ * ISS-0008 — read-only: resolve which order/invoice a Checkout Session's
+ * metadata references, without applying anything. Callers that need to
+ * verify the requester actually owns that order/invoice (confirm-session's
+ * route) call this BEFORE confirmCheckoutSessionById, which re-resolves the
+ * same session for the actual (authorized-by-then) application.
+ */
+export async function resolveCheckoutSessionReference(
+  sessionId: string,
+): Promise<CheckoutSessionReference> {
+  if (!sessionId.startsWith("cs_")) {
+    return { ok: false, error: "Invalid session id" };
+  }
+  const stripe = getStripe();
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+  const metadata = session.metadata ?? {};
+  const referenceId = metadata.referenceId;
+  if (metadata.type === "order" && (metadata.orderId || referenceId)) {
+    return { ok: true, type: "order", orderId: metadata.orderId || referenceId! };
+  }
+  if (metadata.type === "invoice" && (metadata.invoiceId || referenceId)) {
+    return { ok: true, type: "invoice", invoiceId: metadata.invoiceId || referenceId! };
+  }
+  return { ok: false, error: "Unknown checkout type" };
+}
 
 /**
  * Retrieve Checkout Session and sync order/invoice money + fulfillment status.
@@ -65,61 +96,26 @@ export async function confirmCheckoutSessionById(
 
   if (type === "order" && (orderIdMeta || referenceId)) {
     const orderId = orderIdMeta || referenceId!;
-    const order = await prisma.order.findUnique({
+    const orderExists = await prisma.order.findUnique({
       where: { id: orderId },
-      select: {
-        id: true,
-        status: true,
-        paymentStatus: true,
-        stripePaymentIntentId: true,
-      },
+      select: { id: true },
     });
-    if (!order) {
+    if (!orderExists) {
       return { ok: false, alreadyApplied: false, error: "Order not found" };
     }
 
-    const alreadyApplied =
-      !!paymentIntentId &&
-      order.stripePaymentIntentId === paymentIntentId;
-
-    let invoiceId: string | undefined;
-
-    if (!alreadyApplied) {
-      const invoice = await applyStripeChargeToOrderInvoice(
-        orderId,
-        chargeAmount,
-      );
-      invoiceId = invoice.id;
-      if (paymentIntentId) {
-        await prisma.order.update({
-          where: { id: orderId },
-          data: {
-            stripePaymentIntentId: paymentIntentId,
-            updatedAt: new Date(),
-          },
-        });
-        await prisma.invoice.update({
-          where: { id: invoice.id },
-          data: {
-            stripePaymentIntentId: paymentIntentId,
-            updatedAt: new Date(),
-          },
-        });
-      }
-    } else {
-      const existing = await prisma.invoice.findUnique({
-        where: { orderId },
-        select: { id: true },
-      });
-      invoiceId = existing?.id;
-    }
+    // ISS-0008: applied atomically, deduped per-session (not per-"latest
+    // PaymentIntent pointer") — see lib/payments/apply-stripe-session-payment.ts.
+    const applied = await applyStripeSessionPayment({
+      kind: "order",
+      orderId,
+      sessionId,
+      paymentIntentId: paymentIntentId ?? null,
+      chargeAmount,
+    });
 
     // REQ-0215 — heal+sync always (sent→paid when settled; order partial→paid)
-    let invoiceStatus: string | null = null;
-    if (invoiceId) {
-      const healed = await healInvoiceStatusAfterMoney(invoiceId);
-      invoiceStatus = healed?.status ?? null;
-    }
+    const healed = await healInvoiceStatusAfterMoney(applied.invoiceId);
 
     await invalidateOnOrderChange();
     const refreshed = await prisma.order.findUnique({
@@ -129,52 +125,37 @@ export async function confirmCheckoutSessionById(
 
     return {
       ok: true,
-      alreadyApplied,
+      alreadyApplied: applied.alreadyApplied,
       orderId,
-      invoiceId,
+      invoiceId: applied.invoiceId,
       paymentStatus: refreshed?.paymentStatus ?? null,
       orderStatus: refreshed?.status ?? null,
-      invoiceStatus,
+      invoiceStatus: healed?.status ?? null,
     };
   }
 
   if (type === "invoice" && (invoiceIdMeta || referenceId)) {
     const invoiceId = invoiceIdMeta || referenceId!;
-    const prior = await prisma.invoice.findUnique({
+    const invoiceExists = await prisma.invoice.findUnique({
       where: { id: invoiceId },
+      select: { id: true, orderId: true },
     });
-    if (!prior) {
+    if (!invoiceExists) {
       return { ok: false, alreadyApplied: false, error: "Invoice not found" };
     }
 
-    const alreadyApplied =
-      !!paymentIntentId &&
-      prior.stripePaymentIntentId === paymentIntentId;
-
-    if (!alreadyApplied) {
-      const next = applyIncrementalInvoicePayment({
-        priorAmountPaid: prior.amountPaid,
-        total: prior.total,
-        chargeAmount,
-        priorStatus: prior.status,
-      });
-      await prisma.invoice.update({
-        where: { id: invoiceId },
-        data: {
-          status: next.status,
-          amountPaid: next.amountPaid,
-          amountDue: next.amountDue,
-          paidAt: next.fullyPaid ? new Date() : null,
-          stripePaymentIntentId: paymentIntentId ?? undefined,
-          updatedAt: new Date(),
-        },
-      });
-    }
+    const applied = await applyStripeSessionPayment({
+      kind: "invoice",
+      invoiceId,
+      sessionId,
+      paymentIntentId: paymentIntentId ?? null,
+      chargeAmount,
+    });
 
     // REQ-0215 — heal after apply or alreadyApplied (promotes stuck sent→paid)
     const healed = await healInvoiceStatusAfterMoney(invoiceId);
     await invalidateOnOrderChange();
-    const orderId = healed?.orderId ?? prior.orderId;
+    const orderId = healed?.orderId ?? applied.orderId ?? invoiceExists.orderId;
     const refreshed = orderId
       ? await prisma.order.findUnique({
           where: { id: orderId },
@@ -183,7 +164,7 @@ export async function confirmCheckoutSessionById(
       : null;
     return {
       ok: true,
-      alreadyApplied,
+      alreadyApplied: applied.alreadyApplied,
       invoiceId,
       orderId,
       paymentStatus: refreshed?.paymentStatus ?? null,

@@ -7,10 +7,12 @@
  * - Node.js process information
  */
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSystemMetrics } from "@/lib/monitoring/system-metrics";
 import { successResponse, errorResponse } from "@/lib/api/response-helpers";
 import { logger } from "@/lib/logger";
+import { getSessionFromRequest } from "@/utils/auth";
+import { isAuthorizedInternalCall } from "@/lib/api/internal-call-auth";
 
 /**
  * GET /api/system-metrics
@@ -18,6 +20,16 @@ import { logger } from "@/lib/logger";
  */
 export async function GET(request: NextRequest) {
   try {
+    // ISS-0035: cache/DB/resource metrics shouldn't be world-readable.
+    const session = await getSessionFromRequest(request);
+    const isInternalCall = isAuthorizedInternalCall(
+      request.headers.get("authorization"),
+      process.env.INTERNAL_API_KEY,
+    );
+    if (!isInternalCall && (!session || session.role !== "admin")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const metrics = await getSystemMetrics();
     return successResponse(metrics);
   } catch (error) {

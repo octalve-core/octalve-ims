@@ -30,15 +30,19 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error?.config;
-    const isRefreshCall =
+    // Every /auth/* route (login, register, refresh, ...) answers its own 401s directly — a
+    // wrong password on login, for instance, is not an expired session. Treating it like one
+    // used to fire a pointless refresh attempt and then hard-redirect away from the login form
+    // before the real "Invalid email or password" error ever reached it (ISS-0030, decision d).
+    const isAuthCall =
       typeof originalRequest?.url === "string" &&
-      originalRequest.url.includes("/auth/refresh");
+      originalRequest.url.includes("/auth/");
 
     if (
       error?.response?.status === 401 &&
       originalRequest &&
       !originalRequest._retry &&
-      !isRefreshCall
+      !isAuthCall
     ) {
       originalRequest._retry = true;
       const refreshed = await refreshAccessToken();

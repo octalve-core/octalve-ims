@@ -2,6 +2,11 @@
  * User Management (admin) type definitions
  */
 
+import type {
+  UserAccountStatus,
+  AdminSettableAccountStatus,
+} from "@/lib/auth/account-status";
+
 export type UserRole = "user" | "admin" | "supplier" | "client" | "retailer";
 
 export interface UserOverview {
@@ -23,6 +28,7 @@ export interface UserForAdmin {
   username: string | null;
   role: UserRole | null;
   image: string | null;
+  status: UserAccountStatus;
   createdAt: string;
   updatedAt: string | null;
   overview?: UserOverview;
@@ -31,6 +37,7 @@ export interface UserForAdmin {
 export interface UpdateUserAdminInput {
   role?: UserRole | null;
   name?: string;
+  status?: AdminSettableAccountStatus;
 }
 
 export interface CreateUserAdminInput {

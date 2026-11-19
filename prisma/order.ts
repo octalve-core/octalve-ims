@@ -3,19 +3,24 @@
  * Helper functions for order database operations
  */
 
-import { prisma } from "@/prisma/client";
-import { createStripeRefund } from "@/lib/stripe";
+import { prisma, type OrderWithItemsMoneyAsNumber } from "@/prisma/client";
+import { refundAllOrderPayments } from "@/lib/payments/refund-all-order-payments";
 import { orderCancelShouldRefundPayment } from "@/lib/orders/cancel-payment";
 import { Prisma } from "@prisma/client";
 import type { CreateOrderInput, UpdateOrderInput } from "@/types/order";
 import { invalidateCache, cacheKeys } from "@/lib/cache";
-import { decrementStockAllocations } from "@/lib/products/decrement-stock-allocations";
+import {
+  decrementStockAllocations,
+  restoreStockAllocations,
+} from "@/lib/products/decrement-stock-allocations";
 import {
   fulfillPendingOrderLines,
   releasePendingOrderLines,
   reservePendingOrderLines,
 } from "@/lib/products/order-stock-reservation";
 import { getOrderLineCatalogAvailable } from "@/lib/orders/order-line-stock-validation";
+import { assertValidOrderStatusTransition } from "@/lib/orders/order-status-transition";
+import { getOrderFeesFromSubtotal } from "@/lib/orders/order-fees";
 import {
   productRequiresWarehousePick,
   resolveWarehouseName,
@@ -75,9 +80,6 @@ export async function createOrder(
   data: CreateOrderInput,
   party: CreateOrderParty,
 ) {
-  // Generate unique order number
-  const orderNumber = await generateOrderNumber();
-
   // Calculate totals
   let subtotal = 0;
   const orderItemsData = [];
@@ -172,53 +174,90 @@ export async function createOrder(
   }
 
   // Calculate total
-  const tax = data.tax || 0;
-  const shipping = data.shipping || 0;
-  const discount = data.discount || 0;
+  // ISS-0016 — tax/shipping/discount are a fixed schedule off subtotal,
+  // computed here rather than trusting client-submitted values; a buyer
+  // calling this API directly could otherwise submit an arbitrary discount
+  // and drive the total to zero or negative.
+  const {
+    taxAmount: tax,
+    shippingAmount: shipping,
+    discountAmount: discount,
+  } = getOrderFeesFromSubtotal(subtotal);
   const total = subtotal + tax + shipping - discount;
 
   // Create order with items (REQ-0158 party semantics)
-  const order = await prisma.order.create({
-    data: {
-      orderNumber,
-      userId: party.storeOwnerUserId,
-      clientId: party.clientId,
-      status: "pending",
-      paymentStatus: "unpaid",
-      subtotal,
-      tax: tax > 0 ? tax : null,
-      shipping: shipping > 0 ? shipping : null,
-      discount: discount > 0 ? discount : null,
-      total,
-      shippingAddress: data.shippingAddress
-        ? (JSON.parse(
-            JSON.stringify(data.shippingAddress),
-          ) as Prisma.InputJsonValue)
-        : Prisma.DbNull,
-      billingAddress: data.billingAddress
-        ? (JSON.parse(
-            JSON.stringify(data.billingAddress),
-          ) as Prisma.InputJsonValue)
-        : Prisma.DbNull,
-      notes: data.notes || null,
-      createdBy: party.createdByUserId,
-      items: {
-        create: orderItemsData,
-      },
-    },
-    include: {
-      items: true,
-    },
-  });
+  //
+  // ISS-0045 — generateOrderNumber is pure count-based with no retry; two
+  // same-second creates could generate the same number and this create()
+  // would throw an unhandled P2002 (orderNumber is @unique). Regenerate and
+  // retry specifically on that collision, bounded, rather than surfacing an
+  // ugly 500 for what's really just a transient number clash.
+  const MAX_ORDER_NUMBER_ATTEMPTS = 5;
+  let order!: OrderWithItemsMoneyAsNumber;
+  for (let attempt = 1; attempt <= MAX_ORDER_NUMBER_ATTEMPTS; attempt++) {
+    const orderNumber = await generateOrderNumber();
+    try {
+      order = await prisma.order.create({
+        data: {
+          orderNumber,
+          userId: party.storeOwnerUserId,
+          clientId: party.clientId,
+          status: "pending",
+          paymentStatus: "unpaid",
+          subtotal,
+          tax: tax > 0 ? tax : null,
+          shipping: shipping > 0 ? shipping : null,
+          discount: discount > 0 ? discount : null,
+          total,
+          shippingAddress: data.shippingAddress
+            ? (JSON.parse(
+                JSON.stringify(data.shippingAddress),
+              ) as Prisma.InputJsonValue)
+            : Prisma.DbNull,
+          billingAddress: data.billingAddress
+            ? (JSON.parse(
+                JSON.stringify(data.billingAddress),
+              ) as Prisma.InputJsonValue)
+            : Prisma.DbNull,
+          notes: data.notes || null,
+          createdBy: party.createdByUserId,
+          items: {
+            create: orderItemsData,
+          },
+        },
+        include: {
+          items: true,
+        },
+      });
+      break;
+    } catch (err) {
+      const isOrderNumberCollision =
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002" &&
+        (err.meta?.target as string[] | undefined)?.includes("orderNumber");
+      if (!isOrderNumberCollision || attempt === MAX_ORDER_NUMBER_ATTEMPTS) {
+        throw err;
+      }
+    }
+  }
 
-  // REQ-0103 — disjoint reserve: allocation OR product, never both
-  await reservePendingOrderLines(
-    productsToReserve.map((p) => ({
-      productId: p.id,
-      quantity: p.qty,
-      warehouseId: p.warehouseId,
-    })),
-  );
+  // REQ-0103 — disjoint reserve: allocation OR product, never both.
+  // ISS-0009 — reservePendingOrderLines already releases whatever IT
+  // reserved before re-throwing on a mid-order failure; this order
+  // record itself still must not survive as a pending-with-no/partial-
+  // reservation ghost, so delete it here.
+  try {
+    await reservePendingOrderLines(
+      productsToReserve.map((p) => ({
+        productId: p.id,
+        quantity: p.qty,
+        warehouseId: p.warehouseId,
+      })),
+    );
+  } catch (err) {
+    await prisma.order.delete({ where: { id: order.id } }).catch(() => {});
+    throw err;
+  }
 
   // Invalidate product + allocation cache so UI shows updated reserved stock
   await Promise.all([
@@ -496,25 +535,22 @@ const clientOrderDetailInclude = {
 } as const;
 
 /**
- * Get order by ID for client.
- * REQ-0214 — own buyer (`clientId`) first; else any order with line items so
- * product/category/supplier recent-order chips open read-only (mutations stay off in UI).
+ * Get order by ID for client — own orders only.
+ *
+ * ISS-0017 — this used to fall back to "any order with at least one line
+ * item" when the id wasn't the caller's own, on the theory that catalog
+ * recent-order chips should be clickable read-only. That fallback had no
+ * relationship to the chip the client actually clicked — it matched any
+ * order in the system — so any client could read any other buyer's full
+ * order (shipping address, email, items, total) just by requesting an id.
+ * Recent-order chips remain informational display data; they no longer
+ * deep-link into another buyer's order detail.
  */
 export async function getOrderByIdForClient(orderId: string, clientId: string) {
-  const own = await prisma.order.findFirst({
-    where: {
-      id: orderId,
-      clientId,
-    },
-    include: clientOrderDetailInclude,
-  });
-  if (own) return own;
-
-  // Catalog recent-order history rows are clickable for clients — mirror that access.
   return prisma.order.findFirst({
     where: {
       id: orderId,
-      items: { some: {} },
+      clientId,
     },
     include: clientOrderDetailInclude,
   });
@@ -640,6 +676,9 @@ export async function updateOrder(
   const previousPaymentStatus = existingOrder.paymentStatus;
   const newPaymentStatus = updateData.paymentStatus || previousPaymentStatus;
 
+  // ISS-0011 — reject invalid transitions before writing anything.
+  assertValidOrderStatusTransition({ previousStatus, newStatus, newPaymentStatus });
+
   // Determine status categories
   const wasPending = previousStatus === "pending";
   const wasConfirmedOrPaid =
@@ -709,6 +748,15 @@ export async function updateOrder(
       }
       try {
         await syncRestoreConfirmedOrderAllocations(allocationItems);
+        // ISS-0044(a): no-pick items were greedily deducted from StockAllocation
+        // rows at fulfillment (decrementStockAllocations' fallback branch) —
+        // syncRestoreConfirmedOrderAllocations only covers warehouse-pick items,
+        // so this is the symmetric restore for the rest.
+        await restoreStockAllocations(
+          orderWithItems.items
+            .filter((item) => !item.warehouseId)
+            .map((item) => ({ productId: item.productId, quantity: item.quantity })),
+        );
       } catch (error) {
         logger.warn("Failed to restore allocation stock on order cancel", {
           orderId,
@@ -822,6 +870,21 @@ export async function cancelOrder(orderId: string, userId: string) {
     throw new Error("Order not found or unauthorized");
   }
 
+  // ISS-0011 — a delivered order's goods are already with the customer,
+  // not back in the warehouse; the stock-restore logic below assumes the
+  // opposite, so cancelling here would silently inflate stock for
+  // products that were never actually returned. A real return needs its
+  // own process this fix doesn't invent.
+  if (orderWithItems.status === "delivered") {
+    throw new Error(
+      "Cannot cancel a delivered order — process a return instead",
+    );
+  }
+  // Already cancelled: idempotent no-op (DELETE semantics), not an error.
+  if (orderWithItems.status === "cancelled") {
+    return orderWithItems;
+  }
+
   // Cancel order (soft delete).
   // REQ-0208/0209 — refund Stripe + paymentStatus refunded for paid OR partial.
   const shouldRefund = orderCancelShouldRefundPayment(
@@ -835,34 +898,64 @@ export async function cancelOrder(orderId: string, userId: string) {
     select: { id: true, status: true, stripePaymentIntentId: true },
   });
 
-  // Trigger Stripe refund when money was collected and we have a PaymentIntent ID
+  // ISS-0012 — refund every PaymentIntent actually charged (not just the
+  // latest stored pointer), and only claim "refunded" if the money actually
+  // moved: the order stays cancelled either way (cancellation itself is
+  // valid even if Stripe fails), but paymentStatus must not lie about it.
+  let refundSucceeded = true;
   if (shouldRefund) {
-    const paymentIntentId =
+    const legacyFallbackPaymentIntentId =
       orderWithItems.stripePaymentIntentId ??
-      linkedInvoice?.stripePaymentIntentId;
-    if (paymentIntentId) {
-      try {
-        await createStripeRefund(paymentIntentId, "requested_by_customer");
-      } catch (refundErr) {
-        // Log but don't fail - order will still be cancelled; admin can refund manually in Stripe
-        console.error("Stripe refund failed during order cancellation:", refundErr);
-      }
+      linkedInvoice?.stripePaymentIntentId ??
+      null;
+    const refundResult = await refundAllOrderPayments(
+      orderId,
+      linkedInvoice?.id ?? null,
+      legacyFallbackPaymentIntentId,
+    );
+    refundSucceeded = refundResult.allSucceeded;
+    if (!refundSucceeded) {
+      logger.error(
+        "Order cancellation: one or more Stripe refunds failed; paymentStatus left unchanged for manual follow-up",
+        { orderId, failedPaymentIntentIds: refundResult.failedPaymentIntentIds },
+      );
     }
   }
 
-  const cancelledOrder = await prisma.order.update({
-    where: { id: orderId },
+  // ISS-0010 — a plain `update` here always "succeeds" regardless of the
+  // order's actual current status, so a double-clicked DELETE (two
+  // concurrent cancelOrder calls) could both pass the stale-status checks
+  // above and both run the stock-restore block below, double-incrementing
+  // product.quantity. Claim the not-cancelled→cancelled transition
+  // atomically; only the caller whose claim actually flips a row (count 1)
+  // gets to restore stock.
+  const claim = await prisma.order.updateMany({
+    where: {
+      id: orderId,
+      userId,
+      status: { notIn: ["cancelled", "delivered"] },
+    },
     data: {
       status: "cancelled",
-      paymentStatus: shouldRefund ? "refunded" : orderWithItems.paymentStatus,
+      paymentStatus:
+        shouldRefund && refundSucceeded ? "refunded" : orderWithItems.paymentStatus,
       cancelledAt: new Date(),
       updatedAt: new Date(),
       updatedBy: userId,
     },
-    include: {
-      items: true,
-    },
   });
+
+  const cancelledOrder = await prisma.order.findUniqueOrThrow({
+    where: { id: orderId },
+    include: { items: true },
+  });
+
+  if (claim.count === 0) {
+    // Lost the race — another concurrent call already cancelled this
+    // order (or it moved to "delivered" since our read above); idempotent
+    // no-op, no double refund/invoice-cancel/stock-restore.
+    return cancelledOrder;
+  }
 
   // Cancel linked invoice if it exists (so unpaid/outstanding stats update)
   if (linkedInvoice && linkedInvoice.status !== "cancelled") {
@@ -887,41 +980,45 @@ export async function cancelOrder(orderId: string, userId: string) {
     orderWithItems.status === "delivered" ||
     orderWithItems.paymentStatus === "paid";
 
-  if (orderWithItems.status !== "cancelled") {
-    const allocationItems = orderWithItems.items.map((item) => ({
-      productId: item.productId,
-      warehouseId: item.warehouseId ?? null,
-      quantity: item.quantity,
-    }));
+  const allocationItems = orderWithItems.items.map((item) => ({
+    productId: item.productId,
+    warehouseId: item.warehouseId ?? null,
+    quantity: item.quantity,
+  }));
 
-    if (wasConfirmedOrPaid) {
-      // Fulfilled stock (incl. after first partial pay) → restore product + allocations
-      for (const item of orderWithItems.items) {
-        await prisma.product.update({
-          where: { id: item.productId },
-          data: {
-            quantity: { increment: item.quantity },
-          },
-        });
-      }
-      try {
-        await syncRestoreConfirmedOrderAllocations(allocationItems);
-      } catch (error) {
-        logger.warn("Failed to restore allocation stock on cancelOrder", {
-          orderId,
-          error,
-        });
-      }
-    } else if (wasPending) {
-      // Still reserved only (unpaid pending) → release reservation
-      try {
-        await releasePendingOrderLines(allocationItems);
-      } catch (error) {
-        logger.warn("Failed to release reservation on cancelOrder", {
-          orderId,
-          error,
-        });
-      }
+  if (wasConfirmedOrPaid) {
+    // Fulfilled stock (incl. after first partial pay) → restore product + allocations
+    for (const item of orderWithItems.items) {
+      await prisma.product.update({
+        where: { id: item.productId },
+        data: {
+          quantity: { increment: item.quantity },
+        },
+      });
+    }
+    try {
+      await syncRestoreConfirmedOrderAllocations(allocationItems);
+      // ISS-0044(a): see the matching comment in updateOrder's cancel branch.
+      await restoreStockAllocations(
+        orderWithItems.items
+          .filter((item) => !item.warehouseId)
+          .map((item) => ({ productId: item.productId, quantity: item.quantity })),
+      );
+    } catch (error) {
+      logger.warn("Failed to restore allocation stock on cancelOrder", {
+        orderId,
+        error,
+      });
+    }
+  } else if (wasPending) {
+    // Still reserved only (unpaid pending) → release reservation
+    try {
+      await releasePendingOrderLines(allocationItems);
+    } catch (error) {
+      logger.warn("Failed to release reservation on cancelOrder", {
+        orderId,
+        error,
+      });
     }
   }
 

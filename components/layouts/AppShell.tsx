@@ -60,6 +60,19 @@ export default function AppShell({ children }: AppShellProps) {
     try {
       const userName = user?.name || user?.email?.split("@")[0] || "User";
 
+      // Await the server-side logout so the httpOnly session_id cookie is
+      // cleared via Set-Cookie BEFORE the browser navigates to /login — and
+      // don't swallow a failed request (ISS-0050): if the server call
+      // didn't actually succeed, say so instead of quietly redirecting as
+      // if the session had been cleared.
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error(`Logout request failed with status ${response.status}`);
+      }
+
       clearAuthToastMarkers();
       setPostLogoutGoodbye({ userName });
 
@@ -70,12 +83,6 @@ export default function AppShell({ children }: AppShellProps) {
       localStorage.removeItem("prevUserId");
       localStorage.removeItem("octalve-ims-query-cache");
 
-      // Await the server-side logout so the httpOnly session_id cookie is
-      // cleared via Set-Cookie BEFORE the browser navigates to /login.
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      }).catch(() => {});
       window.location.href = "/login";
       return;
     } catch {

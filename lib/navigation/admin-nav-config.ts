@@ -21,6 +21,13 @@ export type AdminNavItemConfig = {
     | "clients"
     | "users"
   >;
+  /**
+   * The page itself `redirect()`s anyone whose role isn't "admin" straight
+   * back to /admin (ISS-0064/0088) — "user"/"retailer" always had real
+   * grants on everything else in this list, so hiding only these three
+   * for them stops the sidebar advertising dead ends, not legitimate work.
+   */
+  adminOnly?: true;
 };
 
 export const ADMIN_MY_STORE_ITEMS: AdminNavItemConfig[] = [
@@ -81,16 +88,19 @@ export const ADMIN_MANAGEMENT_ITEMS: AdminNavItemConfig[] = [
     href: "/admin/supplier-portal",
     label: "Supplier Portal",
     countKey: "suppliers",
+    adminOnly: true,
   },
   {
     href: "/admin/client-portal",
     label: "Client Portal",
     countKey: "clients",
+    adminOnly: true,
   },
   {
     href: "/admin/user-management",
     label: "User Management",
     countKey: "users",
+    adminOnly: true,
   },
   {
     href: "/admin/activity-history",
@@ -107,11 +117,22 @@ export const ADMIN_MY_ACTIVITY_ITEMS: AdminNavItemConfig[] = [
 
 export const ADMIN_SETTINGS_EMAIL_HREF = "/admin/settings/email-preferences";
 
+/** Drops the admin-exclusive items for any role but "admin" (ISS-0064/0088). */
+export function filterAdminOnlyItems(
+  items: AdminNavItemConfig[],
+  role: string | null | undefined,
+): AdminNavItemConfig[] {
+  if (role === "admin") return items;
+  return items.filter((item) => !item.adminOnly);
+}
+
 /** Flat deduped admin sidebar paths for idle RSC warm (admin/user roles). */
-export function getAdminSidebarWarmPaths(): string[] {
+export function getAdminSidebarWarmPaths(
+  role: string | null | undefined,
+): string[] {
   const paths = [
     ...ADMIN_MY_STORE_ITEMS.map((item) => item.href),
-    ...ADMIN_MANAGEMENT_ITEMS.map((item) => item.href),
+    ...filterAdminOnlyItems(ADMIN_MANAGEMENT_ITEMS, role).map((item) => item.href),
     ...ADMIN_MY_ACTIVITY_ITEMS.map((item) => item.href),
     ADMIN_SETTINGS_EMAIL_HREF,
   ];

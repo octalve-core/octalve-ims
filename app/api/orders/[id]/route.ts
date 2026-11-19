@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getApiUrl } from "@/lib/env";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
@@ -77,6 +78,10 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     // Rate limiting check
     const rateLimitResponse = await withRateLimit(
@@ -116,6 +121,13 @@ export async function PUT(
     // Get existing order to track status changes.
     // Admin can update any order (including client orders); other roles
     // can only update their own orders or orders linked to their products.
+    // (ISS-0002 was reassessed, not fixed here: this app is single-tenant
+    // — one company per deployment, just sold in different feature tiers
+    // — with no live branch/warehouse-scoped admin role built yet, so
+    // "admin sees every order in the company" is the correct, intended
+    // behavior once only trusted accounts can hold that role. See
+    // ISS-0001 for the actual fix: self-registration no longer grants
+    // "admin" for free.)
     const isAdmin = session.role === "admin";
     let existingOrder: Awaited<ReturnType<typeof getOrderById>> | null;
     if (isAdmin) {
@@ -294,7 +306,10 @@ export async function PUT(
       });
     }
 
-    // Send order status update email if status changed
+    // Send order status update email if status changed. The recipient is always the
+    // order's own account — never the stored shippingAddress.email — for the same
+    // reason as the order-confirmation email (ISS-0037): that field is client-supplied
+    // and would otherwise let it be redirected to an address of the caller's choosing.
     if (
       statusChanged &&
       existingOrder.shippingAddress &&
@@ -304,19 +319,24 @@ export async function PUT(
         email?: string;
         name?: string;
       };
-      if (shippingAddr.email) {
+      const statusRecipient = await prisma.user.findUnique({
+        where: { id: existingOrder.clientId ?? existingOrder.userId },
+        select: { email: true, name: true },
+      });
+      if (statusRecipient?.email) {
         sendOrderStatusUpdate(
           {
             orderNumber: order.orderNumber,
-            clientName: shippingAddr.name || "Customer",
-            clientEmail: shippingAddr.email,
+            clientName: statusRecipient.name || "Customer",
+            clientEmail: statusRecipient.email,
             previousStatus: existingOrder.status,
             newStatus: updateData.status ?? order.status,
             orderUrl: `${getApiUrl(request)}/orders/${order.id}`,
             estimatedDelivery: order.estimatedDelivery?.toISOString(),
           },
-          shippingAddr.email,
-          shippingAddr.name,
+          statusRecipient.email,
+          statusRecipient.name || shippingAddr.name,
+          existingOrder.clientId ?? existingOrder.userId,
         ).catch((error) => {
           // Log error but don't fail the request
           logger.error("Failed to send order status update email:", error);
@@ -411,6 +431,10 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     // Rate limiting check
     const rateLimitResponse = await withRateLimit(

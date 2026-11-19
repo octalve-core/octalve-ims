@@ -13,7 +13,7 @@ import { createCorsHeaders, handleCorsPreflight } from "@/lib/api/cors";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/prisma/client";
 import { validateCSRF } from "@/lib/auth/csrf";
-import { getServerSession } from "@/lib/auth/session";
+import { getExpiredSession } from "@/lib/auth/session";
 import { clearAuthCookies } from "@/lib/auth/cookies";
 
 /**
@@ -31,7 +31,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const session = await getServerSession();
+    // Tolerant of an EXPIRED access token (signature still fully checked): an idle tab past 15
+    // minutes must still revoke its refresh tokens, or the browser looks signed out while the
+    // database row keeps working for up to 30 days (ISS-0033).
+    const session = await getExpiredSession();
     if (session) {
       await prisma.refreshToken
         .updateMany({
@@ -40,6 +43,18 @@ export async function POST(request: NextRequest) {
         })
         .catch((error) => {
           logger.error("Failed to revoke refresh tokens on logout:", error);
+        });
+
+      // Revoking refresh tokens stops a device from getting a NEW access token; this stops an
+      // access token it already holds from working for the rest of its own 15-minute lifetime
+      // (still-open item, task 0004 — see utils/auth.ts's getSessionFromRequest).
+      await prisma.user
+        .update({
+          where: { id: session.sub },
+          data: { tokensRevokedAt: new Date() },
+        })
+        .catch((error) => {
+          logger.error("Failed to revoke access tokens on logout:", error);
         });
     }
 

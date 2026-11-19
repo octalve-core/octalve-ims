@@ -11,6 +11,7 @@ import {
   getGoogleClientId,
   getGoogleClientSecret,
   isGoogleOAuthConfigured,
+  isVerifiedGoogleEmail,
 } from "@/lib/auth/oauth";
 import { logger } from "@/lib/logger";
 import { generateUniqueUsername } from "@/lib/auth/unique-username";
@@ -42,13 +43,17 @@ async function createGoogleOAuthUser(
 
   const displayName = name?.trim() || email.split("@")[0] || "user";
 
+  // ISS-0001: new OAuth signups used to get "admin" unconditionally, the
+  // same unscoped-global-admin hole as self-registration (see
+  // register/route.ts and docs/issues/README.md). Default to the
+  // least-privileged legacy role instead.
   const createData = {
     email,
     name: displayName,
     password: hashedPassword,
     googleId,
     image: userImage,
-    role: "admin",
+    role: "user",
     username,
     createdAt: new Date(),
   };
@@ -97,8 +102,10 @@ async function updateGoogleOAuthUser(
   if (name && name !== user.name && !user.name) {
     updateData.name = name;
   }
+  // ISS-0001: self-heal a missing/empty role to the least-privileged legacy
+  // role, not "admin" — see createGoogleOAuthUser above.
   if (!user.role || (typeof user.role === "string" && user.role.trim() === "")) {
-    updateData.role = "admin";
+    updateData.role = "user";
   }
 
   if (Object.keys(updateData).length === 0) {
@@ -211,12 +218,37 @@ export async function GET(request: NextRequest) {
       const googleUser = await userInfoResponse.json();
       // Extract user data from Google OAuth response
       // Note: Google uses 'picture' field, but we map it to 'image' for consistency
-      const { id: googleId, email, name, picture: googleImage } = googleUser;
+      const {
+        id: googleId,
+        email: rawEmail,
+        name,
+        picture: googleImage,
+        verified_email: verifiedEmail,
+      } = googleUser;
 
-      if (!email) {
+      if (!rawEmail) {
         logger.error("Google user info missing email");
         return NextResponse.redirect(
           new URL("/login?error=no_email", request.url)
+        );
+      }
+
+      // ISS-0052: normalize here so the lookup below, any account this
+      // creates, and login's own normalized lookup all agree on casing.
+      const email = rawEmail.toLowerCase();
+
+      // ISS-0007 — this used to trust `email` to look up (and silently link
+      // Google sign-in to, then mint a session for) an existing account with
+      // no check that Google has actually verified the attacker controls
+      // that address: anyone able to set an arbitrary unverified email on
+      // their own Google account could take over any existing IMS account
+      // sharing that email.
+      if (!isVerifiedGoogleEmail(verifiedEmail)) {
+        logger.warn("Google account email is not verified - rejecting OAuth sign-in", {
+          email,
+        });
+        return NextResponse.redirect(
+          new URL("/login?error=email_not_verified", request.url)
         );
       }
 
@@ -269,9 +301,12 @@ export async function GET(request: NextRequest) {
           ),
         },
       });
+      // ISS-0001: the access-token role claim must not default to "admin"
+      // either — same hole as the two role-write sites above, just at
+      // sign-in time instead of account-creation time.
       const jwtAccessToken = await signAccessToken({
         sub: user.id,
-        role: user.role ?? "admin",
+        role: user.role ?? "user",
       });
 
       // Redirect to role-appropriate page directly (avoids double-redirect chain through /)

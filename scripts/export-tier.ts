@@ -15,6 +15,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { assertSafeExportTarget } from "./export-tier-guard";
 
 const ROOT = path.resolve(__dirname, "..");
 const TIERS = ["core", "pro", "premium"] as const;
@@ -96,6 +97,7 @@ const ALWAYS_COPY_ROOT = [
   "instrumentation-client.ts",
   "proxy.ts",
   "LICENSE",
+  "NOTICE",
   "README.md",
   "SECURITY.md",
   ".env.example",
@@ -115,6 +117,16 @@ const ALWAYS_EXCLUDE = new Set<string>([
   "scripts/export-tier.ts",
   "scripts/check-tier-manifest-coverage.ts",
   "CLAUDE.md",
+  "AGENTS.md",
+  // Internal engineering records (decisions, security/issue register, task
+  // tracker, phase history, handover). `docs` is an ALWAYS_COPY_ROOT entry, so
+  // anything under it ships to customers unless excluded here.
+  "docs/adr",
+  "docs/issues",
+  "docs/tasks",
+  "docs/development-history",
+  "docs/HANDOVER.md",
+  "docs/open-items.md",
 ]);
 
 /**
@@ -179,6 +191,11 @@ function copyPath(relSrc: string) {
 console.log(`Exporting tier "${tier}" -> ${outDir}`);
 console.log(`Buckets included: ${includedBuckets.join(", ")}`);
 
+assertSafeExportTarget(
+  outDir,
+  ROOT,
+  process.env.HOME ? path.resolve(process.env.HOME) : null,
+);
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
 

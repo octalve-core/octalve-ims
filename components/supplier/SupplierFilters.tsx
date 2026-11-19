@@ -105,7 +105,9 @@ export default function SupplierFilters({
       }));
 
       // Convert to CSV
-      const csv = Papa.unparse(csvData);
+      // escapeFormulae: a cell value starting with =/+/-/@ opens as a live formula in
+      // Excel/Sheets — prefix it with a quote instead (ISS-0040).
+      const csv = Papa.unparse(csvData, { escapeFormulae: true });
 
       // Create blob and download
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });

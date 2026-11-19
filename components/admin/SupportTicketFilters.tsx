@@ -165,7 +165,10 @@ export default function SupportTicketFilters({
                   onViewFilterChange(v as SupportTicketViewFilter)
                 }
               >
-                <SelectTrigger className="h-10 w-[180px] rounded-[28px] border border-violet-400/30 dark:border-violet-400/30 bg-white/10 dark:bg-white/5 text-gray-700 dark:text-white">
+                <SelectTrigger
+                  aria-label="Filter support tickets by view"
+                  className="h-10 w-[180px] rounded-[28px] border border-violet-400/30 dark:border-violet-400/30 bg-white/10 dark:bg-white/5 text-gray-700 dark:text-white"
+                >
                   <SelectValue placeholder="View" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-violet-400/20">

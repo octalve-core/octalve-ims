@@ -75,41 +75,58 @@ export async function syncOrderPaymentStatusFromInvoice(
     derived,
     orderStatus: order.status,
   });
-  const statusUnchanged =
-    order.paymentStatus === derived && !shouldConfirmAndFulfill;
 
-  if (statusUnchanged) return derived;
+  if (shouldConfirmAndFulfill) {
+    // ISS-0010 — this read-then-write was reachable concurrently from the
+    // Stripe webhook, the checkout return page, confirm-session, and even
+    // a plain order-detail-page GET (whose loader heals stuck invoices).
+    // Two callers racing on the same "pending" snapshot both used to pass
+    // this check and both fulfil, double-decrementing stock. Claim the
+    // pending→confirmed transition atomically so only the caller that
+    // actually flips the row gets to fulfil.
+    const claim = await prisma.order.updateMany({
+      where: { id: orderId, status: "pending" },
+      data: {
+        paymentStatus: derived,
+        status: "confirmed",
+        updatedAt: new Date(),
+      },
+    });
+
+    if (claim.count === 1) {
+      try {
+        await fulfillPendingOrderLines(
+          order.items.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            warehouseId: item.warehouseId,
+          })),
+        );
+      } catch (allocErr) {
+        logger.warn(
+          "Failed to fulfill stock for invoice-synced order after first payment",
+          {
+            orderId,
+            derived,
+            error: allocErr,
+          },
+        );
+      }
+      return derived;
+    }
+    // Lost the race — another caller already claimed and fulfilled this
+    // order; fall through to a plain paymentStatus sync instead.
+  }
+
+  if (order.paymentStatus === derived) return derived;
 
   await prisma.order.update({
     where: { id: orderId },
     data: {
       paymentStatus: derived,
-      ...(shouldConfirmAndFulfill ? { status: "confirmed" as const } : {}),
       updatedAt: new Date(),
     },
   });
-
-  // Fulfill reserved lines only when leaving pending on first money (partial or paid)
-  if (shouldConfirmAndFulfill) {
-    try {
-      await fulfillPendingOrderLines(
-        order.items.map((item) => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          warehouseId: item.warehouseId,
-        })),
-      );
-    } catch (allocErr) {
-      logger.warn(
-        "Failed to fulfill stock for invoice-synced order after first payment",
-        {
-          orderId,
-          derived,
-          error: allocErr,
-        },
-      );
-    }
-  }
 
   return derived;
 }
@@ -145,7 +162,12 @@ export function applyIncrementalInvoicePayment(args: {
   const amountDue = fullyPaid ? 0 : Math.max(0, (totalCents - newPaidCents) / 100);
   let status = args.priorStatus;
   if (fullyPaid) {
-    status = "paid";
+    // ISS-0015 — never revive a cancelled invoice just because a charge
+    // landed against it (e.g. a stale/replayed session). Still track the
+    // money below — it did move — but keep the invoice cancelled rather
+    // than silently resurrecting it, matching the partial-payment branch's
+    // existing "never revive cancelled" rule.
+    status = args.priorStatus === "cancelled" ? "cancelled" : "paid";
   } else if (newPaidCents > 0) {
     // REQ-0211 — any money: draft→sent; keep overdue; never revive cancelled
     if (args.priorStatus === "cancelled") {

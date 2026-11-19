@@ -176,6 +176,9 @@ function useToast() {
 
   React.useEffect(() => {
     listeners.push(setState)
+    // External-store subscription pattern: catches up on any memoryState
+    // change that happened between the initial useState and this effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState(memoryState)
     return () => {
       const index = listeners.indexOf(setState)

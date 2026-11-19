@@ -382,12 +382,14 @@ export async function checkAndSendStockAlerts(
  * @param data - Order confirmation data
  * @param recipientEmail - Recipient email address (client email)
  * @param recipientName - Recipient name (client name)
+ * @param userId - User ID to check email preferences (optional)
  * @returns Promise<void> - Resolves when email is sent (or fails silently)
  */
 export async function sendOrderConfirmation(
   data: OrderConfirmationData,
   recipientEmail: string,
-  recipientName?: string
+  recipientName?: string,
+  userId?: string
 ): Promise<void> {
   // Check if Brevo is configured
   if (!isBrevoConfigured()) {
@@ -411,6 +413,7 @@ export async function sendOrderConfirmation(
       data,
       recipientEmail,
       recipientName,
+      userId,
     });
     return; // Email queued or sent, exit early
   } catch (error) {
@@ -468,12 +471,14 @@ export async function sendOrderConfirmation(
  * @param data - Invoice email data
  * @param recipientEmail - Recipient email address (client email)
  * @param recipientName - Recipient name (client name)
+ * @param userId - User ID to check email preferences (optional)
  * @returns Promise<void> - Resolves when email is sent (or fails silently)
  */
 export async function sendInvoiceEmail(
   data: InvoiceEmailData,
   recipientEmail: string,
-  recipientName?: string
+  recipientName?: string,
+  userId?: string
 ): Promise<void> {
   // Check if Brevo is configured
   if (!isBrevoConfigured()) {
@@ -495,6 +500,7 @@ export async function sendInvoiceEmail(
       data,
       recipientEmail,
       recipientName,
+      userId,
     });
     return; // Email queued or sent, exit early
   } catch (error) {
@@ -556,12 +562,14 @@ export async function sendInvoiceEmail(
  * @param data - Shipping notification data
  * @param recipientEmail - Recipient email address (client email)
  * @param recipientName - Recipient name (client name)
+ * @param userId - User ID to check email preferences (optional)
  * @returns Promise<void> - Resolves when email is sent (or fails silently)
  */
 export async function sendShippingNotification(
   data: ShippingNotificationData,
   recipientEmail: string,
-  recipientName?: string
+  recipientName?: string,
+  userId?: string
 ): Promise<void> {
   // Check if Brevo is configured
   if (!isBrevoConfigured()) {
@@ -585,6 +593,7 @@ export async function sendShippingNotification(
       data,
       recipientEmail,
       recipientName,
+      userId,
     });
     return; // Email queued or sent, exit early
   } catch (error) {
@@ -643,12 +652,14 @@ export async function sendShippingNotification(
  * @param data - Order status update data
  * @param recipientEmail - Recipient email address (client email)
  * @param recipientName - Recipient name (client name)
+ * @param userId - User ID to check email preferences (optional)
  * @returns Promise<void> - Resolves when email is sent (or fails silently)
  */
 export async function sendOrderStatusUpdate(
   data: OrderStatusUpdateData,
   recipientEmail: string,
-  recipientName?: string
+  recipientName?: string,
+  userId?: string
 ): Promise<void> {
   // Check if Brevo is configured
   if (!isBrevoConfigured()) {
@@ -672,6 +683,7 @@ export async function sendOrderStatusUpdate(
       data,
       recipientEmail,
       recipientName,
+      userId,
     });
     return; // Email queued or sent, exit early
   } catch (error) {

@@ -5,6 +5,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockProductUpdate = vi.fn();
+const mockExecuteRaw = vi.fn();
+const mockProductFindUnique = vi.fn();
 const mockReserveAllocation = vi.fn();
 const mockReleaseAllocation = vi.fn();
 const mockFulfillAllocation = vi.fn();
@@ -14,7 +16,9 @@ vi.mock("@/prisma/client", () => ({
   prisma: {
     product: {
       update: (...args: unknown[]) => mockProductUpdate(...args),
+      findUnique: (...args: unknown[]) => mockProductFindUnique(...args),
     },
+    $executeRaw: (...args: unknown[]) => mockExecuteRaw(...args),
   },
 }));
 
@@ -43,6 +47,7 @@ describe("order-stock-reservation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockProductUpdate.mockResolvedValue({});
+    mockExecuteRaw.mockResolvedValue(1);
     mockReserveAllocation.mockResolvedValue(undefined);
     mockReleaseAllocation.mockResolvedValue(undefined);
     mockFulfillAllocation.mockResolvedValue(undefined);
@@ -57,21 +62,31 @@ describe("order-stock-reservation", () => {
     });
 
     expect(mockReserveAllocation).toHaveBeenCalledWith("prod1", "wh1", 20);
-    expect(mockProductUpdate).not.toHaveBeenCalled();
+    expect(mockExecuteRaw).not.toHaveBeenCalled();
   });
 
-  it("reservePendingOrderLine without warehouse pick updates product only", async () => {
+  it("reservePendingOrderLine without warehouse pick issues an atomic conditional increment (ISS-0009)", async () => {
     await reservePendingOrderLine({
       productId: "prod1",
       quantity: 5,
       warehouseId: null,
     });
 
-    expect(mockProductUpdate).toHaveBeenCalledWith({
-      where: { id: "prod1" },
-      data: { reservedQuantity: { increment: 5 } },
-    });
+    expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
     expect(mockReserveAllocation).not.toHaveBeenCalled();
+  });
+
+  it("reservePendingOrderLine without warehouse pick throws when the atomic update affects 0 rows (lost the race)", async () => {
+    mockExecuteRaw.mockResolvedValueOnce(0);
+    mockProductFindUnique.mockResolvedValueOnce({
+      name: "Widget",
+      quantity: 3n,
+      reservedQuantity: 3n,
+    });
+
+    await expect(
+      reservePendingOrderLine({ productId: "prod1", quantity: 5, warehouseId: null }),
+    ).rejects.toThrow(/Insufficient stock/);
   });
 
   it("REQ-0106 auto-assign reserves catalog pool only (qty 40, no warehouse pick)", async () => {
@@ -81,10 +96,7 @@ describe("order-stock-reservation", () => {
       warehouseId: null,
     });
 
-    expect(mockProductUpdate).toHaveBeenCalledWith({
-      where: { id: "prod1" },
-      data: { reservedQuantity: { increment: 40 } },
-    });
+    expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
     expect(mockReserveAllocation).not.toHaveBeenCalled();
   });
 

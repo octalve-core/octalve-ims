@@ -22,7 +22,7 @@ export default async function AdminInvoiceDetailPage({
   const { id } = await params;
   const sp = await searchParams;
 
-  const stripeReturn = await reconcileStripeReturnBeforeDetail(sp);
+  const stripeReturn = await reconcileStripeReturnBeforeDetail(sp, user);
   if (stripeReturn.shouldRedirect) {
     redirect(`/admin/invoices/${id}`);
   }
@@ -42,6 +42,7 @@ export default async function AdminInvoiceDetailPage({
     user.id,
     initialInvoice.orderId,
     productIds,
+    user.role,
   );
 
   return (

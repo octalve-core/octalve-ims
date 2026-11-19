@@ -80,6 +80,7 @@ export function CatalogActiveInactiveSelect({
         >
           <SelectTrigger
             className={cn(meta.selectTriggerClass, "[&>div]:min-w-0", className)}
+            aria-label={meta.filterLabel}
           >
             <SelectTriggerLabel entity={entity} value={value} />
           </SelectTrigger>

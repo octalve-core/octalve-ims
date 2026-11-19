@@ -10,11 +10,11 @@ model Order {
   businessId            String?
   status                String      @default("pending") // pending, confirmed, processing, shipped, delivered, cancelled
   paymentStatus         String      @default("unpaid") // unpaid, paid, refunded, partial
-  subtotal              Float       @default(0)
-  tax                   Float?
-  shipping              Float?
-  discount              Float?
-  total                 Float       @default(0)
+  subtotal              Decimal     @default(0) @db.Decimal(12, 2)
+  tax                   Decimal?    @db.Decimal(12, 2)
+  shipping              Decimal?    @db.Decimal(12, 2)
+  discount              Decimal?    @db.Decimal(12, 2)
+  total                 Decimal     @default(0) @db.Decimal(12, 2)
   shippingAddress       Json?
   billingAddress        Json?
   notes                 String?
@@ -22,10 +22,10 @@ model Order {
   trackingCarrier       String?
   trackingUrl           String?
   labelUrl              String?
-  estimatedDelivery     DateTime?
-  shippedAt             DateTime?
-  deliveredAt           DateTime?
-  cancelledAt           DateTime?
+  estimatedDelivery     DateTime?   @db.Timestamptz(3)
+  shippedAt             DateTime?   @db.Timestamptz(3)
+  deliveredAt           DateTime?   @db.Timestamptz(3)
+  cancelledAt           DateTime?   @db.Timestamptz(3)
   stripePaymentIntentId String?
   createdAt             DateTime    @default(now()) @db.Timestamptz(3)
   updatedAt             DateTime?   @db.Timestamptz(3)
@@ -33,6 +33,12 @@ model Order {
   updatedBy             String?
   items                 OrderItem[]
   invoice               Invoice?
+
+  // ISS-0052: zero indexes on a model whose own code (prisma/order.ts) filters
+  // by each of these on nearly every query.
+  @@index([userId])
+  @@index([clientId])
+  @@index([businessId])
 }
 
 model OrderItem {
@@ -42,8 +48,8 @@ model OrderItem {
   productName   String // snapshot at order time
   sku           String?
   quantity      Int
-  price         Float // unit price snapshot
-  subtotal      Float
+  price         Decimal    @db.Decimal(12, 2) // unit price snapshot
+  subtotal      Decimal    @db.Decimal(12, 2)
   warehouseId   String? // picked source warehouse when product has allocations
   warehouseName String? // snapshot at order time
   createdAt     DateTime   @default(now()) @db.Timestamptz(3)
@@ -60,13 +66,13 @@ model Invoice {
   clientId              String? // not promoted, see schema.prisma header
   businessId            String?
   status                String    @default("draft") // draft, sent, paid, overdue, cancelled
-  subtotal              Float     @default(0)
-  tax                   Float?
-  shipping              Float?
-  discount              Float?
-  total                 Float     @default(0)
-  amountPaid            Float     @default(0)
-  amountDue             Float     @default(0)
+  subtotal              Decimal   @default(0) @db.Decimal(12, 2)
+  tax                   Decimal?  @db.Decimal(12, 2)
+  shipping              Decimal?  @db.Decimal(12, 2)
+  discount              Decimal?  @db.Decimal(12, 2)
+  total                 Decimal   @default(0) @db.Decimal(12, 2)
+  amountPaid            Decimal   @default(0) @db.Decimal(12, 2)
+  amountDue             Decimal   @default(0) @db.Decimal(12, 2)
   dueDate               DateTime
   issuedAt              DateTime  @default(now()) @db.Timestamptz(3)
   sentAt                DateTime? @db.Timestamptz(3)
@@ -83,4 +89,53 @@ model Invoice {
   order                 Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([userId, status, dueDate])
+}
+
+// ISS-0008: durable per-Stripe-Checkout-Session dedup ledger. Before this
+// model, "already applied" was decided by comparing a Stripe PaymentIntent
+// id against the single LATEST id stored on Order/Invoice — once a newer
+// session overwrote that pointer, replaying an OLDER (already-paid)
+// session's return URL looked unapplied again and re-credited amountPaid
+// for money that never actually moved. sessionId @unique makes every
+// individual Checkout Session permanently un-replayable, not just the most
+// recent one, and doubles as the concurrency primitive: the application
+// code inserts this row as the FIRST statement of the transaction that
+// applies the charge, so two concurrent callers racing the same session id
+// (the webhook and the browser-return path both fire per REQ-0209) can
+// never both win — whichever insert loses the unique constraint aborts its
+// whole transaction, including any money it attempted to write.
+model ProcessedPayment {
+  id              String   @id @default(cuid())
+  sessionId       String   @unique
+  paymentIntentId String?
+  orderId         String?
+  invoiceId       String?
+  amount          Decimal  @db.Decimal(12, 2)
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([invoiceId])
+}
+
+// ISS-0013: same unique-constraint-as-concurrency-primitive pattern as
+// ProcessedPayment, for the opposite direction (money leaving, not
+// arriving). Before this model, the charge.refunded webhook decided
+// "already processed" by re-reading Order.paymentStatus/Invoice.status —
+// a read-then-write with no transaction and no claim, so two deliveries
+// of the same refund event (Stripe explicitly documents webhooks as
+// at-least-once, and the handler's own createStripeRefund call also
+// triggers a delivery for refunds started from our own cancel flow) could
+// both read "not yet refunded" and both restock the same items. refundId
+// is the specific Stripe Refund object id (charge.refunds.data[0].id),
+// so even a second delivery of the exact same refund — not just the same
+// charge — is permanently un-replayable.
+model ProcessedRefund {
+  id        String   @id @default(cuid())
+  refundId  String   @unique
+  chargeId  String
+  orderId   String?
+  invoiceId String?
+  amount    Decimal  @db.Decimal(12, 2)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([chargeId])
 }

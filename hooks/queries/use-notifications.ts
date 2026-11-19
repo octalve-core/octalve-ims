@@ -87,7 +87,13 @@ export function useUpdateNotification() {
     UpdateNotificationInput,
     {
       previousNotification?: Notification;
-      previousNotifications?: Notification[];
+      // Every active list query, whatever filters each was fetched with — the
+      // real queries are cached under notifications.list(filters), a key one
+      // level deeper than notifications.lists(); getQueryData/setQueryData need
+      // an exact key, so reading/writing .lists() itself never touched the
+      // query the UI actually renders (ISS-0074). getQueriesData/setQueriesData
+      // match by prefix instead.
+      previousNotificationLists?: [readonly unknown[], Notification[] | undefined][];
       previousCount?: number;
     }
   >({
@@ -114,9 +120,9 @@ export function useUpdateNotification() {
       const previousNotification = queryClient.getQueryData<Notification>(
         queryKeys.notifications.detail(updateData.id)
       );
-      const previousNotifications = queryClient.getQueryData<Notification[]>(
-        queryKeys.notifications.lists()
-      );
+      const previousNotificationLists = queryClient.getQueriesData<
+        Notification[]
+      >({ queryKey: queryKeys.notifications.lists() });
       const previousCount = queryClient.getQueryData<number>(
         queryKeys.notifications.unreadCount()
       );
@@ -140,27 +146,22 @@ export function useUpdateNotification() {
             );
       }
 
-      // Optimistically update notifications list
-      if (previousNotifications) {
-        queryClient.setQueryData<Notification[]>(
-          queryKeys.notifications.lists(),
-          (old) => {
-            if (!old) return previousNotifications;
-            return old.map((notification) =>
-              notification.id === updateData.id
-                ? {
-                    ...notification,
-                    read: updateData.read ?? notification.read,
-                    readAt:
-                      updateData.read === true
-                        ? new Date()
-                        : null,
-                  }
-                : notification
-            );
-          }
-        );
-      }
+      // Optimistically update every active notifications-list query
+      queryClient.setQueriesData<Notification[]>(
+        { queryKey: queryKeys.notifications.lists() },
+        (old) => {
+          if (!old) return old;
+          return old.map((notification) =>
+            notification.id === updateData.id
+              ? {
+                  ...notification,
+                  read: updateData.read ?? notification.read,
+                  readAt: updateData.read === true ? new Date() : null,
+                }
+              : notification
+          );
+        }
+      );
 
       // Optimistically update unread count
       if (previousCount !== undefined && updateData.read !== undefined) {
@@ -180,7 +181,7 @@ export function useUpdateNotification() {
 
       return {
         previousNotification,
-        previousNotifications,
+        previousNotificationLists,
         previousCount,
       };
     },
@@ -192,12 +193,9 @@ export function useUpdateNotification() {
           context.previousNotification
         );
       }
-      if (context?.previousNotifications) {
-        queryClient.setQueryData(
-          queryKeys.notifications.lists(),
-          context.previousNotifications
-        );
-      }
+      context?.previousNotificationLists?.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
+      });
       if (context?.previousCount !== undefined) {
         queryClient.setQueryData(
           queryKeys.notifications.unreadCount(),
@@ -244,9 +242,11 @@ export function useMarkAllNotificationsAsRead() {
         queryKey: queryKeys.notifications.unreadCount(),
       });
 
-      // Optimistically update all notifications to read
-      queryClient.setQueryData<Notification[]>(
-        queryKeys.notifications.lists(),
+      // Optimistically update every active notifications-list query (ISS-0074 —
+      // setQueryData on the bare .lists() key never matched the real
+      // .list(filters)-keyed query; setQueriesData matches by prefix instead).
+      queryClient.setQueriesData<Notification[]>(
+        { queryKey: queryKeys.notifications.lists() },
         (old) => {
           if (!old) return old;
           return old.map((notification) => ({
@@ -300,7 +300,10 @@ export function useDeleteNotification() {
     void,
     Error,
     string,
-    { previousNotifications?: Notification[]; previousCount?: number }
+    {
+      previousNotificationLists?: [readonly unknown[], Notification[] | undefined][];
+      previousCount?: number;
+    }
   >({
     mutationFn: async (notificationId) => {
       try {
@@ -325,28 +328,28 @@ export function useDeleteNotification() {
         queryKey: queryKeys.notifications.unreadCount(),
       });
 
-      // Snapshot previous values
-      const previousNotifications = queryClient.getQueryData<Notification[]>(
-        queryKeys.notifications.lists()
-      );
+      // Snapshot previous values — every active list query, not just the bare
+      // .lists() key, which never held the real .list(filters)-keyed data (ISS-0074).
+      const previousNotificationLists = queryClient.getQueriesData<
+        Notification[]
+      >({ queryKey: queryKeys.notifications.lists() });
       const previousCount = queryClient.getQueryData<number>(
         queryKeys.notifications.unreadCount()
       );
 
-      // Optimistically remove notification from list
-      queryClient.setQueryData<Notification[]>(
-        queryKeys.notifications.lists(),
+      // Optimistically remove notification from every active list query
+      queryClient.setQueriesData<Notification[]>(
+        { queryKey: queryKeys.notifications.lists() },
         (old) => {
-          if (!old) return previousNotifications || [];
-          const filtered = old.filter((n) => n.id !== notificationId);
-          return filtered;
+          if (!old) return old;
+          return old.filter((n) => n.id !== notificationId);
         }
       );
 
       // Optimistically update unread count (decrement if notification was unread)
-      const notification = previousNotifications?.find(
-        (n) => n.id === notificationId
-      );
+      const notification = previousNotificationLists
+        .flatMap(([, data]) => data ?? [])
+        .find((n) => n.id === notificationId);
       if (notification && !notification.read && previousCount !== undefined) {
         queryClient.setQueryData<number>(
           queryKeys.notifications.unreadCount(),
@@ -357,16 +360,13 @@ export function useDeleteNotification() {
         );
       }
 
-      return { previousNotifications, previousCount };
+      return { previousNotificationLists, previousCount };
     },
     onError: (error, notificationId, context) => {
       // Rollback to previous values on error
-      if (context?.previousNotifications) {
-        queryClient.setQueryData(
-          queryKeys.notifications.lists(),
-          context.previousNotifications
-        );
-      }
+      context?.previousNotificationLists?.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
+      });
       if (context?.previousCount !== undefined) {
         queryClient.setQueryData(
           queryKeys.notifications.unreadCount(),

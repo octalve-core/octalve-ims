@@ -265,6 +265,7 @@ export default function CreateUserDialog() {
                   }
                 >
                   <SelectTrigger
+                    id="role"
                     className={cn("h-11 w-full", DIALOG_FORM_FIELD_BLUE)}
                   >
                     <SelectValue placeholder="Select role" />

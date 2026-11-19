@@ -23,20 +23,31 @@ export async function POST(request: NextRequest) {
   try {
     const rawBody = await request.text();
 
-    if (isQStashConfigured()) {
-      const isValid = await verifyQStashWebhook({
-        signature: request.headers.get("upstash-signature"),
-        body: rawBody,
-        url: request.url,
-        upstashRegion: request.headers.get("upstash-region"),
-      });
-      if (!isValid) {
-        logger.warn("Invalid QStash webhook signature");
-        return NextResponse.json(
-          { error: "Invalid signature" },
-          { status: 401 },
-        );
-      }
+    // ISS-0005 — this used to skip signature verification entirely when
+    // QStash isn't configured, letting anyone POST directly and trigger a
+    // real email with an attacker-controlled recipient/body. No signing key
+    // means no way to verify a caller, so fail closed instead: nothing in
+    // the app calls this route when QStash is off (queueEmailNotification
+    // sends directly in-process in that case), so this is never a real job.
+    if (!isQStashConfigured()) {
+      logger.warn(
+        "QStash is not configured; rejecting email queue webhook call",
+      );
+      return NextResponse.json({ error: "Not configured" }, { status: 503 });
+    }
+
+    const isValid = await verifyQStashWebhook({
+      signature: request.headers.get("upstash-signature"),
+      body: rawBody,
+      url: request.url,
+      upstashRegion: request.headers.get("upstash-region"),
+    });
+    if (!isValid) {
+      logger.warn("Invalid QStash webhook signature");
+      return NextResponse.json(
+        { error: "Invalid signature" },
+        { status: 401 },
+      );
     }
 
     let job;

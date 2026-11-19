@@ -74,6 +74,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     if (cachedIsLoggedIn && cachedSession) {
       try {
         const parsed = JSON.parse(cachedSession);
+        // One-time hydration from localStorage on mount (SSR had no
+        // initialUser), not a render loop.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setUser({
           id: parsed.userId || parsed.id,
           name: parsed.userName || parsed.name,
@@ -105,6 +108,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       }
 
       const session = await getSessionClient();
+      if (session === "indeterminate") {
+        // A 5xx or network blip proves nothing about the session itself
+        // (ISS-0050) — leave whatever auth state is already in memory/
+        // localStorage alone rather than logging the user out over it.
+        return;
+      }
       if (session) {
         const prevId = localStorage.getItem("prevUserId");
         if (prevId && prevId !== session.id) {
@@ -127,6 +136,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("getSession", JSON.stringify(session));
       } else {
+        // A definite 401/403 — the server rejected the cookie, so this is a
+        // real sign-out, not a guess.
         clearAuthData();
       }
     } finally {
@@ -182,6 +193,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     } else {
       // For OAuth redirect, set isCheckingAuth to false immediately
       // The homepage's refreshSession will handle the session check
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsCheckingAuth(false);
     }
   }, [mounted, checkSession]);

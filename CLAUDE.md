@@ -1,8 +1,10 @@
 # CLAUDE.md — Agent quick reference (octalve-ims)
 
+> **Start with [`docs/HANDOVER.md`](docs/HANDOVER.md)** (current status, rules, how to run things safely, what to do next), then [`docs/open-items.md`](docs/open-items.md). Where this file disagrees with the code, trust the code: it predates the move from MongoDB to PostgreSQL and still shows `npm run` commands (the project uses pnpm). Known documentation drift is listed in [`docs/issues/scan-2026-10-21-docs.md`](docs/issues/scan-2026-10-21-docs.md). The same pointer is in `AGENTS.md` for tools that read that file instead.
+
 ## Stack
 
-- **Next.js 16** App Router, **React 19**, **TypeScript**, **Prisma** + **MongoDB**
+- **Next.js 16** App Router, **React 19**, **TypeScript**, **Prisma** + **PostgreSQL** (ADR 0003; was MongoDB)
 - **TanStack Query** (server state), **JWT** auth, **shadcn/ui** + Tailwind
 - Optional: Stripe, Shippo, Brevo, ImageKit, Upstash Redis/QStash, Sentry, OpenRouter + Groq (AI fallback)
 - **No Python** in this repo
@@ -76,7 +78,7 @@ npm start            # production server
 - **Catalog filter:** `deletedAt: null` OR `deletedAt` unset (legacy MongoDB rows)
 - **No orders** → **hard delete** (ImageKit cleanup + `product.delete()`)
 - Helpers: `lib/products/delete-policy.ts`, `lib/products/product-query.ts`, `lib/api/prisma-errors.ts`
-- After schema change: `npx prisma db push` on MongoDB
+- After a schema change on PostgreSQL: create a migration (`pnpm prisma:migrate` locally; deployments use `pnpm db:migrate:deploy`), not `db push`
 
 ## Data & UI sync (TanStack Query)
 

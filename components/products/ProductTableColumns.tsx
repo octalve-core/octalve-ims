@@ -59,6 +59,8 @@ const SortableHeader: React.FC<SortableHeaderProps> = ({ column, label }) => {
             isSorted && "text-primary"
           }`}
           aria-label={`Sort by ${label}`}
+          role="button"
+          tabIndex={0}
         >
           {label}
           <SortingIcon className="h-4 w-4" />

@@ -13,7 +13,7 @@ import Link from "next/link";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { setPostLoginWelcome } from "@/lib/auth/post-login-welcome";
-import { testAccounts } from "@/lib/auth/test-accounts";
+import { isDemoLoginEnabled, testAccounts } from "@/lib/auth/test-accounts";
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
 import { AuthInfoPanel } from "@/components/auth/AuthInfoPanel";
 import { AuthFormCard } from "@/components/auth/AuthFormCard";
@@ -85,6 +85,10 @@ export default function LoginPage() {
           break;
         case "no_email":
           errorMessage = "Google account email is required. Please try again.";
+          break;
+        case "email_not_verified":
+          errorMessage =
+            "Your Google account's email isn't verified. Please verify it with Google, or sign in with your password instead.";
           break;
         case "oauth_processing_failed":
         case "oauth_error":
@@ -187,16 +191,18 @@ export default function LoginPage() {
     <AuthAnimatedBlock delayMs={AUTH_FORM_STAGGER_BASE} className="w-full">
       <AuthFormCard variant="login" className="w-full">
         <form onSubmit={handleSubmit} className="grid gap-5">
-          <AuthAnimatedBlock delayMs={formRowDelay(0)} className="space-y-2">
-            <span className="mb-2 block text-[13px] font-semibold text-slate-700 dark:text-white/80">
-              Test Accounts To Login With
-            </span>
-            <LoginRoleSelect
-              selectedRole={selectedRole}
-              onRoleSelect={handleRoleSelect}
-              disabled={formDisabled}
-            />
-          </AuthAnimatedBlock>
+          {isDemoLoginEnabled && (
+            <AuthAnimatedBlock delayMs={formRowDelay(0)} className="space-y-2">
+              <span className="mb-2 block text-[13px] font-semibold text-slate-700 dark:text-white/80">
+                Test Accounts To Login With
+              </span>
+              <LoginRoleSelect
+                selectedRole={selectedRole}
+                onRoleSelect={handleRoleSelect}
+                disabled={formDisabled}
+              />
+            </AuthAnimatedBlock>
+          )}
 
           <AuthAnimatedBlock delayMs={formRowDelay(1)}>
             <AuthFieldInput

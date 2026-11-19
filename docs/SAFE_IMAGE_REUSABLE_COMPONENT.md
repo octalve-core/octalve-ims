@@ -1,5 +1,7 @@
 # SafeImage — `next/image` with native `<img>` fallback
 
+> **Known drift (ISS-0083, checked 2026-11-06):** the embedded reference snippet below uses `useState(false)`/`setUseNative(true)`; the real component (`components/ui/safe-image.tsx`) uses a `failedSrc` state instead — read the real file, not just this doc, before relying on the exact API. This doc also lists a `Navbar` component that no longer exists in this repo (see `components/layouts/`).
+
 Use this pattern in **any Next.js App Router project** where you show **remote images** (Unsplash, CDNs, OpenWeather icons, etc.). If **Next.js / Vercel Image Optimization** hits limits or errors (e.g. **HTTP 402** on the free tier, quota exceeded, or upstream failures), the default `<Image>` request can break. **`SafeImage`** tries **`next/image` first**; on **`onError`**, it re-renders with a plain **`<img src="…">`** pointing at the **same URL**, so the image usually **still displays** (no optimizer in the middle).
 
 ---

@@ -57,8 +57,9 @@ import {
 } from "@/lib/invoices/invoice-list-filters";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 
+// ISS-0075: a fixed locale avoids a server/client hydration mismatch when fed from SSR'd initial data.
 const formatCurrency = (value: number) =>
-  `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const InvoiceTable = dynamic(
   () =>

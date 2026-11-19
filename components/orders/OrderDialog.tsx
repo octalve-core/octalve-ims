@@ -45,6 +45,7 @@ import {
 } from "@/components/orders/OrderDialogCreateLineItem";
 import { OrderAddressFields } from "@/components/orders/OrderAddressFields";
 import { ensureStockAllocationsAndValidate } from "@/lib/orders/order-line-stock-validation";
+import { getOrderFeesFromSubtotal } from "@/lib/orders/order-fees";
 import {
   DeferredSelectGate,
   DIALOG_FORM_FIELD_VIOLET,
@@ -128,40 +129,6 @@ const paymentStatusOptions: Array<{ value: PaymentStatus; label: string }> = [
   { value: "partial", label: "Partial" },
   { value: "refunded", label: "Refunded" },
 ];
-
-/** Tax: 7% of subtotal (hardcoded). */
-const TAX_RATE = 0.07;
-/** Shipping: fixed $4.99 (hardcoded). */
-const SHIPPING_FIXED = 4.99;
-
-/**
- * Discount percent by subtotal tiers (hardcoded):
- * &lt; $100 → 10%, $100–$300 → 20%, $300–$500 → 30%, $500+ → 50%
- */
-function getDiscountPercent(subtotal: number): number {
-  if (subtotal < 100) return 10;
-  if (subtotal < 300) return 20;
-  if (subtotal < 500) return 30;
-  return 50;
-}
-
-/**
- * Compute tax, shipping, and discount amounts from subtotal.
- * Used for display and for create-order payload (all roles).
- */
-function getOrderFeesFromSubtotal(subtotal: number): {
-  taxAmount: number;
-  shippingAmount: number;
-  discountPercent: number;
-  discountAmount: number;
-} {
-  const taxAmount = subtotal * TAX_RATE;
-  const discountPercent = getDiscountPercent(subtotal);
-  const discountAmount = subtotal * (discountPercent / 100);
-  // Free shipping on the 10% (< $100) discount tier — keeps total <= subtotal on small orders.
-  const shippingAmount = discountPercent === 10 ? 0 : SHIPPING_FIXED;
-  return { taxAmount, shippingAmount, discountPercent, discountAmount };
-}
 
 /**
  * Order Dialog Component
@@ -267,9 +234,6 @@ export default function OrderDialog({
         zipCode: "",
         country: "",
       },
-      tax: 0,
-      shipping: 0,
-      discount: 0,
       notes: "",
     },
   });
@@ -387,9 +351,6 @@ export default function OrderDialog({
           zipCode: "",
           country: "",
         },
-        tax: 0,
-        shipping: 0,
-        discount: 0,
         notes: "",
       });
     }
@@ -416,18 +377,6 @@ export default function OrderDialog({
       if (validItems.length === 0) {
         throw new Error("At least one order item is required");
       }
-
-      // Compute subtotal and fees (tax 7%, shipping $4.99 except free on 10% tier, discount by tier) for payload
-      const submitSubtotal = validItems.reduce((sum, item) => {
-        const product = availableProducts.find((p) => p.id === item.productId);
-        if (!product) return sum;
-        const qty =
-          item.quantity !== undefined && item.quantity !== null
-            ? Number(item.quantity)
-            : 0;
-        return sum + Number(product.price) * qty;
-      }, 0);
-      const fees = getOrderFeesFromSubtotal(submitSubtotal);
 
       // REQ-0111 — ensure fresh allocation cache before submit validation
       for (const item of validItems) {
@@ -494,9 +443,6 @@ export default function OrderDialog({
         billingAddress: hasValidAddress(data.billingAddress)
           ? (data.billingAddress as BillingAddress)
           : undefined,
-        tax: fees.taxAmount,
-        shipping: fees.shippingAmount,
-        discount: fees.discountAmount,
         notes: data.notes || undefined,
       };
 
@@ -523,9 +469,6 @@ export default function OrderDialog({
           zipCode: "",
           country: "",
         },
-        tax: 0,
-        shipping: 0,
-        discount: 0,
         notes: "",
       });
     } catch (error) {

@@ -26,7 +26,14 @@ const nextConfig: NextConfig = {
   },
 
   compiler: {
-    removeConsole: process.env.NODE_ENV === "production",
+    // Strip plain console noise in production, but keep warn/error visible —
+    // without this, any console.warn/error that bypasses lib/logger.ts (e.g.
+    // in scripts or third-party code paths) is silently discarded server-side
+    // with no log sink to catch it (ISS-0053).
+    removeConsole:
+      process.env.NODE_ENV === "production"
+        ? { exclude: ["error", "warn"] }
+        : false,
   },
 
   poweredByHeader: false,

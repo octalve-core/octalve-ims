@@ -48,7 +48,7 @@ export function getOpenApiSpec(options: OpenApiSpecOptions): Record<string, unkn
                   properties: {
                     name: { type: "string" },
                     email: { type: "string", format: "email" },
-                    password: { type: "string", minLength: 6 },
+                    password: { type: "string", minLength: 8 },
                   },
                 },
               },

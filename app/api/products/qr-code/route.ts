@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getSessionFromRequest } from "@/utils/auth";
 import {
   generateAndUploadQRCode,
@@ -20,6 +21,10 @@ import { prisma } from "@/prisma/client";
  * Body: { productId: string }
  */
 export async function POST(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     // Verify authentication
     const session = await getSessionFromRequest(request);

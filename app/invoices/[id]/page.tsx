@@ -22,7 +22,7 @@ export default async function InvoiceDetailRoute({
   const { id } = await params;
   const sp = await searchParams;
 
-  const stripeReturn = await reconcileStripeReturnBeforeDetail(sp);
+  const stripeReturn = await reconcileStripeReturnBeforeDetail(sp, user);
   if (stripeReturn.shouldRedirect) {
     redirect(`/invoices/${id}`);
   }
@@ -42,6 +42,7 @@ export default async function InvoiceDetailRoute({
     user.id,
     initialInvoice.orderId,
     productIds,
+    user.role,
   );
 
   return (

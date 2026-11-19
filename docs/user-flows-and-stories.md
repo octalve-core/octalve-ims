@@ -48,9 +48,13 @@ with as little friction as possible for demo/QA use, and real security
    Google** (OAuth redirect, comes back to `/api/auth/oauth/google`).
 4. Optionally checks **"Keep me signed in"** — controls refresh-token
    lifetime (1 day unchecked, 30 days checked).
-5. Submits. Server validates credentials, rate-limits by
-   `<ip>:<email>`, issues a short-lived access token + rotating refresh
-   token as httpOnly cookies.
+5. Submits. Server validates credentials against two database-backed
+   rate-limit budgets, both checked before the password hash comparison
+   (`lib/auth/rate-limit-db.ts`): per `<ip>:<email>` (so one address's
+   guesses don't lock out other accounts) and per-account across every
+   address (so a distributed guesser can't get a fresh allowance per IP).
+   Only failed attempts count against either budget. On success, issues a
+   short-lived access token + rotating refresh token as httpOnly cookies.
 6. Redirected by role: `client` → `/client`, `supplier` → `/supplier`,
    everyone else → `/`.
 7. A "Welcome back" toast fires post-redirect.

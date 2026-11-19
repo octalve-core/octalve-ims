@@ -38,6 +38,21 @@ function formatCurrency(amount: number): string {
 }
 
 /**
+ * Escape a string for safe interpolation into HTML email markup. Applied to every
+ * field here that ultimately traces back to free text someone typed (a name, an
+ * address line, a product name/description, a carrier) rather than to a
+ * system-generated or enum-constrained value (ISS-0037).
+ */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
  * Generate order confirmation email
  * Sent to client when order is placed
  *
@@ -63,12 +78,26 @@ export function generateOrderConfirmationEmail(
 
   const subject = generateUniqueSubject(`Order Confirmation: ${orderNumber}`);
 
+  // HTML-only escaped copies — textContent below interpolates the raw values instead.
+  const clientNameSafe = escapeHtml(clientName);
+  const shippingAddressSafe = shippingAddress
+    ? {
+        street: escapeHtml(shippingAddress.street),
+        city: escapeHtml(shippingAddress.city),
+        state: shippingAddress.state
+          ? escapeHtml(shippingAddress.state)
+          : shippingAddress.state,
+        zipCode: escapeHtml(shippingAddress.zipCode),
+        country: escapeHtml(shippingAddress.country),
+      }
+    : shippingAddress;
+
   // Generate items table rows
   const itemsRows = items
     .map(
       (item) => `
         <tr>
-          <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #333333;">${item.productName}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #333333;">${escapeHtml(item.productName)}</td>
           <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #666666; text-align: center;">${item.quantity}</td>
           <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #666666; text-align: right;">${formatCurrency(item.price)}</td>
           <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #333333; text-align: right; font-weight: 600;">${formatCurrency(item.subtotal)}</td>
@@ -101,7 +130,7 @@ export function generateOrderConfirmationEmail(
               <td style="padding: 30px;">
                 <h1 style="color: #27ae60; margin: 0 0 20px 0; font-size: 24px; font-weight: 600; line-height: 1.2;">✅ Order Confirmed</h1>
                 
-                <p style="font-size: 16px; line-height: 1.6; color: #333333; margin: 0 0 20px 0;">Thank you for your order, ${clientName}! We've received your order and will begin processing it shortly.</p>
+                <p style="font-size: 16px; line-height: 1.6; color: #333333; margin: 0 0 20px 0;">Thank you for your order, ${clientNameSafe}! We've received your order and will begin processing it shortly.</p>
                 
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #e8f8f5; border-left: 4px solid #27ae60; border-radius: 4px; margin: 20px 0;">
                   <tr>
@@ -172,13 +201,13 @@ export function generateOrderConfirmationEmail(
                 </table>
 
                 ${
-                  shippingAddress
+                  shippingAddressSafe
                     ? `<div style="margin: 30px 0;">
                   <h2 style="color: #333333; margin: 0 0 15px 0; font-size: 18px; font-weight: 600;">Shipping Address</h2>
                   <p style="font-size: 14px; line-height: 1.6; color: #666666; margin: 0;">
-                    ${shippingAddress.street}<br>
-                    ${shippingAddress.city}${shippingAddress.state ? `, ${shippingAddress.state}` : ""} ${shippingAddress.zipCode}<br>
-                    ${shippingAddress.country}
+                    ${shippingAddressSafe.street}<br>
+                    ${shippingAddressSafe.city}${shippingAddressSafe.state ? `, ${shippingAddressSafe.state}` : ""} ${shippingAddressSafe.zipCode}<br>
+                    ${shippingAddressSafe.country}
                   </p>
                 </div>`
                     : ""
@@ -273,12 +302,15 @@ export function generateInvoiceEmail(data: InvoiceEmailData): EmailContent {
 
   const subject = generateUniqueSubject(`Invoice ${invoiceNumber}${status === "overdue" ? " - Payment Overdue" : ""}`);
 
+  // HTML-only escaped copy — textContent below interpolates the raw value instead.
+  const clientNameSafe = escapeHtml(clientName);
+
   // Generate items table rows
   const itemsRows = items
     .map(
       (item) => `
         <tr>
-          <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #333333;">${item.description}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #333333;">${escapeHtml(item.description)}</td>
           <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #666666; text-align: center;">${item.quantity}</td>
           <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #666666; text-align: right;">${formatCurrency(item.unitPrice)}</td>
           <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #333333; text-align: right; font-weight: 600;">${formatCurrency(item.subtotal)}</td>
@@ -320,7 +352,7 @@ export function generateInvoiceEmail(data: InvoiceEmailData): EmailContent {
               <td style="padding: 30px;">
                 <h1 style="color: ${statusColor}; margin: 0 0 20px 0; font-size: 24px; font-weight: 600; line-height: 1.2;">📄 Invoice ${invoiceNumber}</h1>
                 
-                <p style="font-size: 16px; line-height: 1.6; color: #333333; margin: 0 0 20px 0;">Dear ${clientName},</p>
+                <p style="font-size: 16px; line-height: 1.6; color: #333333; margin: 0 0 20px 0;">Dear ${clientNameSafe},</p>
                 <p style="font-size: 16px; line-height: 1.6; color: #333333; margin: 0 0 20px 0;">Please find your invoice details below.${status === "overdue" ? " <strong style='color: #e74c3c;'>This invoice is overdue. Please make payment immediately.</strong>" : ""}</p>
                 
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f8f9fa; border-left: 4px solid ${statusColor}; border-radius: 4px; margin: 20px 0;">
@@ -518,6 +550,22 @@ export function generateShippingNotificationEmail(
 
   const subject = generateUniqueSubject(`Your Order ${orderNumber} Has Shipped`);
 
+  // HTML-only escaped copies — textContent below interpolates the raw values instead.
+  const clientNameSafe = escapeHtml(clientName);
+  const trackingNumberSafe = escapeHtml(trackingNumber);
+  const carrierSafe = escapeHtml(carrier);
+  const shippingAddressSafe = shippingAddress
+    ? {
+        street: escapeHtml(shippingAddress.street),
+        city: escapeHtml(shippingAddress.city),
+        state: shippingAddress.state
+          ? escapeHtml(shippingAddress.state)
+          : shippingAddress.state,
+        zipCode: escapeHtml(shippingAddress.zipCode),
+        country: escapeHtml(shippingAddress.country),
+      }
+    : shippingAddress;
+
   const htmlContent = `
 <!DOCTYPE html>
 <html lang="en">
@@ -542,7 +590,7 @@ export function generateShippingNotificationEmail(
               <td style="padding: 30px;">
                 <h1 style="color: #3498db; margin: 0 0 20px 0; font-size: 24px; font-weight: 600; line-height: 1.2;">🚚 Your Order Has Shipped!</h1>
                 
-                <p style="font-size: 16px; line-height: 1.6; color: #333333; margin: 0 0 20px 0;">Great news, ${clientName}! Your order ${orderNumber} has been shipped and is on its way to you.</p>
+                <p style="font-size: 16px; line-height: 1.6; color: #333333; margin: 0 0 20px 0;">Great news, ${clientNameSafe}! Your order ${orderNumber} has been shipped and is on its way to you.</p>
                 
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #e8f4f8; border-left: 4px solid #3498db; border-radius: 4px; margin: 20px 0;">
                   <tr>
@@ -555,11 +603,11 @@ export function generateShippingNotificationEmail(
                         </tr>
                         <tr>
                           <td style="padding: 8px 0; font-weight: 600; color: #333333;">Tracking Number:</td>
-                          <td style="padding: 8px 0; color: #3498db; font-weight: 700; font-size: 16px;">${trackingNumber}</td>
+                          <td style="padding: 8px 0; color: #3498db; font-weight: 700; font-size: 16px;">${trackingNumberSafe}</td>
                         </tr>
                         <tr>
                           <td style="padding: 8px 0; font-weight: 600; color: #333333;">Carrier:</td>
-                          <td style="padding: 8px 0; color: #666666;">${carrier}</td>
+                          <td style="padding: 8px 0; color: #666666;">${carrierSafe}</td>
                         </tr>
                         <tr>
                           <td style="padding: 8px 0; font-weight: 600; color: #333333;">Shipped Date:</td>
@@ -588,7 +636,7 @@ export function generateShippingNotificationEmail(
                     .map(
                       (item) => `
                     <tr>
-                      <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #333333;">${item.productName}</td>
+                      <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #333333;">${escapeHtml(item.productName)}</td>
                       <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #666666; text-align: right;">Quantity: ${item.quantity}</td>
                     </tr>
                   `
@@ -599,12 +647,12 @@ export function generateShippingNotificationEmail(
                 <div style="margin: 30px 0;">
                   <h2 style="color: #333333; margin: 0 0 15px 0; font-size: 18px; font-weight: 600;">Delivery Address</h2>
                   <p style="font-size: 14px; line-height: 1.6; color: #666666; margin: 0;">
-                    ${shippingAddress.street}<br>
-                    ${shippingAddress.city}${shippingAddress.state ? `, ${shippingAddress.state}` : ""} ${shippingAddress.zipCode}<br>
-                    ${shippingAddress.country}
+                    ${shippingAddressSafe?.street}<br>
+                    ${shippingAddressSafe?.city}${shippingAddressSafe?.state ? `, ${shippingAddressSafe.state}` : ""} ${shippingAddressSafe?.zipCode}<br>
+                    ${shippingAddressSafe?.country}
                   </p>
                 </div>
-                
+
                 <p style="font-size: 14px; line-height: 1.6; color: #666666; margin: 30px 0 0 0;">
                   You can track your package using the tracking number above. If you have any questions, please contact our support team.
                 </p>
@@ -700,6 +748,10 @@ export function generateOrderStatusUpdateEmail(
 
   const statusColor = statusColors[newStatus.toLowerCase()] || "#95a5a6";
 
+  // HTML-only escaped copies — textContent below interpolates the raw values instead.
+  const clientNameSafe = escapeHtml(clientName);
+  const statusMessageSafe = statusMessage ? escapeHtml(statusMessage) : statusMessage;
+
   const htmlContent = `
 <!DOCTYPE html>
 <html lang="en">
@@ -724,7 +776,7 @@ export function generateOrderStatusUpdateEmail(
               <td style="padding: 30px;">
                 <h1 style="color: ${statusColor}; margin: 0 0 20px 0; font-size: 24px; font-weight: 600; line-height: 1.2;">📦 Order Status Update</h1>
                 
-                <p style="font-size: 16px; line-height: 1.6; color: #333333; margin: 0 0 20px 0;">Hello ${clientName},</p>
+                <p style="font-size: 16px; line-height: 1.6; color: #333333; margin: 0 0 20px 0;">Hello ${clientNameSafe},</p>
                 <p style="font-size: 16px; line-height: 1.6; color: #333333; margin: 0 0 20px 0;">We wanted to let you know that your order status has been updated.</p>
                 
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f8f9fa; border-left: 4px solid ${statusColor}; border-radius: 4px; margin: 20px 0;">
@@ -761,7 +813,7 @@ export function generateOrderStatusUpdateEmail(
                   statusMessage
                     ? `<div style="background-color: #e8f4f8; border-left: 4px solid #3498db; border-radius: 4px; padding: 15px; margin: 20px 0;">
                   <p style="font-size: 14px; line-height: 1.6; color: #333333; margin: 0;">
-                    <strong>Message:</strong> ${statusMessage}
+                    <strong>Message:</strong> ${statusMessageSafe}
                   </p>
                 </div>`
                     : ""

@@ -167,6 +167,7 @@ export const ProductReviewTable = React.memo(function ProductReviewTable({
             size="sm"
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
+            aria-label="First page"
             className="h-10 rounded-[28px] border border-violet-400/30 dark:border-violet-400/30 bg-gradient-to-r from-violet-500/25 via-violet-500/15 to-violet-500/10 text-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <BiFirstPage />
@@ -176,6 +177,7 @@ export const ProductReviewTable = React.memo(function ProductReviewTable({
             size="sm"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
+            aria-label="Previous page"
             className="h-10 rounded-[28px] border border-violet-400/30 dark:border-violet-400/30 bg-gradient-to-r from-violet-500/25 via-violet-500/15 to-violet-500/10 text-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <GrFormPrevious />
@@ -188,6 +190,7 @@ export const ProductReviewTable = React.memo(function ProductReviewTable({
             size="sm"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
+            aria-label="Next page"
             className="h-10 rounded-[28px] border border-violet-400/30 dark:border-violet-400/30 bg-gradient-to-r from-violet-500/25 via-violet-500/15 to-violet-500/10 text-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <GrFormNext />
@@ -197,6 +200,7 @@ export const ProductReviewTable = React.memo(function ProductReviewTable({
             size="sm"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
+            aria-label="Last page"
             className="h-10 rounded-[28px] border border-violet-400/30 dark:border-violet-400/30 bg-gradient-to-r from-violet-500/25 via-violet-500/15 to-violet-500/10 text-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <BiLastPage />

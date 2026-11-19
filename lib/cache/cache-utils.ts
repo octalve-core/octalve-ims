@@ -183,7 +183,7 @@ export async function deleteCacheByPattern(pattern: string): Promise<number> {
     let cursor: number | string = 0;
 
     do {
-      const result = await redis.scan(cursor, { match: cachePattern });
+      const result = await redis.scan(cursor, { match: cachePattern, count: 100 });
       cursor = result[0];
       const resultKeys = Array.isArray(result[1]) ? result[1] : [];
       keys.push(...resultKeys);
@@ -238,7 +238,9 @@ export const cacheKeys = {
       // REQ-0179 — v3: productOwnerName/Image + supplierImage on all list rows
       return `products:list:v3:${filterStr}`;
     },
-    detail: (id: string) => `products:detail:${id}`,
+    /** Optional scope suffix (e.g. supplier:{entityId}) for role-scoped detail payloads. ISS-0018 */
+    detail: (id: string, scope?: string) =>
+      scope ? `products:detail:${id}:${scope}` : `products:detail:${id}`,
     pattern: "products:*",
   },
 

@@ -6,6 +6,7 @@
 
 import { computeCatalogInsights } from "@/lib/server/catalog-insights";
 import { toParty } from "@/lib/server/catalog-party-snapshot";
+import { redactBuyerForViewer } from "@/lib/server/catalog-buyer-privacy";
 import { getSupplierById, getDemoSupplierUserId } from "@/prisma/supplier";
 import { getCache, setCache, cacheKeys } from "@/lib/cache";
 import { prisma } from "@/prisma/client";
@@ -52,6 +53,7 @@ function transformSupplierDetail(
   orderUserMap: Map<string, CatalogPartyUserRow>,
   isDemoSupplier: boolean,
   categoryMap: Map<string, { id: string; name: string }>,
+  session: SessionForDetail,
 ) {
   const supplierSnapshot = { id: supplier.id, name: supplier.name };
   const totalProducts = products.length;
@@ -119,7 +121,10 @@ function transformSupplierDetail(
             clientId: order.clientId,
           })
         : null;
-      const placedBy = buyerId ? toParty(orderUserMap.get(buyerId)) : null;
+      const placedBy = redactBuyerForViewer(
+        buyerId ? toParty(orderUserMap.get(buyerId)) : null,
+        session,
+      );
       return {
         id: item.id,
         orderId: order?.id || "",
@@ -349,6 +354,7 @@ export async function getSupplierDetailForPage(
     orderUserMap,
     isDemoSupplier,
     categoryMap,
+    session,
   );
 
   const enrichedProducts = await enrichProductsWithCommittedQuantity(

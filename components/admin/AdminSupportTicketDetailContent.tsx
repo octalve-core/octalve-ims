@@ -247,6 +247,7 @@ export default function AdminSupportTicketDetailContent({
               variant="ghost"
               size="icon"
               onClick={handleBack}
+              aria-label="Back to Support Tickets"
               className={DETAIL_HEADER_BACK_ICON_CLASS}
             >
               <ArrowLeft className="h-5 w-5" />

@@ -10,6 +10,7 @@
 
 import { prisma } from "@/prisma/client";
 import { getOrderLineWarehouseAvailable } from "@/lib/orders/order-line-stock-validation";
+import { logger } from "@/lib/logger";
 
 export type WarehousePickOption = {
   warehouseId: string;
@@ -127,22 +128,37 @@ export async function validateWarehousePick(
   }
 }
 
-/** Pending order create — reserve allocation row for the picked warehouse. */
+/**
+ * Pending order create — reserve allocation row for the picked warehouse.
+ *
+ * ISS-0009 — validateWarehousePick gives a friendly, specific error for
+ * the common (non-race) case, but it's a plain read with no lock, so by
+ * itself it can't stop two concurrent reservations against the same
+ * allocation row both passing. The UPDATE below is the real, atomic
+ * gate: its WHERE clause is evaluated against the row's current
+ * committed state as Postgres takes the row lock for the statement
+ * itself, so a losing concurrent caller's increment never applies.
+ */
 export async function reserveAllocationForOrderItem(
   productId: string,
   warehouseId: string,
   quantity: number,
 ): Promise<void> {
   await validateWarehousePick(productId, warehouseId, quantity);
-  await prisma.stockAllocation.update({
-    where: {
-      productId_warehouseId: { productId, warehouseId },
-    },
-    data: {
-      reservedQuantity: { increment: quantity },
-      updatedAt: new Date(),
-    },
-  });
+
+  const affected = await prisma.$executeRaw`
+    UPDATE "StockAllocation"
+    SET "reservedQuantity" = "reservedQuantity" + ${quantity},
+        "updatedAt" = NOW()
+    WHERE "productId" = ${productId}
+      AND "warehouseId" = ${warehouseId}
+      AND ("quantity" - "reservedQuantity") >= ${quantity}
+  `;
+  if (affected === 0) {
+    throw new Error(
+      `Insufficient allocated stock for product ${productId} at warehouse ${warehouseId}: requested ${quantity}`,
+    );
+  }
 }
 
 /** Pending order cancel — release allocation reservation only. */
@@ -235,8 +251,9 @@ export async function syncReleasePendingOrderAllocations(
         item.warehouseId,
         item.quantity,
       );
-    } catch {
-      // non-blocking
+    } catch (error) {
+      // ISS-0044(b): non-blocking by design, but was previously silent.
+      logger.warn("Failed to release allocation reservation", { item, error });
     }
   }
 }
@@ -253,8 +270,9 @@ export async function syncFulfillPendingOrderAllocations(
         item.quantity,
         { releaseReservation: true },
       );
-    } catch {
-      // non-blocking
+    } catch (error) {
+      // ISS-0044(b): non-blocking by design, but was previously silent.
+      logger.warn("Failed to fulfill pending allocation", { item, error });
     }
   }
 }
@@ -270,8 +288,9 @@ export async function syncRestoreConfirmedOrderAllocations(
         item.warehouseId,
         item.quantity,
       );
-    } catch {
-      // non-blocking
+    } catch (error) {
+      // ISS-0044(b): non-blocking by design, but was previously silent.
+      logger.warn("Failed to restore confirmed-order allocation", { item, error });
     }
   }
 }
@@ -288,8 +307,9 @@ export async function syncFulfillReactivatedOrderAllocations(
         item.quantity,
         { releaseReservation: false },
       );
-    } catch {
-      // non-blocking
+    } catch (error) {
+      // ISS-0044(b): non-blocking by design, but was previously silent.
+      logger.warn("Failed to fulfill reactivated-order allocation", { item, error });
     }
   }
 }

@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import {
@@ -29,6 +30,7 @@ function transform(
     username: r.username,
     role: r.role as UserForAdmin["role"],
     image: r.image,
+    status: r.status as UserForAdmin["status"],
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt?.toISOString() ?? null,
   };
@@ -77,6 +79,10 @@ export async function GET(request: NextRequest) {
  * Create a new user (admin-only)
  */
 export async function POST(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const rateLimitResponse = await withRateLimit(
       request,

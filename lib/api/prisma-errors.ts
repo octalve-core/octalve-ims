@@ -26,3 +26,24 @@ export function isPrismaRelationViolation(error: unknown): boolean {
 
   return false;
 }
+
+/**
+ * Unique constraint violation (P2002). `target` optionally narrows to a
+ * specific @unique field (e.g. ProcessedPayment.sessionId), matching
+ * Prisma's meta.target array.
+ */
+export function isPrismaUniqueConstraintViolation(
+  error: unknown,
+  target?: string,
+): boolean {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
+  if (error.code !== "P2002") return false;
+  if (!target) return true;
+  const meta = error.meta as { target?: string[] | string } | undefined;
+  const fields = Array.isArray(meta?.target)
+    ? meta.target
+    : typeof meta?.target === "string"
+      ? [meta.target]
+      : [];
+  return fields.includes(target);
+}

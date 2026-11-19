@@ -66,6 +66,7 @@ import {
 } from "@/lib/ui/card-list-styles";
 import { ProductStockFromQuantityBadge } from "@/lib/ui/semantic-badges";
 import { StatisticsCard } from "@/components/home/StatisticsCard";
+import { formatStableCurrency } from "@/lib/date/format-stable";
 import {
   isDataSlotUnsettled,
   queryKeys,
@@ -240,7 +241,7 @@ export default function SupplierPortalPage({
             />
             <StatisticsCard
               title="Total Revenue"
-              value={`$${(dashboard?.totalRevenue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              value={formatStableCurrency(dashboard?.totalRevenue ?? 0)}
               description="Revenue from your products (excl. cancelled)"
               icon={DollarSign}
               variant="violet"
@@ -249,68 +250,44 @@ export default function SupplierPortalPage({
               badges={[
                 {
                   label: "Paid",
-                  value: `$${(
+                  value: formatStableCurrency(
                     dashboard?.revenueBreakdown?.paid ??
-                    dashboard?.paidRevenue ??
-                    0
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                      dashboard?.paidRevenue ??
+                      0,
+                  ),
                 },
                 {
                   label: "Partial",
-                  value: `$${(
-                    dashboard?.revenueBreakdown?.partial ?? 0
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                  value: formatStableCurrency(dashboard?.revenueBreakdown?.partial ?? 0),
                 },
                 {
                   label: "Due",
-                  value: `$${(
-                    dashboard?.revenueBreakdown?.due ?? 0
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                  value: formatStableCurrency(dashboard?.revenueBreakdown?.due ?? 0),
                 },
                 {
                   label: "Refund",
-                  value: `$${(
-                    dashboard?.revenueBreakdown?.refund ?? 0
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                  value: formatStableCurrency(dashboard?.revenueBreakdown?.refund ?? 0),
                 },
                 {
                   label: "Pending",
-                  value: `$${(
+                  value: formatStableCurrency(
                     dashboard?.revenueBreakdown?.pending ??
-                    dashboard?.unpaidRevenue ??
-                    0
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                      dashboard?.unpaidRevenue ??
+                      0,
+                  ),
                 },
                 ...((dashboard?.totalOrders ?? 0) > 0
                   ? [
                       {
                         label: "Avg/Order",
-                        value: `$${(
+                        value: formatStableCurrency(
                           (dashboard?.totalRevenue ?? 0) /
-                          Math.max(
-                            1,
-                            (dashboard?.totalOrders ?? 0) -
-                              (dashboard?.orderStatusCounts?.cancelled ?? 0),
-                          )
-                        ).toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}`,
+                            Math.max(
+                              1,
+                              (dashboard?.totalOrders ?? 0) -
+                                (dashboard?.orderStatusCounts?.cancelled ?? 0),
+                            ),
+                        ),
                       },
                     ]
                   : []),

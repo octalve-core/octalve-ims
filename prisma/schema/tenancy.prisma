@@ -48,6 +48,15 @@ model User {
   /// (see docs/auth-system-port-plan.md). Core's 2 fixed roles read this;
   /// Pro+ custom-role permission checks use roleRelation/roleId instead.
   role               String? // user | admin | supplier | client | retailer
+  /// ACTIVE | SUSPENDED | PENDING_VERIFICATION — see lib/auth/account-status.ts. Plain string,
+  /// matching `role`'s convention above rather than a Postgres enum.
+  status             String              @default("ACTIVE")
+  /// Set by logout, change-password and reset-password's existing "revoke every refresh
+  /// token" (log out everywhere). An access token issued before this moment is rejected by
+  /// utils/auth.ts's getSessionFromRequest even though its own 15-minute JWT expiry hasn't
+  /// passed yet — otherwise an already-issued access token outlived those events by up to 15
+  /// minutes (still-open item, task 0004). Null means "never revoked."
+  tokensRevokedAt    DateTime?           @db.Timestamptz(3)
   roleId             String?
   businessId         String?
   emailPreferences   Json?

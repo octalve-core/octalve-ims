@@ -32,6 +32,7 @@ export async function getOrderReviewContextForPage(
   _userId: string,
   _orderId: string,
   productIds: string[],
+  _viewerRole: string | null,
 ): Promise<OrderReviewContext> {
   const uniqueIds = [...new Set(productIds.filter(Boolean))];
   const reviewsByProductId: Record<string, ProductReview[]> = {};

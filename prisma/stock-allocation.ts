@@ -185,6 +185,17 @@ export async function createStockTransfer(
 
 /**
  * Complete a stock transfer
+ *
+ * ISS-0043 — this used to be 4+ separate statements with a plain
+ * `status !== "pending"` read-then-write guard: two concurrent completions
+ * of the same transfer both passed the stale check and both applied the
+ * stock movement (double-deduct from source, double-credit to dest), and a
+ * crash between the source decrement and the dest credit lost stock
+ * outright. Now: claim the transfer atomically first (same
+ * unique-constraint/conditional-UPDATE-as-concurrency-primitive pattern as
+ * ISS-0009/0010/0013/0014), and only a transaction that wins the claim ever
+ * touches stock. The source decrement is itself a conditional UPDATE so it
+ * can never take it negative even against reservations made after the read.
  */
 export async function completeStockTransfer(id: string, userId: string) {
   const transfer = await prisma.stockTransfer.findUnique({
@@ -195,61 +206,59 @@ export async function completeStockTransfer(id: string, userId: string) {
     throw new Error("Transfer not found");
   }
 
-  if (transfer.status !== "pending") {
-    throw new Error("Transfer is not pending");
-  }
+  return prisma.$transaction(async (tx) => {
+    const claimed = await tx.stockTransfer.updateMany({
+      where: { id, status: "pending" },
+      data: { status: "completed", completedAt: new Date() },
+    });
+    if (claimed.count === 0) {
+      throw new Error("Transfer is not pending");
+    }
 
-  // Deduct from source warehouse
-  await prisma.stockAllocation.update({
-    where: {
-      productId_warehouseId: {
-        productId: transfer.productId,
-        warehouseId: transfer.fromWarehouseId,
-      },
-    },
-    data: {
-      quantity: { decrement: Number(transfer.quantity) },
-      updatedAt: new Date(),
-    },
-  });
+    const deducted = await tx.$executeRaw`
+      UPDATE "StockAllocation"
+      SET "quantity" = "quantity" - ${Number(transfer.quantity)},
+          "updatedAt" = NOW()
+      WHERE "productId" = ${transfer.productId}
+        AND "warehouseId" = ${transfer.fromWarehouseId}
+        AND "quantity" >= ${Number(transfer.quantity)}
+    `;
+    if (deducted === 0) {
+      throw new Error(
+        "Insufficient stock in source warehouse to complete transfer",
+      );
+    }
 
-  // Add to destination warehouse (create if doesn't exist)
-  const destAllocation = await prisma.stockAllocation.findUnique({
-    where: {
-      productId_warehouseId: {
-        productId: transfer.productId,
-        warehouseId: transfer.toWarehouseId,
-      },
-    },
-  });
-
-  if (destAllocation) {
-    await prisma.stockAllocation.update({
-      where: { id: destAllocation.id },
-      data: {
-        quantity: { increment: Number(transfer.quantity) },
-        updatedAt: new Date(),
+    const destAllocation = await tx.stockAllocation.findUnique({
+      where: {
+        productId_warehouseId: {
+          productId: transfer.productId,
+          warehouseId: transfer.toWarehouseId,
+        },
       },
     });
-  } else {
-    await prisma.stockAllocation.create({
-      data: {
-        productId: transfer.productId,
-        warehouseId: transfer.toWarehouseId,
-        quantity: transfer.quantity,
-        userId,
-        createdAt: new Date(),
-      },
-    });
-  }
 
-  // Mark transfer as completed
-  return prisma.stockTransfer.update({
-    where: { id },
-    data: {
-      status: "completed",
-      completedAt: new Date(),
-    },
+    if (destAllocation) {
+      await tx.stockAllocation.update({
+        where: { id: destAllocation.id },
+        data: {
+          quantity: { increment: Number(transfer.quantity) },
+          updatedAt: new Date(),
+        },
+      });
+    } else {
+      await tx.stockAllocation.create({
+        data: {
+          productId: transfer.productId,
+          warehouseId: transfer.toWarehouseId,
+          quantity: transfer.quantity,
+          userId,
+          createdAt: new Date(),
+        },
+      });
+    }
+
+    return tx.stockTransfer.findUniqueOrThrow({ where: { id } });
   });
 }
 

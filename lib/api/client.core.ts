@@ -240,6 +240,26 @@ class ApiClient {
         statusText: response.statusText,
       };
     },
+
+    /**
+     * Change the signed-in user's password (ISS-0084).
+     * Revokes every session on success — the route clears this device's own
+     * cookies too, so the caller must redirect to /login afterward.
+     */
+    changePassword: async (data: {
+      currentPassword: string;
+      newPassword: string;
+    }): Promise<ApiResponse<{ success: boolean; message: string }>> => {
+      const response = await this.client.post<{
+        success: boolean;
+        message: string;
+      }>(API_ENDPOINTS.auth.changePassword, data);
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
   };
 
   /**

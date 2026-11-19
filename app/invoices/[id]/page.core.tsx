@@ -39,6 +39,7 @@ export default async function InvoiceDetailRoute({ params }: Props) {
     user.id,
     initialInvoice.orderId,
     productIds,
+    user.role,
   );
 
   return (

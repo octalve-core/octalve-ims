@@ -76,8 +76,13 @@ export async function trackCacheHit(): Promise<void> {
     }
 
     const key = "metrics:cache:hits";
-    await redis.incr(key);
-    await redis.expire(key, 86400); // 24h TTL
+    const value = await redis.incr(key);
+    // Only set the TTL on creation — expiring it on every increment (the
+    // previous behavior) kept pushing it forward under continuous traffic,
+    // so it never actually rolled over into a fresh 24h window (ISS-0076).
+    if (value === 1) {
+      await redis.expire(key, 86400); // 24h TTL
+    }
   } catch (error) {
     logger.error("Failed to track cache hit", { error });
     // Non-critical, don't throw
@@ -100,8 +105,10 @@ export async function trackCacheMiss(): Promise<void> {
     }
 
     const key = "metrics:cache:misses";
-    await redis.incr(key);
-    await redis.expire(key, 86400); // 24h TTL
+    const value = await redis.incr(key);
+    if (value === 1) {
+      await redis.expire(key, 86400); // 24h TTL
+    }
   } catch (error) {
     logger.error("Failed to track cache miss", { error });
     // Non-critical, don't throw
@@ -181,10 +188,16 @@ export async function getCacheStats(): Promise<CacheStats> {
       redis.get("metrics:cache:misses"),
     ]);
 
-    const hitsCount =
-      typeof hits === "string" ? parseInt(hits, 10) : 0;
-    const missesCount =
-      typeof misses === "string" ? parseInt(misses, 10) : 0;
+    // redis.get() JSON.parses whatever's stored — a raw INCR-created integer
+    // comes back as a number, not a string, so the old `typeof === "string"`
+    // check always missed it and hitRate silently read as 0 (ISS-0076).
+    const toCount = (v: unknown): number => {
+      if (typeof v === "number") return v;
+      if (typeof v === "string") return parseInt(v, 10) || 0;
+      return 0;
+    };
+    const hitsCount = toCount(hits);
+    const missesCount = toCount(misses);
     const totalRequests = hitsCount + missesCount;
     const hitRate =
       totalRequests > 0 ? Math.round((hitsCount / totalRequests) * 100) : 0;

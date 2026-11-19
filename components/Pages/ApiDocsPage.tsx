@@ -49,7 +49,9 @@ export default function ApiDocsPage() {
   const [baseUrl, setBaseUrl] = useState(() => getApiUrl());
 
   useEffect(() => {
-    // Re-resolve on mount in case window.location is now available
+    // Re-resolve on mount in case window.location is now available — the
+    // one-time SSR→client upgrade this hook exists for, not a loop.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setBaseUrl(getApiUrl());
   }, []);
 
@@ -79,7 +81,7 @@ export default function ApiDocsPage() {
               name: "password",
               type: "string",
               required: true,
-              description: "User's password (min 6 characters)",
+              description: "User's password (min 8 characters)",
             },
           ],
           response: {

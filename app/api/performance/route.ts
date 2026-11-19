@@ -14,7 +14,7 @@
  * See: lib/api/performance-wrapper.ts for implementation details
  */
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import {
   getAllEndpointMetrics,
   getPerformanceSummary,
@@ -22,6 +22,8 @@ import {
 } from "@/lib/monitoring/performance";
 import { successResponse, errorResponse } from "@/lib/api/response-helpers";
 import { logger } from "@/lib/logger";
+import { getSessionFromRequest } from "@/utils/auth";
+import { isAuthorizedInternalCall } from "@/lib/api/internal-call-auth";
 
 /**
  * GET /api/performance
@@ -33,6 +35,16 @@ import { logger } from "@/lib/logger";
  */
 export async function GET(request: NextRequest) {
   try {
+    // ISS-0035: internal perf metrics shouldn't be world-readable.
+    const session = await getSessionFromRequest(request);
+    const isInternalCall = isAuthorizedInternalCall(
+      request.headers.get("authorization"),
+      process.env.INTERNAL_API_KEY,
+    );
+    if (!isInternalCall && (!session || session.role !== "admin")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const endpoint = searchParams.get("endpoint");
     const method = searchParams.get("method");

@@ -13,6 +13,8 @@ import { logger } from "@/lib/logger";
 import { computeProportionalLineAmount } from "@/lib/proportional-line-amount";
 import { isOrderRecordCountedAsSold } from "@/lib/orders/order-sales-eligibility";
 import type { SessionForDetail } from "@/lib/server/order-detail-data";
+import { catalogDetailCacheScope } from "@/lib/server/catalog-entity-access";
+import { redactBuyerForViewer } from "@/lib/server/catalog-buyer-privacy";
 import { computeProductInsights } from "@/lib/server/product-insights";
 import { catalogDetailOrderSelect } from "@/lib/server/catalog-detail-order-select";
 import { resolveOrderStatusAtFromSource } from "@/lib/orders/order-status-display-date";
@@ -69,6 +71,7 @@ function transformProductDetail(
     email: string;
     image?: string | null;
   } | null,
+  session: SessionForDetail,
 ) {
   const orderItems = product.orderItems || [];
   // REQ-0140 — sold stats = delivered or paid only (not pending reservations)
@@ -220,14 +223,17 @@ function transformProductDetail(
               image: ownerUser.image ?? null,
             }
           : null,
-        placedBy: placedBy
-          ? {
-              id: placedBy.id,
-              name: placedBy.name,
-              email: placedBy.email,
-              image: placedBy.image ?? null,
-            }
-          : null,
+        placedBy: redactBuyerForViewer(
+          placedBy
+            ? {
+                id: placedBy.id,
+                name: placedBy.name,
+                email: placedBy.email,
+                image: placedBy.image ?? null,
+              }
+            : null,
+          session,
+        ),
         productId: product.id,
         productName: product.name,
         productSku: product.sku,
@@ -258,7 +264,16 @@ export async function getProductDetailForPage(
   const isSupplier = session.role === "supplier";
   const isClient = session.role === "client";
 
-  const cacheKey = cacheKeys.products.detail(id);
+  // ISS-0018 — resolve the supplier entity (if any) before touching the
+  // cache, so the cache key itself is scoped to it. The cache used to be
+  // keyed only by product id, with no role/owner scope at all: once any
+  // caller populated it, every later caller got that exact cached payload
+  // regardless of their own role-scoped access rule — a different supplier
+  // could read a product they don't own just because it was already cached.
+  const supplierEntity = isSupplier ? await getSupplierByUserId(userId) : null;
+  if (isSupplier && !supplierEntity) return null;
+  const cacheScope = catalogDetailCacheScope(session, supplierEntity?.id);
+  const cacheKey = cacheKeys.products.detail(id, cacheScope);
   const cacheReadStartedAt = Date.now();
   const cachedProduct = await getCache<ProductDetailForPage>(cacheKey);
   if (productDetailCacheValid(cachedProduct)) {
@@ -274,11 +289,9 @@ export async function getProductDetailForPage(
       where: mergeProductListWhere({ id }),
       include: productInclude,
     });
-  } else if (isSupplier) {
-    const supplier = await getSupplierByUserId(userId);
-    if (!supplier) return null;
+  } else if (isSupplier && supplierEntity) {
     product = await prisma.product.findFirst({
-      where: mergeProductListWhere({ id, supplierId: supplier.id }),
+      where: mergeProductListWhere({ id, supplierId: supplierEntity.id }),
       include: productInclude,
     });
   } else if (isClient) {
@@ -374,6 +387,7 @@ export async function getProductDetailForPage(
     updaterUser,
     orderUserMap,
     ownerUser,
+    session,
   );
 
   const enrichedProduct =

@@ -28,7 +28,7 @@ flowchart LR
   UI[Pages / Components] --> Hooks[hooks/queries]
   Hooks --> API[app/api]
   API --> Prisma[prisma/*]
-  Prisma --> DB[(MongoDB)]
+  Prisma --> DB[(PostgreSQL)]
   Hooks --> RQ[TanStack Query cache]
   Mutate[onSuccess mutations] --> Inv[invalidateAllRelatedQueries]
   Inv --> RQ

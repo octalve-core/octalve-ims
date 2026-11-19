@@ -1,5 +1,7 @@
 # Vercel Production Guardrails (Generic, Reusable)
 
+> **Known drift (ISS-0083, checked 2026-11-06):** generic, reusable guardrails doc, not specific to this repo — it references `src/app/robots.ts` (real path here: `app/robots.ts`) and some of the "root causes" it warns about are already fixed here (security headers and a real `robots.ts` both exist). It advises avoiding `force-dynamic`, but this repo's root layout deliberately uses it. Check the real `app/robots.ts` for current disallow rules rather than trusting the example in this doc.
+
 ## Why This Exists — Real-World Incident
 
 This project **exceeded Vercel free tier limits in production** within a single billing cycle due to bot/crawler traffic and unconstrained resource exposure. Observed overages:

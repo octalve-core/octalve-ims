@@ -202,9 +202,11 @@ export default function BusinessInsightPage({
   const startDateInputRef = useRef<HTMLInputElement | null>(null);
   const endDateInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Set QR URL after component mounts (client-side only)
+  // Set QR URL after component mounts (client-side only) — SSR has no
+  // window.location, so this one-time upgrade can't be done any earlier.
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQrUrl(`${window.location.origin}/business-insights`);
     }
   }, []);

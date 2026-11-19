@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import {
@@ -12,12 +13,17 @@ import {
 } from "@/lib/imagekit";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 import { scheduleInvalidateProductCaches } from "@/lib/cache";
+import { prisma } from "@/prisma/client";
 
 /**
  * POST /api/products/image
  * Upload a product image to ImageKit
  */
 export async function POST(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     // Rate limiting check
     const rateLimitResponse = await withRateLimit(
@@ -103,6 +109,10 @@ export async function POST(request: NextRequest) {
  * Delete a product image from ImageKit
  */
 export async function DELETE(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     // Rate limiting check
     const rateLimitResponse = await withRateLimit(
@@ -126,6 +136,21 @@ export async function DELETE(request: NextRequest) {
         { error: "File ID is required" },
         { status: 400 }
       );
+    }
+
+    // ISS-0036: without this, any logged-in user could delete any product's
+    // image/QR file by guessing or observing its ImageKit fileId — the
+    // session check above only proved they're logged in, not that they own
+    // the product the file belongs to.
+    const owningProduct = await prisma.product.findFirst({
+      where: { OR: [{ imageFileId: fileId }, { qrCodeFileId: fileId }] },
+      select: { userId: true },
+    });
+    if (!owningProduct) {
+      return NextResponse.json({ error: "File not found" }, { status: 404 });
+    }
+    if (session.role !== "admin" && owningProduct.userId !== session.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Delete from ImageKit

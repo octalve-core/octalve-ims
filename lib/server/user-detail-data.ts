@@ -7,6 +7,7 @@
 import { getUserById } from "@/prisma/user-admin";
 import { prisma } from "@/prisma/client";
 import type { UserForAdmin, UserOverview } from "@/types";
+import type { UserAccountStatus } from "@/lib/auth/account-status";
 import type { SessionForDetail } from "@/lib/server/order-detail-data";
 
 type UserRecord = NonNullable<Awaited<ReturnType<typeof getUserById>>>;
@@ -20,6 +21,7 @@ export function transformUserForAdmin(r: UserRecord): UserForAdmin {
     username: r.username,
     role: r.role as UserForAdmin["role"],
     image: r.image,
+    status: r.status as UserAccountStatus,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt?.toISOString() ?? null,
   };

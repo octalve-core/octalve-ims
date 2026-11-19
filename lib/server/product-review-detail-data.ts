@@ -25,7 +25,15 @@ export async function getProductReviewDetailForPage(
   const record = await getProductReviewById(id);
   if (!record) return null;
 
-  if (session.role === "admin") {
+  // ISS-0023 — this was inverted: admin (who should see every review
+  // under the single-tenant model, as PUT/DELETE on this same resource
+  // already correctly allow) was the ONLY role gated by product
+  // ownership, while every other role — including a client with no
+  // relationship to the review at all — got unconditional access,
+  // reviewer email and order total/status included.
+  const isAuthor = record.userId === session.id;
+  const isAdmin = session.role === "admin";
+  if (!isAuthor && !isAdmin) {
     const product = await prisma.product.findUnique({
       where: { id: record.productId },
       select: { userId: true },

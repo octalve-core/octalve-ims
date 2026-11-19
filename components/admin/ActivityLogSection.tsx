@@ -381,6 +381,7 @@ export default function ActivityLogSection({
               onValueChange={(v) => setPeriod(v as ActivityLogPeriod)}
             >
               <SelectTrigger
+                aria-label="Activity log time period"
                 className={cn(
                   "w-full sm:w-[180px] h-10 rounded-[28px] border border-sky-400/30 dark:border-sky-400/30",
                   "bg-gradient-to-r from-sky-500/25 via-sky-500/15 to-sky-500/10 dark:from-sky-500/25 dark:via-sky-500/15 dark:to-sky-500/10",

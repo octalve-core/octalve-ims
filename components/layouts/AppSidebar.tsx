@@ -53,6 +53,7 @@ import {
   ADMIN_MY_ACTIVITY_ITEMS,
   ADMIN_MY_STORE_ITEMS,
   ADMIN_SETTINGS_EMAIL_HREF,
+  filterAdminOnlyItems,
   type AdminNavItemConfig,
 } from "@/lib/navigation/admin-nav-config";
 import { getNavItemsForRole, type RoleNavItem } from "@/lib/navigation/role-nav-config";
@@ -174,7 +175,7 @@ function SidebarNavLink({
 function GroupLabel({ children, collapsed }: { children: React.ReactNode; collapsed?: boolean }) {
   if (collapsed) return <div className="my-1 w-6 border-t border-white/10" />;
   return (
-    <p className="px-3 pt-4 pb-1 text-[10.5px] font-bold uppercase tracking-wider text-white/35">
+    <p className="px-3 pt-4 pb-1 text-[10.5px] font-bold uppercase tracking-wider text-white/50">
       {children}
     </p>
   );
@@ -269,7 +270,7 @@ export default function AppSidebar({
       <GroupLabel collapsed={collapsed}>My Store</GroupLabel>
       {renderAdminGroup(ADMIN_MY_STORE_ITEMS)}
       <GroupLabel collapsed={collapsed}>Management</GroupLabel>
-      {renderAdminGroup(ADMIN_MANAGEMENT_ITEMS)}
+      {renderAdminGroup(filterAdminOnlyItems(ADMIN_MANAGEMENT_ITEMS, role))}
       <GroupLabel collapsed={collapsed}>My Activity</GroupLabel>
       {renderAdminGroup(ADMIN_MY_ACTIVITY_ITEMS)}
       <GroupLabel collapsed={collapsed}>Settings</GroupLabel>

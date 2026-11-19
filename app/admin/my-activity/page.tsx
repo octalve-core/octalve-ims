@@ -33,7 +33,10 @@ export default async function MyActivityPage() {
     getWarehousesForUser(user.id),
     getInvoicesForUser(user.id),
     getCategoriesForUser(user.id),
-    getUsersForAdmin(),
+    // ISS-0019 — this page is reachable by any logged-in role (no role
+    // guard in app/admin/layout.tsx), but the full user directory (emails,
+    // roles) is admin-only data — never fetch it for a non-admin viewer.
+    user.role === "admin" ? getUsersForAdmin() : Promise.resolve([]),
   ]);
 
   return (

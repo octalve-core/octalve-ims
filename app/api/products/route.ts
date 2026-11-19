@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCSRF } from "@/lib/auth/csrf";
 import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import {
@@ -21,7 +22,7 @@ import {
 } from "@/lib/products/delete-policy";
 import { mergeProductListWhere } from "@/lib/products/product-query";
 import { prisma } from "@/prisma/client";
-import { getSupplierByUserId } from "@/prisma/supplier";
+import { getSupplierByUserId, getDemoSupplierUserId } from "@/prisma/supplier";
 import { checkAndSendStockAlerts } from "@/lib/email/notifications";
 import {
   getCache,
@@ -33,7 +34,10 @@ import {
 } from "@/lib/cache";
 import { getStockAllocationsByProduct } from "@/prisma/stock-allocation";
 import { planCatalogQuantityReconcile } from "@/lib/stock-allocation/catalog-quantity-reconcile";
-import { applyCatalogQuantityReconcile } from "@/lib/stock-allocation/apply-catalog-quantity-reconcile";
+import {
+  applyCatalogQuantityReconcile,
+  ProductConcurrentModificationError,
+} from "@/lib/stock-allocation/apply-catalog-quantity-reconcile";
 import { enrichProductsWithCommittedQuantity } from "@/lib/products/enrich-product-committed-quantity";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 import { createAuditLog } from "@/prisma/audit-log";
@@ -43,6 +47,39 @@ import {
 } from "@/lib/validations/product";
 // NOTE: Performance tracking wrapper is available but deferred until after all features are implemented
 // import { withPerformanceTracking } from "@/lib/api/performance-wrapper";
+
+/**
+ * ISS-0073 — create/update used to accept any categoryId/supplierId with no
+ * existence or ownership check: nothing stopped one user's product from
+ * being silently attached to a different user's category or supplier row.
+ * A bad id now gets a clean 400 instead of surfacing as a confusing FK
+ * failure from prisma.product.create/update. Admins may use any category/
+ * supplier (company-wide scope, same reassessment as ISS-0002); everyone
+ * else is limited to their own rows plus the global Demo Supplier (same
+ * "own + demo" rule getSuppliersForAdminIncludingDemo already applies).
+ */
+async function validateCategoryAndSupplierOwnership(
+  userId: string,
+  isAdmin: boolean,
+  categoryId: string,
+  supplierId: string,
+): Promise<string | null> {
+  const [category, supplier] = await Promise.all([
+    prisma.category.findUnique({ where: { id: categoryId }, select: { userId: true } }),
+    prisma.supplier.findUnique({ where: { id: supplierId }, select: { userId: true } }),
+  ]);
+
+  if (!category) return "Invalid categoryId";
+  if (!supplier) return "Invalid supplierId";
+  if (isAdmin) return null;
+
+  if (category.userId !== userId) return "Invalid categoryId";
+  if (supplier.userId !== userId) {
+    const demoSupplierUserId = await getDemoSupplierUserId();
+    if (supplier.userId !== demoSupplierUserId) return "Invalid supplierId";
+  }
+  return null;
+}
 
 /**
  * GET /api/products
@@ -176,6 +213,10 @@ export async function GET(request: NextRequest) {
  * Create a new product
  */
 export async function POST(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const session = await getSessionFromRequest(request);
     if (!session) {
@@ -228,6 +269,16 @@ export async function POST(request: NextRequest) {
         { error: "SKU must be unique" },
         { status: 400 },
       );
+    }
+
+    const ownershipError = await validateCategoryAndSupplierOwnership(
+      userId,
+      session.role === "admin",
+      categoryId,
+      supplierId,
+    );
+    if (ownershipError) {
+      return NextResponse.json({ error: ownershipError }, { status: 400 });
     }
 
     // Create product with audit fields
@@ -357,6 +408,10 @@ export async function POST(request: NextRequest) {
  * Update an existing product
  */
 export async function PUT(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const session = await getSessionFromRequest(request);
     if (!session) {
@@ -423,6 +478,18 @@ export async function PUT(request: NextRequest) {
           { error: "SKU must be unique" },
           { status: 400 },
         );
+      }
+    }
+
+    if (categoryId || supplierId) {
+      const ownershipError = await validateCategoryAndSupplierOwnership(
+        userId,
+        session.role === "admin",
+        categoryId ?? existingProduct.categoryId,
+        supplierId ?? existingProduct.supplierId,
+      );
+      if (ownershipError) {
+        return NextResponse.json({ error: ownershipError }, { status: 400 });
       }
     }
 
@@ -509,6 +576,7 @@ export async function PUT(request: NextRequest) {
           newCatalog: quantity,
           shrinkSteps: reconcilePlan.shrinkSteps,
           productUpdate: productUpdateData,
+          expectedCurrentQuantity: existingProduct.quantity,
         });
         // REQ-0225 — client patches warehouse/product stock caches from steps
         stockReconcile = {
@@ -521,13 +589,18 @@ export async function PUT(request: NextRequest) {
           })),
         };
       } else {
-        await prisma.product.update({
-          where: { id },
+        // ISS-0046 — guard against a second concurrent PUT that read the
+        // same now-stale quantity; see ProductConcurrentModificationError.
+        const claimed = await prisma.product.updateMany({
+          where: { id, quantity: existingProduct.quantity },
           data: {
             ...productUpdateData,
             quantity: BigInt(quantity) as never,
           },
         });
+        if (claimed.count === 0) {
+          throw new ProductConcurrentModificationError(id);
+        }
       }
 
       await scheduleInvalidateStockAllocationCaches();
@@ -690,6 +763,12 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(transformedProduct);
   } catch (error) {
+    if (error instanceof ProductConcurrentModificationError) {
+      return NextResponse.json(
+        { error: "Product was modified concurrently. Please retry." },
+        { status: 409 },
+      );
+    }
     logger.error("Error updating product:", error);
     return NextResponse.json(
       { error: "Failed to update product" },
@@ -703,6 +782,10 @@ export async function PUT(request: NextRequest) {
  * Hard-delete when no order history; soft-delete (archive) when only completed orders exist.
  */
 export async function DELETE(request: NextRequest) {
+  if (!validateCSRF(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const session = await getSessionFromRequest(request);
     if (!session) {
@@ -864,11 +947,12 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Hard delete: DB first (fast response), ImageKit cleanup deferred after response
-    await prisma.stockAllocation.deleteMany({ where: { productId: id } });
-
-    await prisma.product.delete({
-      where: { id },
-    });
+    // ISS-0046 — these were two separate statements; a crash between them
+    // orphaned allocation rows with no product to belong to.
+    await prisma.$transaction([
+      prisma.stockAllocation.deleteMany({ where: { productId: id } }),
+      prisma.product.delete({ where: { id } }),
+    ]);
 
     const mediaSnapshot = {
       qrCodeFileId: existingProduct.qrCodeFileId,

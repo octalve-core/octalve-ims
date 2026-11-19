@@ -6,6 +6,15 @@ import * as Sentry from "@sentry/nextjs";
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
+    // ISS-0070 — validateEnv() existed but was never called from anywhere,
+    // so a deployment missing a required var (DATABASE_URL, JWT_SECRET,
+    // NEXT_PUBLIC_API_URL) only surfaced as a confusing failure on the
+    // first request that needed it, not at startup. Deliberately not
+    // wrapped in try/catch like the optional services below — a missing
+    // required var should fail startup, not be swallowed.
+    const { validateEnv } = await import("@/lib/env");
+    validateEnv();
+
     try {
       await import("./sentry.server.config");
     } catch {

@@ -129,7 +129,11 @@ export default function AdminMyActivityContent({
   const warehousesQuery = useWarehouses(initialWarehouses);
   const invoicesQuery = useInvoices(undefined, initialInvoices);
   const categoriesQuery = useCategories(initialCategories);
-  const usersQuery = useUsers(initialUsers);
+  // ISS-0019 — this page is reachable by any logged-in role; the full user
+  // directory (emails, roles) is admin-only data, so only fetch/query it
+  // when the viewer actually is an admin.
+  const isAdminViewer = authUser?.role === "admin";
+  const usersQuery = useUsers(initialUsers, { enabled: isAdminViewer });
 
   useSyncSsrQueryDataMany([
     { queryKey: queryKeys.orders.lists(), serverData: initialOrders },
@@ -418,20 +422,22 @@ export default function AdminMyActivityContent({
               { label: "Stock Out", value: stats.productStockOut },
             ]}
           />
-          <StatisticsCard
-            title="Total Users"
-            value={stats.totalUsers}
-            description="Registered users"
-            icon={Users}
-            variant="amber"
-            valueLoading={cardsDataLoading}
-            badgeValuesLoading={cardsDataLoading}
-            badges={[
-              { label: "Admin", value: stats.userAdmin },
-              { label: "Client", value: stats.userClient },
-              { label: "Supplier", value: stats.userSupplier },
-            ]}
-          />
+          {isAdminViewer && (
+            <StatisticsCard
+              title="Total Users"
+              value={stats.totalUsers}
+              description="Registered users"
+              icon={Users}
+              variant="amber"
+              valueLoading={cardsDataLoading}
+              badgeValuesLoading={cardsDataLoading}
+              badges={[
+                { label: "Admin", value: stats.userAdmin },
+                { label: "Client", value: stats.userClient },
+                { label: "Supplier", value: stats.userSupplier },
+              ]}
+            />
+          )}
           <StatisticsCard
             title="Total Suppliers"
             value={stats.totalSuppliers}
